@@ -18,7 +18,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "demo:clinic": "tsx demo/clinic.ts"
+    "demo": "tsx demo/server.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

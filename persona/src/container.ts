@@ -2,6 +2,7 @@ import { AccountController } from './controllers/account.controller';
 import { AuthController } from './controllers/auth.controller';
 import { HealthController } from './controllers/health.controller';
 import { ProfileController } from './controllers/profile.controller';
+import { WebController } from './controllers/web.controller';
 import { Repositories, UnitOfWork } from './domain/interfaces/unit-of-work';
 import { prisma } from './infrastructure/db/prisma';
 import { createRepositories } from './repositories';
@@ -24,6 +25,7 @@ export class Container {
   readonly authController: AuthController;
   readonly profileController: ProfileController;
   readonly accountController: AccountController;
+  readonly webController: WebController;
 
   constructor() {
     // repositories (bound to the shared client for non-transactional work)
@@ -41,6 +43,12 @@ export class Container {
     this.authController = new AuthController(this.authService, this.repositories.users);
     this.profileController = new ProfileController(this.profileService);
     this.accountController = new AccountController(this.accountService);
+    this.webController = new WebController(
+      this.authService,
+      this.profileService,
+      this.accountService,
+      this.repositories.users,
+    );
   }
 }
 
