@@ -4,8 +4,6 @@ import { errorHandler } from './middlewares/error.middleware';
 import { buildRoutes } from './routes';
 import type { Container } from './container';
 
-// Builds the Express app from a wired container. No network side effects,
-// so it can be imported directly in tests.
 export function buildApp(container: Container): Express {
   const app = express();
 

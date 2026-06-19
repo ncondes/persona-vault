@@ -5,6 +5,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4400),
+  DATABASE_URL: z.string().min(1),
 });
 
 const env = envSchema.parse(process.env);
@@ -12,6 +13,7 @@ const env = envSchema.parse(process.env);
 export const config = {
   env: env.NODE_ENV,
   port: env.PORT,
+  databaseUrl: env.DATABASE_URL,
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
 };
