@@ -7,6 +7,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4400),
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(1),
+  OIDC_ISSUER: z.string().default('http://localhost:4400/oidc'),
 });
 
 const env = envSchema.parse(process.env);
@@ -16,6 +17,7 @@ export const config = {
   port: env.PORT,
   databaseUrl: env.DATABASE_URL,
   authSecret: env.AUTH_SECRET,
+  oidcIssuer: env.OIDC_ISSUER,
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
 };
