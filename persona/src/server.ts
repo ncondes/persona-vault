@@ -1,6 +1,5 @@
+import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
-import session from 'express-session';
-import { config } from './config/config';
 import { requestLogger } from './middlewares/requestLogger.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 import { buildRoutes } from './routes';
@@ -13,19 +12,7 @@ export function buildApp(container: Container): Express {
 
   app.use(requestLogger);
   app.use(express.json());
-  app.use(
-    session({
-      secret: config.sessionSecret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: config.isProd,
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      },
-    }),
-  );
+  app.use(cookieParser());
 
   app.use('/api', buildRoutes(container));
 

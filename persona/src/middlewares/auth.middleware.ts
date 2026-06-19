@@ -1,12 +1,15 @@
 import { RequestHandler } from 'express';
 import { UnauthorizedError } from '../domain/errors';
+import { verifyAuthToken } from '../infrastructure/auth/token';
 
-// Rejects requests that do not have a logged-in session, and exposes the user id
+// Rejects requests without a valid auth token cookie, and exposes the user id
 // on the request for downstream handlers.
 export const requireAuth: RequestHandler = (req, _res, next) => {
-  if (!req.session.userId) {
+  const token = req.cookies?.token as string | undefined;
+  const userId = token ? verifyAuthToken(token) : null;
+  if (!userId) {
     throw new UnauthorizedError('Authentication required');
   }
-  req.userId = req.session.userId;
+  req.userId = userId;
   next();
 };
