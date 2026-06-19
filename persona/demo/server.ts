@@ -56,6 +56,10 @@ function page(body: string): string {
 </style></head><body><div class="wrap"><div class="card">${body}</div></div></body></html>`;
 }
 
+// Keeps the last result per client so refreshing the result page doesn't
+// re-submit the (single-use) authorization code.
+const lastResult = new Map<string, Record<string, unknown>>();
+
 const app = express();
 
 app.get('/', (_req, res) => {
@@ -118,18 +122,30 @@ app.get('/callback/:client', async (req, res, next) => {
       headers: { authorization: `Bearer ${token.access_token}` },
     });
     const claims = (await userRes.json()) as Record<string, unknown>;
-    const rows = Object.entries(claims)
-      .filter(([k]) => k !== 'sub')
-      .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`)
-      .join('');
-
-    res.send(page(`<h1>${client.emoji} ${esc(client.label)}</h1>
-      <p class="muted">Persona shared the following:</p>
-      <dl>${rows || '<dt>(nothing)</dt><dd></dd>'}</dl>
-      <p><a href="/">Back to demos</a></p>`));
+    // Redirect to a code-free URL so a page refresh won't reuse the code.
+    lastResult.set(id, claims);
+    res.redirect(`/result/${id}`);
   } catch (err) {
     next(err);
   }
+});
+
+app.get('/result/:client', (req, res) => {
+  const id = req.params.client;
+  const client = CLIENTS[id];
+  const claims = lastResult.get(id);
+  if (!client || !claims) {
+    res.redirect('/');
+    return;
+  }
+  const rows = Object.entries(claims)
+    .filter(([k]) => k !== 'sub')
+    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`)
+    .join('');
+  res.send(page(`<h1>${client.emoji} ${esc(client.label)}</h1>
+    <p class="muted">Persona shared the following:</p>
+    <dl>${rows || '<dt>(nothing)</dt><dd></dd>'}</dl>
+    <p><a href="/">Back to demos</a></p>`));
 });
 
 app.listen(PORT, () => {
