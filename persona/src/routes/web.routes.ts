@@ -1,6 +1,7 @@
 import { Router, urlencoded } from 'express';
 import type { Container } from '../container';
 import { requireWebAuth } from '../middlewares/web-auth.middleware';
+import { revokeGrant } from '../oidc/grants';
 
 // Server-rendered Persona pages. `provider` lets the revoke action destroy the
 // live OIDC grant.
@@ -26,7 +27,7 @@ export function buildWebRoutes(container: Container, provider?: any): Router {
         String(req.params.clientId),
       );
       if (provider && grantId) {
-        await provider.Grant.revokeByGrantId(grantId);
+        await revokeGrant(provider, grantId);
       }
       res.redirect('/account');
     } catch (err) {
