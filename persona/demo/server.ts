@@ -48,7 +48,9 @@ function page(body: string): string {
   .card{background:#fff;border-radius:16px;padding:2rem;max-width:32rem;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.06)}
   h1{margin:.2rem 0}.muted{color:#6b7280}
   a.btn,button{display:inline-block;background:#0ea5e9;color:#fff;border:0;border-radius:9px;padding:.7rem 1.1rem;font-weight:600;text-decoration:none;cursor:pointer;margin-top:.5rem}
-  .apps{display:flex;gap:1rem;flex-wrap:wrap}.apps>div{flex:1;min-width:13rem;border:1px solid #e5e7eb;border-radius:12px;padding:1rem}
+  .apps{display:flex;gap:1rem;flex-wrap:wrap;align-items:stretch}
+  .apps>div{flex:1;min-width:13rem;border:1px solid #e5e7eb;border-radius:12px;padding:1rem;display:flex;flex-direction:column}
+  .apps a.btn{margin-top:auto;align-self:flex-start}
   dl{display:grid;grid-template-columns:auto 1fr;gap:.4rem 1rem}dt{color:#6b7280}
   pre{background:#f6f7f9;border-radius:10px;padding:1rem;overflow:auto}
 </style></head><body><div class="wrap"><div class="card">${body}</div></div></body></html>`;

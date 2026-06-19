@@ -33,7 +33,7 @@ export function page(title: string, body: string): string {
   .primary{background:var(--accent);color:#fff;width:100%;margin-top:1rem}
   .row{display:flex;gap:.6rem;margin-top:1.25rem}
   .row form{flex:1}
-  .row button{width:100%}
+  .row button{width:100%;margin-top:0}
   .secondary{background:#f1f1f4;color:var(--ink)}
   .scopes{list-style:none;padding:0;margin:.5rem 0 0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .scopes li{padding:.6rem .8rem;font-size:.92rem;border-top:1px solid var(--line)}
