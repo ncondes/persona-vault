@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "jest",
+    "test:int": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.int.config.js",
     "db:up": "docker compose up -d postgres --wait",
     "db:down": "docker compose down",
     "docker:dev": "docker compose up --build",
