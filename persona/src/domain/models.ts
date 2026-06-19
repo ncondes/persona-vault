@@ -1,5 +1,3 @@
-// Domain entity types, kept independent of the database layer.
-
 export type NameVariantKind = 'legal' | 'preferred' | 'professional' | 'public';
 export type ProfileFieldKey = 'email' | 'phone' | 'address' | 'dob';
 

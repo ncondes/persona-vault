@@ -1,4 +1,3 @@
-// Base class for expected errors that map to a specific HTTP response.
 export class AppError extends Error {
   constructor(
     public readonly statusCode: number,
