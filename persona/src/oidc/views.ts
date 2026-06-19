@@ -37,6 +37,13 @@ export function renderLogin(uid: string, error?: string): string {
     </form>`);
 }
 
+export function renderExpired(): string {
+  return page('Request expired', `
+    <h1>Request expired</h1>
+    <p class="muted">This sign-in request has expired or was already completed.
+    Please start again from the app you were using.</p>`);
+}
+
 export function renderConsent(uid: string, clientId: string, scope: string): string {
   const items = scope
     .split(' ')
