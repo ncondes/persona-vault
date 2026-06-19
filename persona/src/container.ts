@@ -6,6 +6,7 @@ import { prisma } from './infrastructure/db/prisma';
 import { createRepositories } from './repositories';
 import { PrismaUnitOfWork } from './repositories/unit-of-work';
 import { AuthService, AuthServiceImpl } from './services/auth.service';
+import { ContextService, ContextServiceImpl } from './services/context.service';
 import { ProfileService, ProfileServiceImpl } from './services/profile.service';
 
 // Wires the application's dependencies together at startup.
@@ -15,6 +16,7 @@ export class Container {
   readonly unitOfWork: UnitOfWork;
   readonly authService: AuthService;
   readonly profileService: ProfileService;
+  readonly contextService: ContextService;
   readonly healthController: HealthController;
   readonly authController: AuthController;
   readonly profileController: ProfileController;
@@ -27,6 +29,7 @@ export class Container {
     // services
     this.authService = new AuthServiceImpl(this.repositories.users);
     this.profileService = new ProfileServiceImpl(this.repositories, this.unitOfWork);
+    this.contextService = new ContextServiceImpl(this.repositories.profiles, this.repositories.clients);
 
     // controllers
     this.healthController = new HealthController();
