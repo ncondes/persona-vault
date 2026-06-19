@@ -38,3 +38,13 @@ export interface Client {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface AuditEntry {
+  id: string;
+  at: Date;
+  userId: string;
+  clientId: string;
+  context: string;
+  scopesReleased: string[];
+  fieldsReleased: string[];
+}

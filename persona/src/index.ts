@@ -1,4 +1,3 @@
-import { RequestHandler } from 'express';
 import { config } from './config/config';
 import { buildContainer } from './container';
 import { buildApp } from './server';
@@ -7,8 +6,8 @@ import { logger } from './infrastructure/logger/logger';
 
 async function main(): Promise<void> {
   const container = buildContainer();
-  const provider = await createOidcProvider();
-  const app = buildApp(container, provider.callback() as unknown as RequestHandler);
+  const provider = await createOidcProvider(container);
+  const app = buildApp(container, provider);
 
   app.listen(config.port, () => {
     logger.info(`Persona API listening on http://localhost:${config.port}`);

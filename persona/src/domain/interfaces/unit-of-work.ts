@@ -1,3 +1,4 @@
+import { AuditRepository } from './audit.repository';
 import { ClientRepository } from './client.repository';
 import { ProfileRepository } from './profile.repository';
 import { UserRepository } from './user.repository';
@@ -7,6 +8,7 @@ export interface Repositories {
   users: UserRepository;
   profiles: ProfileRepository;
   clients: ClientRepository;
+  audit: AuditRepository;
 }
 
 // Runs a unit of work inside one database transaction: every repository call

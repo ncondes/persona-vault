@@ -56,6 +56,7 @@ function makeService() {
     users: {} as Repositories['users'],
     clients: {} as Repositories['clients'],
     profiles: new InMemoryProfileRepository(),
+    audit: {} as Repositories['audit'],
   } satisfies Repositories;
 
   const unitOfWork: UnitOfWork = { run: (work) => work(repositories) };
