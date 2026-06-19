@@ -12,9 +12,11 @@ services:
       DATABASE_URL: "postgresql://persona:persona@postgres:5432/persona?schema=public"
     ports:
       - "4400:4400"
+    # Mount only the code for hot reload; node_modules stays the image's
+    # (correct Linux build, never shadowed by the host or left stale).
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./src:/app/src
+      - ./prisma:/app/prisma
     depends_on:
       postgres:
         condition: service_healthy
