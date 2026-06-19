@@ -1,4 +1,24 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: persona-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "4400"
+      # Inside the compose network Postgres is reached by service name on 5432.
+      DATABASE_URL: "postgresql://persona:persona@postgres:5432/persona?schema=public"
+    ports:
+      - "4400:4400"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:16
     container_name: persona-postgres

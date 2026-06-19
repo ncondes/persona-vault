@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum NameVariantKind {
@@ -12,6 +12,8 @@ enum NameVariantKind {
   preferred
   professional
   public
+
+  @@map("name_variant_kind")
 }
 
 enum ProfileFieldKey {
@@ -19,46 +21,52 @@ enum ProfileFieldKey {
   phone
   address
   dob
+
+  @@map("profile_field_key")
 }
 
 // A person who owns a profile in Persona.
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  passwordHash String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  nameVariants NameVariant[]
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  nameVariants  NameVariant[]
   profileFields ProfileField[]
-  consents     Consent[]
-  auditEntries AuditEntry[]
+  consents      Consent[]
+  auditEntries  AuditEntry[]
+
+  @@map("user")
 }
 
 // A version of the user's name for a given context (legal, preferred, ...).
 model NameVariant {
   id        String          @id @default(uuid())
-  userId    String
+  userId    String          @map("user_id")
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   kind      NameVariantKind
   value     String
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
 
   @@unique([userId, kind])
+  @@map("name_variant")
 }
 
 // A single profile field (email, phone, ...) the user can share.
 model ProfileField {
   id        String          @id @default(uuid())
-  userId    String
+  userId    String          @map("user_id")
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   key       ProfileFieldKey
   value     String
   sensitive Boolean         @default(false)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
 
   @@unique([userId, key])
+  @@map("profile_field")
 }
 
 // A relying party (an app/institution) that can request user data. Its primary
@@ -67,37 +75,42 @@ model Client {
   id            String       @id
   name          String
   purpose       String
-  allowedScopes String[]
-  redirectUris  String[]
-  secretHash    String
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  allowedScopes String[]     @map("allowed_scopes")
+  redirectUris  String[]     @map("redirect_uris")
+  secretHash    String       @map("secret_hash")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
   consents      Consent[]
   auditEntries  AuditEntry[]
+
+  @@map("client")
 }
 
 // A user's standing consent for a client to receive a set of scopes.
 model Consent {
   id        String   @id @default(uuid())
-  userId    String
+  userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clientId  String
+  clientId  String   @map("client_id")
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   scopes    String[]
-  grantedAt DateTime @default(now())
+  grantedAt DateTime @default(now()) @map("granted_at")
 
   @@unique([userId, clientId])
+  @@map("consent")
 }
 
 // A record of one release of data to a client.
 model AuditEntry {
   id             String   @id @default(uuid())
   at             DateTime @default(now())
-  userId         String
+  userId         String   @map("user_id")
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clientId       String
+  clientId       String   @map("client_id")
   client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   context        String
-  scopesReleased String[]
-  fieldsReleased String[]
+  scopesReleased String[] @map("scopes_released")
+  fieldsReleased String[] @map("fields_released")
+
+  @@map("audit_entry")
 }

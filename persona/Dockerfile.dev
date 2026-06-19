@@ -1,0 +1,15 @@
+# Development image for the Persona API (hot reload via tsx watch).
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Install dependencies first for better layer caching.
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Copy the source (overlaid by a bind mount at runtime for hot reload).
+COPY . .
+
+EXPOSE 4400
+
+CMD ["npm", "run", "dev"]

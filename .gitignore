@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# generated code (Prisma client)
+persona/src/generated/
+
 # env / secrets
 .env
 .env.*
