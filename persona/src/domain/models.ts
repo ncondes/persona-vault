@@ -39,6 +39,15 @@ export interface Client {
   updatedAt: Date;
 }
 
+export interface Consent {
+  id: string;
+  userId: string;
+  clientId: string;
+  scopes: string[];
+  grantId: string | null;
+  grantedAt: Date;
+}
+
 export interface AuditEntry {
   id: string;
   at: Date;

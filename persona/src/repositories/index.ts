@@ -2,6 +2,7 @@ import { Repositories } from '../domain/interfaces/unit-of-work';
 import { DbClient } from '../infrastructure/db/db-client';
 import { PrismaAuditRepository } from './audit.repository';
 import { PrismaClientRepository } from './client.repository';
+import { PrismaConsentRepository } from './consent.repository';
 import { PrismaProfileRepository } from './profile.repository';
 import { PrismaUserRepository } from './user.repository';
 
@@ -12,6 +13,7 @@ export function createRepositories(db: DbClient): Repositories {
     users: new PrismaUserRepository(db),
     profiles: new PrismaProfileRepository(db),
     clients: new PrismaClientRepository(db),
+    consents: new PrismaConsentRepository(db),
     audit: new PrismaAuditRepository(db),
   };
 }

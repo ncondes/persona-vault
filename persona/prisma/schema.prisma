@@ -95,6 +95,7 @@ model Consent {
   clientId  String   @map("client_id")
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   scopes    String[]
+  grantId   String?  @map("grant_id")
   grantedAt DateTime @default(now()) @map("granted_at")
 
   @@unique([userId, clientId])

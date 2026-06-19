@@ -1,5 +1,6 @@
 import { AuditRepository } from './audit.repository';
 import { ClientRepository } from './client.repository';
+import { ConsentRepository } from './consent.repository';
 import { ProfileRepository } from './profile.repository';
 import { UserRepository } from './user.repository';
 
@@ -8,6 +9,7 @@ export interface Repositories {
   users: UserRepository;
   profiles: ProfileRepository;
   clients: ClientRepository;
+  consents: ConsentRepository;
   audit: AuditRepository;
 }
 

@@ -27,7 +27,7 @@ export function buildApp(container: Container, provider?: any): Express {
     app.use('/interaction', buildInteractionRoutes(provider, container));
   }
 
-  app.use('/api', buildRoutes(container));
+  app.use('/api', buildRoutes(container, provider));
 
   app.use(errorHandler);
 

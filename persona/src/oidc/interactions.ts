@@ -101,6 +101,16 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
       grant.addOIDCScope(String(params.scope ?? ''));
       const grantId = await grant.save();
 
+      // Record the connection so the user can review and revoke it later.
+      await container.repositories.consents.record({
+        userId: session.accountId,
+        clientId: String(params.client_id),
+        scopes: String(params.scope ?? '')
+          .split(' ')
+          .filter(Boolean),
+        grantId,
+      });
+
       return provider.interactionFinished(
         req,
         res,

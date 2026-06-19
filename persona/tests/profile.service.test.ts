@@ -56,6 +56,7 @@ function makeService() {
     users: {} as Repositories['users'],
     clients: {} as Repositories['clients'],
     profiles: new InMemoryProfileRepository(),
+    consents: {} as Repositories['consents'],
     audit: {} as Repositories['audit'],
   } satisfies Repositories;
 
