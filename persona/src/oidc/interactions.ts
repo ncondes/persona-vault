@@ -43,16 +43,25 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
       const { prompt, params, uid } = details;
 
       if (prompt.name === 'login') {
-        // If the user is already signed in to Persona, complete login silently.
-        const token = req.cookies?.token as string | undefined;
-        const userId = token ? verifyAuthToken(token) : null;
-        if (userId) {
-          return provider.interactionFinished(
-            req,
-            res,
-            { login: { accountId: userId } },
-            { mergeWithLastSubmission: false },
-          );
+        // If the app asked to re-authenticate (prompt=login), always show the
+        // login screen so the user can sign in or switch accounts.
+        const reasons: string[] = Array.isArray(prompt.reasons) ? prompt.reasons : [];
+        const forceLogin =
+          reasons.includes('login_prompt') ||
+          String(params.prompt ?? '').split(' ').includes('login');
+
+        // Otherwise, if the user is already signed in to Persona, log in silently.
+        if (!forceLogin) {
+          const token = req.cookies?.token as string | undefined;
+          const userId = token ? verifyAuthToken(token) : null;
+          if (userId) {
+            return provider.interactionFinished(
+              req,
+              res,
+              { login: { accountId: userId } },
+              { mergeWithLastSubmission: false },
+            );
+          }
         }
         return res.send(renderLogin(uid));
       }

@@ -98,6 +98,38 @@ describe('Connect with Persona — end to end', () => {
     expect(claims.email).toBeUndefined();
   });
 
+  it('prompt=login forces the sign-in screen so a different account can be used', async () => {
+    const email = await makeUser();
+    const redirectUri = 'http://localhost:4410/callback/clinic';
+
+    // sign in once — this sets Persona's session + cookie on the agent
+    const { agent } = await connect('clinic', 'clinic-dev-secret', 'openid name email', email);
+
+    const authorize = (extra: Record<string, string> = {}) =>
+      agent.get('/oidc/auth').query({
+        client_id: 'clinic',
+        response_type: 'code',
+        scope: 'openid name email',
+        redirect_uri: redirectUri,
+        state: 'xyz',
+        ...extra,
+      });
+
+    // without prompt=login: already signed in and consented, so Persona returns a
+    // code silently (single sign-on) — no sign-in screen
+    let res = await authorize();
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toContain('code=');
+
+    // with prompt=login: the sign-in screen is shown again, so the user can switch
+    // to a different Persona account
+    res = await authorize({ prompt: 'login' });
+    expect(res.headers.location).toContain('/interaction/');
+    const page = await agent.get(toPath(res.headers.location));
+    expect(page.status).toBe(200);
+    expect(page.text).toContain('Sign in');
+  });
+
   it('revoking a connection cuts the app off', async () => {
     const email = await makeUser();
     const { accessToken, agent } = await connect('clinic', 'clinic-dev-secret', 'openid name email', email);

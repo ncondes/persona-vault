@@ -87,6 +87,9 @@ app.get('/connect/:client', (req, res) => {
   url.searchParams.set('scope', client.scope);
   url.searchParams.set('redirect_uri', `http://localhost:${PORT}/callback/${req.params.client}`);
   url.searchParams.set('state', 'demo');
+  // Always ask the user to sign in, so each connection starts fresh and you can
+  // switch Persona accounts.
+  url.searchParams.set('prompt', 'login');
   res.redirect(url.toString());
 });
 
