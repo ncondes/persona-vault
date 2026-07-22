@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { deleteItem, updateItem } from "@/lib/api";
+import { useStrings } from "@/lib/locale";
 import { KIND_SCOPE } from "@/lib/sections";
-import { t } from "@/lib/strings";
 import type { Catalog, Connection, VaultItem, VaultKind } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ interface FieldGroupCardProps {
 
 // One card per kind: its values, add/edit forms, and which apps use it.
 export function FieldGroupCard({ kind, items, catalog, connections, onChanged }: FieldGroupCardProps) {
+  const t = useStrings();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);

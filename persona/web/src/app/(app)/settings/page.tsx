@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { ChevronRight, Download } from "lucide-react";
 import { deleteAccount, getMe, getSettings, logout, updateSettings } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import type { Settings } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Spinner } from "@/components/common/spinner";
 import { initialsOf } from "@/components/shell/user-card";
 
 export default function SettingsPage() {
+  const t = useStrings();
   const me = useLoad(useCallback(() => getMe(), []));
   const settings = useLoad(useCallback(() => getSettings(), []));
   const [local, setLocal] = useState<Settings | null>(null);

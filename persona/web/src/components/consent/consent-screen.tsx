@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { ApiError, getCatalog, interactionAbort, interactionDecision } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import type { ConsentPrompt, InteractionField } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ interface ConsentScreenProps {
 }
 
 export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
+  const t = useStrings();
   const { data: catalog } = useLoad(getCatalog);
   const [selections, setSelections] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(prompt.fields.map((field) => [field.scope, field.suggestedIds])),

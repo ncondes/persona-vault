@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { LanguageToggle } from "@/components/common/language-toggle";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
 
 export default async function SignupPage() {
@@ -8,6 +9,9 @@ export default async function SignupPage() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-page p-6">
+      <div className="fixed top-4 right-4">
+        <LanguageToggle />
+      </div>
       <OnboardingWizard />
     </div>
   );

@@ -4,24 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, IdCard, Link2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
+import type { Strings } from "@/lib/strings";
 
 export const NAV_ITEMS = [
-  { href: "/vault", label: t.nav.vault, icon: IdCard },
-  { href: "/connections", label: t.nav.connections, icon: Link2 },
-  { href: "/contexts", label: t.nav.contexts, icon: Compass },
-  { href: "/settings", label: t.nav.settings, icon: Settings },
+  { href: "/vault", key: "vault", icon: IdCard },
+  { href: "/connections", key: "connections", icon: Link2 },
+  { href: "/contexts", key: "contexts", icon: Compass },
+  { href: "/settings", key: "settings", icon: Settings },
 ] as const;
 
-export function pageTitle(pathname: string): string {
-  return NAV_ITEMS.find((item) => pathname.startsWith(item.href))?.label ?? t.appName;
+export function pageTitle(pathname: string, t: Strings): string {
+  const item = NAV_ITEMS.find((entry) => pathname.startsWith(entry.href));
+  return item ? t.nav[item.key] : t.appName;
 }
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const t = useStrings();
   return (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {NAV_ITEMS.map(({ href, key, icon: Icon }) => {
         const active = pathname.startsWith(href);
         return (
           <Link
@@ -36,7 +39,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             )}
           >
             <Icon className="size-4" />
-            {label}
+            {t.nav[key]}
           </Link>
         );
       })}

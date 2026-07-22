@@ -3,13 +3,14 @@
 import { useCallback } from "react";
 import { Link2 } from "lucide-react";
 import { getConnections } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import { ConnectionCard } from "@/components/connections/connection-card";
 import { EmptyState } from "@/components/common/empty-state";
 import { Spinner } from "@/components/common/spinner";
 
 export default function ConnectionsPage() {
+  const t = useStrings();
   const { data, loading, error, reload } = useLoad(useCallback(() => getConnections(), []));
 
   if (loading) {

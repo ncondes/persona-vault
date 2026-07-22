@@ -2,8 +2,9 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/common/language-toggle";
 import { Logo } from "@/components/common/logo";
-import { t } from "@/lib/strings";
+import { getStrings } from "@/lib/strings";
 
 function CheckIcon() {
   return (
@@ -16,9 +17,13 @@ function CheckIcon() {
 export default async function LandingPage() {
   const cookieStore = await cookies();
   if (cookieStore.has("token")) redirect("/vault");
+  const t = getStrings(cookieStore.get("locale")?.value);
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-page p-6">
+      <div className="fixed top-4 right-4">
+        <LanguageToggle />
+      </div>
       <div className="flex w-full max-w-sm flex-col">
         <Logo size="lg" className="mb-7" />
         <h1 className="text-3xl font-semibold tracking-tight">{t.landing.title}</h1>

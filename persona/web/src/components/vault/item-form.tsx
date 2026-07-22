@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ApiError, createItem, updateItem } from "@/lib/api";
+import { useStrings } from "@/lib/locale";
 import { flagOf } from "@/lib/sections";
-import { t } from "@/lib/strings";
 import {
   addressDetail,
   docDetail,
@@ -41,6 +41,7 @@ interface ItemFormProps {
 // Add/edit form for one vault item; the controls adapt to the kind. For name,
 // phone and address the parts are sent and the server composes the value.
 export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }: ItemFormProps) {
+  const t = useStrings();
   const [value, setValue] = useState(item?.value ?? "");
   const [label, setLabel] = useState(item?.label ?? "");
   const [nameContext, setNameContext] = useState<NameContext>(item?.nameContext ?? "preferred");

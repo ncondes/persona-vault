@@ -1,8 +1,10 @@
+"use client";
+
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SegmentedProgress } from "@/components/common/segmented-progress";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 
 interface StepShellProps {
   total: number;
@@ -37,6 +39,7 @@ export function StepShell({
   onSubmit,
   children,
 }: StepShellProps) {
+  const t = useStrings();
   return (
     <div className="flex w-full max-w-md flex-col rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
       <div className="mb-7 flex items-center gap-4">

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { ApiError, getInteraction } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import { Logo } from "@/components/common/logo";
 import { Spinner } from "@/components/common/spinner";
@@ -10,6 +10,7 @@ import { ConsentLogin } from "./consent-login";
 import { ConsentScreen } from "./consent-screen";
 
 function ExpiredCard() {
+  const t = useStrings();
   return (
     <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 text-center shadow-sm">
       <Logo className="mx-auto" />
@@ -22,6 +23,7 @@ function ExpiredCard() {
 // The consent app: loads the interaction and shows sign-in, the consent
 // screen, or the expired card. A silent sign-on comes back as a redirect.
 export function AuthorizeView({ uid }: { uid: string }) {
+  const t = useStrings();
   const { data, loading, error, reload } = useLoad(
     useCallback(() => getInteraction(uid), [uid]),
   );

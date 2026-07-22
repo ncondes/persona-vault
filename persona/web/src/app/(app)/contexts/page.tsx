@@ -1,7 +1,10 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 
 export default function ContextsPage() {
+  const t = useStrings();
   return (
     <div className="max-w-2xl">
       <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{t.contexts.title}</h1>

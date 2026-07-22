@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ApiError, interactionLogin } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import type { LoginPrompt } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Field } from "@/components/common/field";
 import { ConsentHeader } from "./consent-header";
 
 export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
+  const t = useStrings();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

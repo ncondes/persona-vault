@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -29,6 +29,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
 }: ConfirmDialogProps) {
+  const t = useStrings();
   const [busy, setBusy] = useState(false);
 
   const confirm = async () => {

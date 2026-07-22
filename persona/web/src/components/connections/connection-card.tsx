@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { revokeConnection } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
+import type { Strings } from "@/lib/strings";
 import { docDetail, nameDetail, type Connection } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { initialsOf } from "@/components/shell/user-card";
 import { cn } from "@/lib/utils";
 
-function snapshotText(shared: Connection["shared"][number]): string {
+function snapshotText(t: Strings, shared: Connection["shared"][number]): string {
   return shared.snapshot
     .map((s) => {
       let value = s.value;
@@ -35,6 +36,7 @@ export function ConnectionCard({
   connection: Connection;
   onRevoked: () => void;
 }) {
+  const t = useStrings();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
@@ -82,7 +84,7 @@ export function ConnectionCard({
                       </Badge>
                     ) : null}
                   </span>
-                  <span className="text-right font-medium">{snapshotText(shared)}</span>
+                  <span className="text-right font-medium">{snapshotText(t, shared)}</span>
                 </div>
               ))}
             </div>

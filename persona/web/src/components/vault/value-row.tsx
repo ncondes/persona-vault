@@ -1,12 +1,13 @@
 "use client";
 
 import { Pencil, Trash2 } from "lucide-react";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
+import type { Strings } from "@/lib/strings";
 import { docDetail, type VaultItem } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-function displayValue(item: VaultItem): string {
+function displayValue(t: Strings, item: VaultItem): string {
   if (item.kind === "blood_type") return t.catalog.bloodTypes[item.value] ?? item.value;
   if (item.kind === "eps") return t.catalog.epsProviders[item.value] ?? item.value;
   return item.value;
@@ -21,6 +22,7 @@ interface ValueRowProps {
 }
 
 export function ValueRow({ item, canMakeDefault, onMakeDefault, onEdit, onDelete }: ValueRowProps) {
+  const t = useStrings();
   const chip =
     item.nameContext !== null ? t.vault.nameContexts[item.nameContext] : (item.label ?? null);
 
@@ -29,7 +31,7 @@ export function ValueRow({ item, canMakeDefault, onMakeDefault, onEdit, onDelete
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className={item.kind === "document" ? "font-mono text-[15px]" : "text-[15px]"}>
-            {displayValue(item)}
+            {displayValue(t, item)}
           </span>
           {chip ? <Badge variant="secondary">{chip}</Badge> : null}
           {item.isDefault ? (

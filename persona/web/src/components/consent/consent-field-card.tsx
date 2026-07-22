@@ -1,7 +1,8 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
+import type { Strings } from "@/lib/strings";
 import { docDetail, nameDetail, type InteractionField, type InteractionOption } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-function optionText(field: InteractionField, option: InteractionOption): string {
+function optionText(t: Strings, field: InteractionField, option: InteractionOption): string {
   let value = option.value;
   const name = nameDetail(option.detail);
   if (field.scope === "given_name" && name) value = name.firstName;
@@ -40,6 +41,7 @@ interface ConsentFieldCardProps {
 // One requested field on the consent screen: its value (or picker), the
 // required/sensitive treatment, and the on/off switch for optional sensitive data.
 export function ConsentFieldCard({ field, selected, enabled, onSelect, onToggle }: ConsentFieldCardProps) {
+  const t = useStrings();
   const sensitiveTone = field.sensitive;
 
   const picker =
@@ -81,14 +83,14 @@ export function ConsentFieldCard({ field, selected, enabled, onSelect, onToggle 
         <SelectContent>
           {field.options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
-              {optionText(field, option)}
+              {optionText(t, field, option)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
     ) : field.options.length === 1 ? (
       <p className={cn("mt-1.5 text-[15px]", !enabled && "text-zinc-400 line-through")}>
-        {optionText(field, field.options[0])}
+        {optionText(t, field, field.options[0])}
       </p>
     ) : null;
 

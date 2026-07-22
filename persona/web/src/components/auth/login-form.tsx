@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { login, ApiError } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
 import { Logo } from "@/components/common/logo";
 
 export function LoginForm() {
+  const t = useStrings();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

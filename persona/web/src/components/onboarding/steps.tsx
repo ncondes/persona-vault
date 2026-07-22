@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { ApiError, createItem, register } from "@/lib/api";
+import { useStrings } from "@/lib/locale";
 import { flagOf } from "@/lib/sections";
-import { t } from "@/lib/strings";
+import type { Strings } from "@/lib/strings";
 import type { Catalog } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ interface StepProps {
   onBack?: () => void;
 }
 
-function errorText(err: unknown): string {
+function errorText(t: Strings, err: unknown): string {
   if (err instanceof ApiError) {
     return t.auth.errors[err.code] ?? Object.values(err.fields ?? {})[0] ?? err.message;
   }
@@ -38,6 +39,7 @@ export function EssentialsStep({
   onDone,
   onName,
 }: StepProps & { onName: (fullName: string) => void }) {
+  const t = useStrings();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +56,7 @@ export function EssentialsStep({
       onName(`${firstName} ${lastName}`.trim());
       onDone(2); // the vault starts with name + email
     } catch (err) {
-      setError(errorText(err));
+      setError(errorText(t, err));
       setBusy(false);
     }
   };
@@ -101,6 +103,7 @@ export function ContactStep({
   onBack,
   catalog,
 }: StepProps & { catalog: Catalog | null }) {
+  const t = useStrings();
   const [dial, setDial] = useState("+57");
   const [number, setNumber] = useState("");
   const [street, setStreet] = useState("");
@@ -131,7 +134,7 @@ export function ContactStep({
       }
       onDone(added);
     } catch (err) {
-      setError(errorText(err));
+      setError(errorText(t, err));
       setBusy(false);
     }
   };
@@ -201,6 +204,7 @@ export function DocumentStep({
   onBack,
   catalog,
 }: StepProps & { catalog: Catalog | null }) {
+  const t = useStrings();
   const [type, setType] = useState("CC");
   const [number, setNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
@@ -221,7 +225,7 @@ export function DocumentStep({
       });
       onDone(1);
     } catch (err) {
-      setError(errorText(err));
+      setError(errorText(t, err));
       setBusy(false);
     }
   };
@@ -297,6 +301,7 @@ export function HealthStep({
   onBack,
   catalog,
 }: StepProps & { catalog: Catalog | null }) {
+  const t = useStrings();
   const [bloodType, setBloodType] = useState("");
   const [eps, setEps] = useState("");
   const [allergies, setAllergies] = useState("");
@@ -323,7 +328,7 @@ export function HealthStep({
       }
       onDone(added);
     } catch (err) {
-      setError(errorText(err));
+      setError(errorText(t, err));
       setBusy(false);
     }
   };
@@ -378,6 +383,7 @@ export function HealthStep({
 }
 
 export function SuccessStep({ fullName, itemsSaved }: { fullName: string; itemsSaved: number }) {
+  const t = useStrings();
   const firstName = fullName.split(" ")[0] || fullName;
   return (
     <div className="flex w-full max-w-md flex-col items-center rounded-3xl border border-zinc-200 bg-white p-7 py-12 text-center shadow-sm">

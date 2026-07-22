@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
+import { LocaleProvider } from "@/lib/locale";
+import type { Locale } from "@/lib/strings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,17 +20,22 @@ export const metadata: Metadata = {
   description: "Your data, shared on your terms",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const locale: Locale = cookieStore.get("locale")?.value === "es" ? "es" : "en";
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <LocaleProvider initial={locale}>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }

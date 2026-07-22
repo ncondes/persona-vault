@@ -3,14 +3,15 @@
 import { useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCatalog, getConnections, getVault } from "@/lib/api";
+import { useStrings } from "@/lib/locale";
 import { SECTIONS } from "@/lib/sections";
-import { t } from "@/lib/strings";
 import { useLoad } from "@/lib/useLoad";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/common/spinner";
 import { FieldGroupCard } from "./field-group-card";
 
 export function VaultView() {
+  const t = useStrings();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") ?? SECTIONS[0].id;

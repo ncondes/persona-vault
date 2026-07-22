@@ -2,7 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import { logout } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import type { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ export function initialsOf(text: string): string {
 }
 
 export function UserCard({ user }: { user: User | null }) {
+  const t = useStrings();
   const signOut = async () => {
     await logout();
     window.location.assign("/login");

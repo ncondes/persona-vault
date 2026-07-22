@@ -4,10 +4,11 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { getMe } from "@/lib/api";
-import { t } from "@/lib/strings";
+import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { LanguageToggle } from "@/components/common/language-toggle";
 import { Logo } from "@/components/common/logo";
 import { NavLinks, pageTitle } from "./nav";
 import { UserCard, initialsOf } from "./user-card";
@@ -15,6 +16,7 @@ import { UserCard, initialsOf } from "./user-card";
 // The authenticated frame: fixed sidebar on desktop, top bar + drawer on mobile.
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useStrings();
   const { data: user } = useLoad(getMe);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -53,13 +55,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </SheetContent>
           </Sheet>
-          <h1 className="flex-1 text-lg font-semibold tracking-tight">{pageTitle(pathname)}</h1>
+          <h1 className="flex-1 text-lg font-semibold tracking-tight">{pageTitle(pathname, t)}</h1>
+          <LanguageToggle />
           <div className="bg-brand flex size-8 items-center justify-center rounded-full text-xs font-semibold text-white">
             {user ? initialsOf(user.email) : "…"}
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="relative flex-1 p-4 lg:p-8">
+          <div className="absolute top-6 right-8 hidden lg:block">
+            <LanguageToggle />
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

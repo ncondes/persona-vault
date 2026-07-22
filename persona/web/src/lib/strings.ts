@@ -1,5 +1,7 @@
-// Every user-facing string lives here so another locale can be added by
-// swapping the exported object.
+// Every user-facing string lives here, per locale. `en` defines the shape;
+// `es` must match it.
+
+export type Locale = "en" | "es";
 
 const en = {
   appName: "Persona",
@@ -247,7 +249,262 @@ const en = {
     deleteConfirm:
       "Delete your account and everything in your vault? Connected apps lose access immediately. This can't be undone.",
   },
-} as const;
+};
 
 export type Strings = typeof en;
-export const t: Strings = en;
+
+const es: Strings = {
+  appName: "Persona",
+  tagline: "Tus datos, compartidos en tus términos",
+
+  common: {
+    save: "Guardar",
+    cancel: "Cancelar",
+    delete: "Eliminar",
+    add: "Añadir",
+    edit: "Editar",
+    skip: "Añadir luego",
+    continue: "Continuar",
+    back: "Atrás",
+    makeDefault: "Marcar predeterminado",
+    defaultBadge: "Predeterminado",
+    requiredBadge: "Requerido",
+    sensitiveBadge: "Sensible",
+    optionalBadge: "Opcional",
+    loading: "Cargando…",
+    somethingWrong: "Algo salió mal. Inténtalo de nuevo.",
+  },
+
+  nav: {
+    vault: "Mis datos",
+    connections: "Conexiones",
+    settings: "Ajustes",
+    contexts: "Contextos",
+    logout: "Cerrar sesión",
+  },
+
+  auth: {
+    signIn: "Iniciar sesión",
+    signInLead: "Inicia sesión para elegir qué compartes.",
+    signUp: "Crear cuenta",
+    firstName: "Nombre",
+    lastName: "Apellido",
+    email: "Correo electrónico",
+    password: "Contraseña",
+    noAccount: "¿Nuevo aquí? Crea tu Persona",
+    haveAccount: "¿Ya tienes cuenta? Inicia sesión",
+    errors: {
+      EMAIL_TAKEN: "Ya existe una cuenta con ese correo.",
+      INVALID_CREDENTIALS: "Correo o contraseña inválidos.",
+    },
+  },
+
+  landing: {
+    title: "Tus datos viven aquí",
+    body: "Tú decides qué compartir y con quién. Persona rellena formularios por ti, sin entregar todo.",
+    points: ["Guarda tus datos una sola vez", "Compártelos con un toque", "Nunca contraseñas ni tarjetas"],
+    cta: "Empezar",
+    signIn: "Iniciar sesión",
+  },
+
+  onboarding: {
+    welcomeNote: "Toma menos de 2 minutos",
+    essentials: {
+      title: "Lo esencial",
+      lead: "Empecemos con lo básico.",
+      emailHint: "Lo usaremos para identificarte. Nunca lo compartimos sin tu permiso.",
+    },
+    contact: {
+      title: "Contacto",
+      lead: "Tu vault crece con el uso. Puedes saltarte esto y añadirlo luego.",
+    },
+    document: {
+      title: "Documento",
+      lead: "Lo piden casi todos los trámites. Lo escribes una vez.",
+      hint: "Persona no guarda fotos del documento, solo el número que escribes.",
+    },
+    health: {
+      title: "Salud",
+      lead: "Útil para citas y urgencias. Solo se comparte con tu permiso.",
+    },
+    success: {
+      title: (name: string) => `Listo, ${name}`,
+      body: "Tu vault está creado. Añade más datos cuando quieras, o cuando una app los pida.",
+      itemsSaved: (n: number) => `${n} dato${n === 1 ? "" : "s"} guardado${n === 1 ? "" : "s"}`,
+      cta: "Ir a mis datos",
+    },
+  },
+
+  vault: {
+    title: "Mis datos",
+    sections: {
+      identity: "Identidad",
+      document: "Documento",
+      contact: "Contacto",
+      location: "Ubicación",
+      health: "Salud",
+    },
+    kinds: {
+      name: "Nombre",
+      username: "Nombre de usuario",
+      avatar: "Avatar",
+      birth_date: "Fecha de nacimiento",
+      document: "Documento",
+      email: "Correo",
+      phone: "Teléfono",
+      address: "Dirección",
+      blood_type: "Grupo sanguíneo",
+      eps: "EPS",
+      allergy: "Alergias",
+    },
+    nameContexts: {
+      legal: "Legal",
+      preferred: "Preferido",
+      professional: "Profesional",
+      public: "Público",
+    },
+    documentFields: { type: "Tipo", number: "Número", issueDate: "Expedición", issuePlace: "Lugar" },
+    phoneFields: { countryCode: "Prefijo", number: "Número" },
+    addressFields: {
+      street: "Calle",
+      details: "Detalles (apto, interior…)",
+      city: "Ciudad",
+      region: "Región / departamento",
+      postalCode: "Código postal",
+      country: "País",
+    },
+    nameContextLabel: "Contexto",
+    label: "Etiqueta",
+    labelHint: "p. ej. Personal, Trabajo",
+    addValue: (kind: string) => `Añadir ${kind.toLowerCase()}`,
+    emptyGroup: (kind: string) => `Aún no has añadido ${kind.toLowerCase()}`,
+    usedIn: "se usa en:",
+    deleteConfirm: "¿Eliminar este valor? Las apps con las que se compartió dejarán de recibirlo.",
+    errors: {
+      SINGLE_VALUE_KIND: "Solo se permite un valor aquí — edita el existente.",
+    },
+  },
+
+  contexts: {
+    title: "Contextos",
+    lead: "Para qué sirve cada grupo de datos.",
+    cards: [
+      {
+        title: "Trámites y gobierno",
+        body: "Documento, nombre legal completo, fecha de nacimiento. Bancos, aseguradoras, registros, contratos.",
+      },
+      {
+        title: "Salud",
+        body: "Documento, EPS, grupo sanguíneo y alergias. Citas y urgencias.",
+      },
+      {
+        title: "Compras y envíos",
+        body: "Nombre, teléfono, correo, dirección de envío. E-commerce y domicilios.",
+      },
+      {
+        title: "Identidad básica",
+        body: "Nombre de usuario, correo, nombre. Apps, comunidades y registro exprés.",
+      },
+    ],
+  },
+
+  scopes: {
+    name: "Nombre completo",
+    given_name: "Nombre",
+    family_name: "Apellido",
+    username: "Nombre de usuario",
+    email: "Correo",
+    phone: "Teléfono",
+    address: "Dirección",
+    birth_date: "Fecha de nacimiento",
+    document: "Documento",
+    blood_type: "Grupo sanguíneo",
+    eps: "EPS",
+    allergies: "Alergias",
+  },
+
+  catalog: {
+    documentTypes: {
+      CC: "Cédula de ciudadanía (CC)",
+      TI: "Tarjeta de identidad (TI)",
+      CE: "Cédula de extranjería (CE)",
+      PASSPORT: "Pasaporte",
+      PEP_PPT: "Permiso temporal (PEP/PPT)",
+    },
+    bloodTypes: {
+      A_POS: "A+",
+      A_NEG: "A−",
+      B_POS: "B+",
+      B_NEG: "B−",
+      AB_POS: "AB+",
+      AB_NEG: "AB−",
+      O_POS: "O+",
+      O_NEG: "O−",
+    },
+    epsProviders: {
+      SURA: "EPS Sura",
+      SANITAS: "Sanitas",
+      NUEVA_EPS: "Nueva EPS",
+      SALUD_TOTAL: "Salud Total",
+      COMPENSAR: "Compensar",
+      FAMISANAR: "Famisanar",
+      COOSALUD: "Coosalud",
+      MUTUAL_SER: "Mutual Ser",
+    },
+  },
+
+  consent: {
+    wantsAccess: "quiere acceder a",
+    itemCount: (n: number) => `${n} dato${n === 1 ? "" : "s"}`,
+    verified: "Identidad verificada · solo lo que actives",
+    sensitiveDivider: "Datos sensibles",
+    missingBadge: "Falta en tu vault",
+    addAndSave: "Añadir y guardar en mi vault",
+    missingNote: "La guardamos para la próxima vez. Solo se comparte si lo apruebas aquí.",
+    trivialNote: "Nada sensible. Esto es de un clic.",
+    optionalMissing: "No está en tu vault — no se compartirá.",
+    confirmTitle: "¿Compartir datos sensibles?",
+    confirmBody: (n: number) =>
+      n === 1
+        ? "Se compartirá 1 dato sensible. Puedes desactivarlo antes de aprobar."
+        : `Se compartirán ${n} datos sensibles. Puedes desactivarlos antes de aprobar.`,
+    approve: "Compartir estos datos",
+    approveMissing: "Completa los datos faltantes para continuar",
+    dontShare: "No compartir",
+    footerNote: "Persona no guarda lo que no actives",
+    expiredTitle: "Solicitud expirada",
+    expiredBody: "Esta solicitud expiró o ya se completó. Empieza de nuevo desde la app que estabas usando.",
+  },
+
+  connections: {
+    title: "Conexiones",
+    lead: "Lo que compartiste. Puedes revocarlo cuando quieras.",
+    itemCount: (n: number) => `${n} dato${n === 1 ? "" : "s"}`,
+    sharedData: "Datos compartidos",
+    revoke: "Revocar acceso",
+    revokeConfirm: (name: string) =>
+      `¿Revocar el acceso de ${name}? Dejará de recibir tus datos de inmediato.`,
+    empty: "Aún no compartes con nadie",
+    emptyBody: 'Cuando uses "Ingresar con Persona" en una app, verás aquí qué compartiste y podrás revocarlo.',
+  },
+
+  settings: {
+    title: "Ajustes",
+    privacy: "Privacidad",
+    confirmSensitive: "Confirmar datos sensibles",
+    notifyAccess: "Avisarme de cada acceso",
+    downloadData: "Descargar mis datos",
+    dangerZone: "Zona de riesgo",
+    logout: "Cerrar sesión",
+    deleteAccount: "Eliminar cuenta y vault",
+    deleteWarning: "No se puede deshacer",
+    deleteConfirm:
+      "¿Eliminar tu cuenta y todo tu vault? Las apps conectadas pierden acceso de inmediato. No se puede deshacer.",
+  },
+};
+
+const STRINGS: Record<Locale, Strings> = { en, es };
+
+export function getStrings(locale?: string): Strings {
+  return STRINGS[locale === "es" ? "es" : "en"];
+}
