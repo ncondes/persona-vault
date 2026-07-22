@@ -9,6 +9,7 @@ import { PrismaUnitOfWork } from './repositories/unit-of-work';
 import { AccountService, AccountServiceImpl } from './services/account.service';
 import { AuthService, AuthServiceImpl } from './services/auth.service';
 import { ContextService, ContextServiceImpl } from './services/context.service';
+import { InteractionService } from './services/interaction.service';
 import { VaultService, VaultServiceImpl } from './services/vault.service';
 import { VaultController } from './controllers/vault.controller';
 
@@ -20,6 +21,7 @@ export class Container {
   readonly authService: AuthService;
   readonly vaultService: VaultService;
   readonly contextService: ContextService;
+  readonly interactionService: InteractionService;
   readonly accountService: AccountService;
   readonly healthController: HealthController;
   readonly authController: AuthController;
@@ -40,6 +42,7 @@ export class Container {
       this.repositories.clients,
       this.repositories.consents,
     );
+    this.interactionService = new InteractionService(this.repositories);
     this.accountService = new AccountServiceImpl(this.repositories);
 
     // controllers

@@ -1,8 +1,14 @@
 const SCOPE_LABELS: Record<string, string> = {
   name: 'Your name',
+  username: 'Your username',
   email: 'Your email address',
   phone: 'Your phone number',
   address: 'Your postal address',
+  birth_date: 'Your date of birth',
+  document: 'Your identity document',
+  blood_type: 'Your blood type',
+  eps: 'Your health insurer (EPS)',
+  allergies: 'Your allergies',
 };
 
 export function escapeHtml(value: string): string {
@@ -71,7 +77,7 @@ export function renderConsent(uid: string, clientId: string, scope: string): str
     <p><strong>${escapeHtml(clientId)}</strong> is requesting access to:</p>
     <ul class="scopes">${items || '<li>Basic sign-in only</li>'}</ul>
     <div class="row">
-      <form method="post" action="/interaction/${encodeURIComponent(uid)}/confirm">
+      <form method="post" action="/interaction/${encodeURIComponent(uid)}/decision">
         <button class="primary" type="submit">Allow</button>
       </form>
       <form method="post" action="/interaction/${encodeURIComponent(uid)}/abort">
