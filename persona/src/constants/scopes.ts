@@ -1,21 +1,29 @@
-import { NameVariantKind, ProfileFieldKey } from '../domain/models';
+import { NameContext, VaultKind } from '../domain/models';
 
-// The scope that releases a (context-appropriate) name variant.
 export const NAME_SCOPE = 'name';
 
-// Each non-name scope maps one-to-one to a profile field.
-export const SCOPE_FIELD: Record<string, ProfileFieldKey> = {
+// Each data scope maps one-to-one to a vault kind. Claim names mirror scope
+// names; `allergies` releases every `allergy` item as a list.
+export const SCOPE_KIND: Record<string, VaultKind> = {
+  name: 'name',
+  username: 'username',
   email: 'email',
   phone: 'phone',
   address: 'address',
-  dob: 'dob',
+  birth_date: 'birth_date',
+  document: 'document',
+  blood_type: 'blood_type',
+  eps: 'eps',
+  allergies: 'allergy',
 };
 
-// Which name variant a client receives, based on its declared purpose.
-export const PURPOSE_VARIANT: Record<string, NameVariantKind> = {
+export const ALL_SCOPES = Object.keys(SCOPE_KIND);
+
+// Which name context a client's purpose suggests on the consent screen.
+export const PURPOSE_VARIANT: Record<string, NameContext> = {
   healthcare: 'legal',
   employment: 'professional',
   social: 'public',
 };
 
-export const DEFAULT_VARIANT: NameVariantKind = 'preferred';
+export const DEFAULT_VARIANT: NameContext = 'preferred';

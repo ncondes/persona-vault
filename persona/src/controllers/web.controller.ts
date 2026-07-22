@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
 import { config } from '../config/config';
-import { UserRepository } from '../domain/interfaces/user.repository';
-import { NameVariantKind, ProfileFieldKey } from '../domain/models';
+import { Repositories } from '../domain/interfaces/unit-of-work';
 import { signAuthToken } from '../infrastructure/auth/token';
 import { AccountService } from '../services/account.service';
 import { AuthService } from '../services/auth.service';
-import { ProfileService, ProfileUpdate } from '../services/profile.service';
 import { renderAccount, renderSignup, renderWebLogin } from '../web/views';
 
 const cookieOptions = {
@@ -16,16 +14,13 @@ const cookieOptions = {
   maxAge: 1000 * 60 * 60 * 24 * 7,
 };
 
-const NAME_KINDS: NameVariantKind[] = ['legal', 'preferred', 'professional', 'public'];
-const FIELD_KEYS: ProfileFieldKey[] = ['email', 'phone', 'address', 'dob'];
-
-// Server-rendered pages for managing a Persona account (signup, login, profile).
+// Server-rendered Persona pages (signup, login, account overview). The vault is
+// managed through the JSON API; the account page shows it read-only.
 export class WebController {
   constructor(
     private readonly authService: AuthService,
-    private readonly profileService: ProfileService,
     private readonly accountService: AccountService,
-    private readonly users: UserRepository,
+    private readonly repositories: Repositories,
   ) {}
 
   showSignup = (_req: Request, res: Response): void => {
@@ -65,27 +60,12 @@ export class WebController {
 
   account = async (req: Request, res: Response): Promise<void> => {
     const userId = req.userId!;
-    const [user, profile, connections, audit] = await Promise.all([
-      this.users.findById(userId),
-      this.profileService.getProfile(userId),
+    const [user, items, connections, audit] = await Promise.all([
+      this.repositories.users.findById(userId),
+      this.repositories.vault.listForUser(userId),
       this.accountService.connections(userId),
       this.accountService.auditHistory(userId),
     ]);
-    res.send(renderAccount({ email: user?.email ?? '', profile, connections, audit }));
-  };
-
-  updateProfile = async (req: Request, res: Response): Promise<void> => {
-    const names: ProfileUpdate['names'] = {};
-    for (const kind of NAME_KINDS) {
-      const value = req.body[`n_${kind}`];
-      if (value) names[kind] = String(value);
-    }
-    const fields: ProfileUpdate['fields'] = {};
-    for (const key of FIELD_KEYS) {
-      const value = req.body[`f_${key}`];
-      if (value) fields[key] = { value: String(value) };
-    }
-    await this.profileService.updateProfile(req.userId!, { names, fields });
-    res.redirect('/account');
+    res.send(renderAccount({ email: user?.email ?? '', items, connections, audit }));
   };
 }

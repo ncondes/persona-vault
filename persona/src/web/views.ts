@@ -1,10 +1,6 @@
-import { AuditEntry } from '../domain/models';
+import { AuditEntry, VaultItem } from '../domain/models';
 import { escapeHtml, page } from '../oidc/views';
 import { ConnectionView } from '../services/account.service';
-import { ProfileView } from '../services/profile.service';
-
-const NAME_KINDS = ['legal', 'preferred', 'professional', 'public'] as const;
-const FIELD_KEYS = ['email', 'phone', 'address', 'dob'] as const;
 
 export function renderSignup(error?: string): string {
   return page('Create your Persona', `
@@ -37,21 +33,23 @@ export function renderWebLogin(error?: string): string {
 
 interface AccountData {
   email: string;
-  profile: ProfileView;
+  items: VaultItem[];
   connections: ConnectionView[];
   audit: AuditEntry[];
 }
 
 export function renderAccount(data: AccountData): string {
-  const nameInputs = NAME_KINDS.map(
-    (k) =>
-      `<label>${k}</label><input name="n_${k}" value="${escapeHtml(data.profile.names[k] ?? '')}">`,
-  ).join('');
-
-  const fieldInputs = FIELD_KEYS.map(
-    (k) =>
-      `<label>${k}</label><input name="f_${k}" value="${escapeHtml(data.profile.fields[k]?.value ?? '')}">`,
-  ).join('');
+  const vault = data.items.length
+    ? data.items
+        .map((item) => {
+          const label = item.label ?? item.nameContext ?? '';
+          const badge = item.isDefault ? ' <span class="muted">· default</span>' : '';
+          return `<li><b>${escapeHtml(item.kind)}</b>${
+            label ? ` (${escapeHtml(label)})` : ''
+          }: ${escapeHtml(item.value)}${badge}</li>`;
+        })
+        .join('')
+    : '<li class="muted">Your vault is empty.</li>';
 
   const connections = data.connections.length
     ? data.connections
@@ -85,11 +83,8 @@ export function renderAccount(data: AccountData): string {
         <button class="secondary" type="submit">Log out</button>
       </form>
     </p>
-    <h2>Profile</h2>
-    <form method="post" action="/account/profile">
-      ${nameInputs}${fieldInputs}
-      <button class="primary" type="submit">Save profile</button>
-    </form>
+    <h2>Your vault</h2>
+    <ul class="scopes">${vault}</ul>
     <h2>Connected apps</h2>
     <ul class="scopes">${connections}</ul>
     <h2>Recent data shared</h2>

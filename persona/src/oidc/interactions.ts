@@ -111,12 +111,15 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
       const grantId = await grant.save();
 
       // Record the connection so the user can review and revoke it later.
+      // Per-field selections arrive with the interaction API; empty means the
+      // vault defaults apply.
       await container.repositories.consents.record({
         userId: session.accountId,
         clientId: String(params.client_id),
         scopes: String(params.scope ?? '')
           .split(' ')
           .filter(Boolean),
+        selections: [],
         grantId,
       });
 

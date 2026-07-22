@@ -19,7 +19,6 @@ export function buildWebRoutes(container: Container, provider?: any): Router {
   router.post('/logout', web.logout);
 
   router.get('/account', requireWebAuth, web.account);
-  router.post('/account/profile', requireWebAuth, form, web.updateProfile);
   router.post('/account/connections/:clientId/revoke', requireWebAuth, async (req, res, next) => {
     try {
       const grantId = await container.accountService.revokeConnection(

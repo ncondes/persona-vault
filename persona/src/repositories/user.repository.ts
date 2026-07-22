@@ -1,4 +1,8 @@
-import { CreateUserInput, UserRepository } from '../domain/interfaces/user.repository';
+import {
+  CreateUserInput,
+  UpdateSettingsInput,
+  UserRepository,
+} from '../domain/interfaces/user.repository';
 import { User } from '../domain/models';
 import { DbClient } from '../infrastructure/db/db-client';
 
@@ -15,5 +19,13 @@ export class PrismaUserRepository implements UserRepository {
 
   findByEmail(email: string): Promise<User | null> {
     return this.db.user.findUnique({ where: { email } });
+  }
+
+  updateSettings(userId: string, patch: UpdateSettingsInput): Promise<User> {
+    return this.db.user.update({ where: { id: userId }, data: patch });
+  }
+
+  async deleteById(userId: string): Promise<void> {
+    await this.db.user.delete({ where: { id: userId } });
   }
 }

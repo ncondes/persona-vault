@@ -29,10 +29,21 @@ describe('Connect with Persona — end to end', () => {
     const email = `oidc-e2e-${Date.now()}-${counter++}@example.com`;
     await container.unitOfWork.run(async (repos) => {
       const user = await repos.users.create({ email, passwordHash: await hashPassword(password) });
-      await repos.profiles.setNameVariant(user.id, 'legal', 'María de los Ángeles');
-      await repos.profiles.setNameVariant(user.id, 'public', 'Mara P.');
-      await repos.profiles.setProfileField(user.id, 'email', email, false);
-      await repos.profiles.setProfileField(user.id, 'phone', '12345', true);
+      await repos.vault.create({
+        userId: user.id,
+        kind: 'name',
+        value: 'María de los Ángeles',
+        nameContext: 'legal',
+      });
+      await repos.vault.create({
+        userId: user.id,
+        kind: 'name',
+        value: 'Mara P.',
+        nameContext: 'public',
+        isDefault: true,
+      });
+      await repos.vault.create({ userId: user.id, kind: 'email', value: email, isDefault: true });
+      await repos.vault.create({ userId: user.id, kind: 'phone', value: '12345', isDefault: true });
     });
     return email;
   }

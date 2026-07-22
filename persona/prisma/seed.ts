@@ -1,68 +1,86 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, NameVariantKind, ProfileFieldKey } from '../src/generated/prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client';
+import { DEMO_CLIENTS } from '../src/constants/clients';
+import { hashPassword } from '../src/infrastructure/auth/password';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const email = 'mara@example.com';
+  const email = 'camila@example.com';
 
-  // Reset the demo user (cascades to its variants, fields, consents, audit).
+  // Reset the demo user (cascades to vault items, consents, audit entries).
   await prisma.user.deleteMany({ where: { email } });
 
   await prisma.user.create({
     data: {
       email,
-      passwordHash: 'seed-placeholder', // a real hash is set once auth (Stage 4) lands
-      nameVariants: {
+      passwordHash: await hashPassword('password123'),
+      vaultItems: {
         create: [
-          { kind: NameVariantKind.legal, value: 'María de los Ángeles Pérez Ruiz' },
-          { kind: NameVariantKind.preferred, value: 'Mara' },
-          { kind: NameVariantKind.professional, value: 'Dr. M. Pérez Ruiz' },
-          { kind: NameVariantKind.public, value: 'Mara P.' },
-        ],
-      },
-      profileFields: {
-        create: [
-          { key: ProfileFieldKey.email, value: 'mara@example.com', sensitive: false },
-          { key: ProfileFieldKey.phone, value: '+44 7700 900123', sensitive: true },
-          { key: ProfileFieldKey.address, value: '12 Kings Road, London', sensitive: true },
-          { key: ProfileFieldKey.dob, value: '1990-04-12', sensitive: true },
+          {
+            kind: 'name',
+            label: 'Legal',
+            value: 'Camila Andrea Rodríguez García',
+            nameContext: 'legal',
+          },
+          {
+            kind: 'name',
+            label: 'Preferred',
+            value: 'Cami Rodríguez',
+            nameContext: 'preferred',
+            isDefault: true,
+          },
+          { kind: 'name', label: 'Public', value: 'Camila R.', nameContext: 'public' },
+          { kind: 'username', value: 'camirg', isDefault: true },
+          { kind: 'birth_date', value: '1994-08-23', isDefault: true },
+          {
+            kind: 'document',
+            label: 'Cédula',
+            value: '1032456789',
+            detail: { type: 'CC', issueDate: '2012-09-01', issuePlace: 'Bogotá D.C.' },
+            isDefault: true,
+          },
+          {
+            kind: 'document',
+            label: 'Passport',
+            value: 'AV1234567',
+            detail: { type: 'PASSPORT', issueDate: '2021-05-18', issuePlace: 'Bogotá D.C.' },
+          },
+          { kind: 'email', label: 'Personal', value: 'camila@example.com', isDefault: true },
+          { kind: 'email', label: 'Work', value: 'camila@acme.co' },
+          { kind: 'phone', label: 'Mobile', value: '+57 300 555 1234', isDefault: true },
+          {
+            kind: 'address',
+            label: 'Home',
+            value: 'Cra 7 # 45-10, Bogotá',
+            isDefault: true,
+          },
+          { kind: 'blood_type', value: 'O_POS', isDefault: true },
+          { kind: 'eps', value: 'SANITAS', isDefault: true },
+          { kind: 'allergy', value: 'Penicillin' },
+          { kind: 'allergy', value: 'Peanuts' },
         ],
       },
     },
   });
 
-  // Relying-party demo clients.
-  const clients = [
-    {
-      id: 'clinic',
-      name: 'City Health Clinic',
-      purpose: 'healthcare',
-      allowedScopes: ['name', 'email', 'phone', 'address'],
-      redirectUris: ['http://localhost:4410/callback/clinic'],
-      secretHash: 'seed-placeholder',
-    },
-    {
-      id: 'forum',
-      name: 'Hobbyist Forum',
-      purpose: 'social',
-      allowedScopes: ['name'],
-      redirectUris: ['http://localhost:4410/callback/forum'],
-      secretHash: 'seed-placeholder',
-    },
-  ];
-
-  for (const client of clients) {
-    await prisma.client.upsert({
-      where: { id: client.id },
-      create: client,
-      update: client,
-    });
+  // Relying-party demo clients, registered from the shared list.
+  for (const client of DEMO_CLIENTS) {
+    const data = {
+      id: client.id,
+      name: client.name,
+      purpose: client.purpose,
+      allowedScopes: client.allowedScopes,
+      requiredScopes: client.requiredScopes,
+      redirectUris: client.redirectUris,
+      secretHash: await hashPassword(client.devSecret),
+    };
+    await prisma.client.upsert({ where: { id: client.id }, create: data, update: data });
   }
 
-  console.log('Seed complete: demo user + clinic & forum clients.');
+  console.log('Seed complete: demo user camila@example.com + clinic, forum & store clients.');
 }
 
 main()

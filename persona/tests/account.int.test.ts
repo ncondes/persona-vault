@@ -17,9 +17,10 @@ describe('account API (integration)', () => {
     const reg = await agent.post('/api/auth/register').send({ email, password: 'password123' });
     userId = reg.body.data.id;
 
-    await container.repositories.audit.recordRelease({
+    await container.repositories.audit.record({
       userId,
       clientId: 'clinic',
+      type: 'release',
       context: 'healthcare',
       scopesReleased: ['name', 'email'],
       fieldsReleased: ['name', 'email'],
@@ -28,6 +29,7 @@ describe('account API (integration)', () => {
       userId,
       clientId: 'clinic',
       scopes: ['openid', 'name', 'email'],
+      selections: [],
       grantId: 'grant-test-1',
     });
   });

@@ -1,14 +1,15 @@
-import { AuditEntry } from '../models';
+import { AuditEntry, AuditType } from '../models';
 
-export interface RecordReleaseInput {
+export interface RecordAuditInput {
   userId: string;
   clientId: string;
+  type: AuditType;
   context: string;
   scopesReleased: string[];
   fieldsReleased: string[];
 }
 
 export interface AuditRepository {
-  recordRelease(input: RecordReleaseInput): Promise<AuditEntry>;
+  record(input: RecordAuditInput): Promise<AuditEntry>;
   listForUser(userId: string): Promise<AuditEntry[]>;
 }

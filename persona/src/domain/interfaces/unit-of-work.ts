@@ -1,13 +1,13 @@
 import { AuditRepository } from './audit.repository';
 import { ClientRepository } from './client.repository';
 import { ConsentRepository } from './consent.repository';
-import { ProfileRepository } from './profile.repository';
 import { UserRepository } from './user.repository';
+import { VaultRepository } from './vault.repository';
 
 // The full set of repositories, all bound to a single database executor.
 export interface Repositories {
   users: UserRepository;
-  profiles: ProfileRepository;
+  vault: VaultRepository;
   clients: ClientRepository;
   consents: ConsentRepository;
   audit: AuditRepository;

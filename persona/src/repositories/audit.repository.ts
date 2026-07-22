@@ -1,11 +1,11 @@
-import { AuditRepository, RecordReleaseInput } from '../domain/interfaces/audit.repository';
+import { AuditRepository, RecordAuditInput } from '../domain/interfaces/audit.repository';
 import { AuditEntry } from '../domain/models';
 import { DbClient } from '../infrastructure/db/db-client';
 
 export class PrismaAuditRepository implements AuditRepository {
   constructor(private readonly db: DbClient) {}
 
-  recordRelease(input: RecordReleaseInput): Promise<AuditEntry> {
+  record(input: RecordAuditInput): Promise<AuditEntry> {
     return this.db.auditEntry.create({ data: input });
   }
 

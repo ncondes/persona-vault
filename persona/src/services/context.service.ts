@@ -1,54 +1,79 @@
-import { DEFAULT_VARIANT, NAME_SCOPE, PURPOSE_VARIANT, SCOPE_FIELD } from '../constants/scopes';
+import { DEFAULT_VARIANT, PURPOSE_VARIANT, SCOPE_KIND } from '../constants/scopes';
 import { ClientRepository } from '../domain/interfaces/client.repository';
-import { ProfileRepository } from '../domain/interfaces/profile.repository';
+import { VaultRepository } from '../domain/interfaces/vault.repository';
 import { NotFoundError } from '../domain/errors';
-import { NameVariantKind, ProfileFieldKey } from '../domain/models';
+import { VaultItem } from '../domain/models';
 
-export interface ResolveInput {
-  names: Partial<Record<NameVariantKind, string>>;
-  fields: Partial<Record<ProfileFieldKey, string>>;
+export interface ResolveDefaultsInput {
   purpose: string;
   allowedScopes: string[];
-  requestedScopes: string[];
-  consentedScopes: string[];
+  grantedScopes: string[];
+  items: VaultItem[];
 }
 
 export interface ResolvedClaims {
   context: string;
   scopesReleased: string[];
-  claims: Record<string, string>;
+  claims: Record<string, unknown>;
 }
 
-// The data-minimisation core. Pure and side-effect free, so it is easy to test:
-// it releases only scopes the client may request AND the user consented to, and
-// resolves `name` to the variant appropriate for the client's purpose.
-export function resolveClaims(input: ResolveInput): ResolvedClaims {
-  const allowed = new Set(input.allowedScopes);
-  const consented = new Set(input.consentedScopes);
-  const effective = input.requestedScopes.filter((scope) => allowed.has(scope) && consented.has(scope));
+// Picks the vault item that backs a scope when the user made no explicit
+// choice: for `name`, the context matching the client's purpose; for any other
+// kind, the default value.
+export function pickDefaultItem(
+  scope: string,
+  purpose: string,
+  candidates: VaultItem[],
+): VaultItem | undefined {
+  if (candidates.length === 0) return undefined;
+  if (scope === 'name') {
+    const wanted = PURPOSE_VARIANT[purpose] ?? DEFAULT_VARIANT;
+    const match = candidates.find((item) => item.nameContext === wanted);
+    if (match) return match;
+  }
+  return candidates.find((item) => item.isDefault) ?? candidates[0];
+}
 
-  const claims: Record<string, string> = {};
+// Turns a vault item into the claim value for its scope. A document becomes an
+// object (number + detail); every other kind releases its plain value.
+export function itemClaimValue(item: VaultItem): unknown {
+  if (item.kind === 'document') {
+    return {
+      type: item.detail?.type ?? null,
+      number: item.value,
+      issueDate: item.detail?.issueDate ?? null,
+      issuePlace: item.detail?.issuePlace ?? null,
+    };
+  }
+  return item.value;
+}
+
+// The data-minimisation core: releases only scopes the client may request,
+// resolved from the vault's default values. `allergies` releases every allergy
+// item as a list.
+export function resolveDefaultClaims(input: ResolveDefaultsInput): ResolvedClaims {
+  const allowed = new Set(input.allowedScopes);
+  const effective = input.grantedScopes.filter((scope) => allowed.has(scope));
+
+  const claims: Record<string, unknown> = {};
   const scopesReleased: string[] = [];
 
   for (const scope of effective) {
-    if (scope === NAME_SCOPE) {
-      const variant = PURPOSE_VARIANT[input.purpose] ?? DEFAULT_VARIANT;
-      const value = input.names[variant];
-      if (value !== undefined) {
-        claims.name = value;
-        scopesReleased.push(NAME_SCOPE);
-      }
+    const kind = SCOPE_KIND[scope];
+    if (!kind) continue;
+    const candidates = input.items.filter((item) => item.kind === kind);
+    if (candidates.length === 0) continue;
+
+    if (kind === 'allergy') {
+      claims[scope] = candidates.map((item) => item.value);
+      scopesReleased.push(scope);
       continue;
     }
 
-    const fieldKey = SCOPE_FIELD[scope];
-    if (fieldKey) {
-      const value = input.fields[fieldKey];
-      if (value !== undefined) {
-        claims[fieldKey] = value;
-        scopesReleased.push(scope);
-      }
-    }
+    const item = pickDefaultItem(scope, input.purpose, candidates);
+    if (!item) continue;
+    claims[scope] = itemClaimValue(item);
+    scopesReleased.push(scope);
   }
 
   return { context: input.purpose, scopesReleased, claims };
@@ -58,49 +83,32 @@ export interface ContextService {
   resolveForClient(
     userId: string,
     clientId: string,
-    requestedScopes: string[],
-    consentedScopes: string[],
+    grantedScopes: string[],
   ): Promise<ResolvedClaims>;
 }
 
 export class ContextServiceImpl implements ContextService {
   constructor(
-    private readonly profiles: ProfileRepository,
+    private readonly vault: VaultRepository,
     private readonly clients: ClientRepository,
   ) {}
 
   async resolveForClient(
     userId: string,
     clientId: string,
-    requestedScopes: string[],
-    consentedScopes: string[],
+    grantedScopes: string[],
   ): Promise<ResolvedClaims> {
     const client = await this.clients.findById(clientId);
     if (!client) {
       throw new NotFoundError(`Unknown client: ${clientId}`, 'UNKNOWN_CLIENT');
     }
 
-    const [variants, fields] = await Promise.all([
-      this.profiles.listNameVariants(userId),
-      this.profiles.listProfileFields(userId),
-    ]);
-
-    const names: Partial<Record<NameVariantKind, string>> = {};
-    for (const variant of variants) {
-      names[variant.kind] = variant.value;
-    }
-    const fieldMap: Partial<Record<ProfileFieldKey, string>> = {};
-    for (const field of fields) {
-      fieldMap[field.key] = field.value;
-    }
-
-    return resolveClaims({
-      names,
-      fields: fieldMap,
+    const items = await this.vault.listForUser(userId);
+    return resolveDefaultClaims({
       purpose: client.purpose,
       allowedScopes: client.allowedScopes,
-      requestedScopes,
-      consentedScopes,
+      grantedScopes,
+      items,
     });
   }
 }

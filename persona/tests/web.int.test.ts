@@ -40,15 +40,19 @@ describe('web UI (integration)', () => {
     expect(res.text).toContain(email);
   });
 
-  it('saves the profile from the form', async () => {
+  it('shows vault items on the account page', async () => {
     const agent = request.agent(app);
     await agent.post('/login').type('form').send({ email, password: 'password123' });
 
-    const save = await agent
-      .post('/account/profile')
-      .type('form')
-      .send({ n_legal: 'Web Tester', f_email: email });
-    expect(save.status).toBe(302);
+    const container = buildContainer();
+    const user = await prisma.user.findUnique({ where: { email } });
+    await container.repositories.vault.create({
+      userId: user!.id,
+      kind: 'name',
+      value: 'Web Tester',
+      nameContext: 'preferred',
+      isDefault: true,
+    });
 
     const account = await agent.get('/account');
     expect(account.text).toContain('Web Tester');

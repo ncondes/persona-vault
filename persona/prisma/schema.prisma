@@ -8,111 +8,124 @@ datasource db {
   provider = "postgresql"
 }
 
-enum NameVariantKind {
+// Every kind of data the vault can hold. `allergy` holds one item per allergy.
+enum VaultKind {
+  name
+  username
+  avatar
+  birth_date
+  document
+  email
+  phone
+  address
+  blood_type
+  eps
+  allergy
+
+  @@map("vault_kind")
+}
+
+// Which context a name value belongs to (legal, preferred, ...). Only set on
+// items of kind `name`.
+enum NameContext {
   legal
   preferred
   professional
   public
 
-  @@map("name_variant_kind")
+  @@map("name_context")
 }
 
-enum ProfileFieldKey {
-  email
-  phone
-  address
-  dob
+enum AuditType {
+  grant
+  release
+  revoke
 
-  @@map("profile_field_key")
+  @@map("audit_type")
 }
 
-// A person who owns a profile in Persona.
+// A person who owns a vault in Persona.
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String         @map("password_hash")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  nameVariants  NameVariant[]
-  profileFields ProfileField[]
-  consents      Consent[]
-  auditEntries  AuditEntry[]
+  id               String       @id @default(uuid())
+  email            String       @unique
+  passwordHash     String       @map("password_hash")
+  confirmSensitive Boolean      @default(true) @map("confirm_sensitive")
+  notifyAccess     Boolean      @default(false) @map("notify_access")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  vaultItems       VaultItem[]
+  consents         Consent[]
+  auditEntries     AuditEntry[]
 
   @@map("user")
 }
 
-// A version of the user's name for a given context (legal, preferred, ...).
-model NameVariant {
-  id        String          @id @default(uuid())
-  userId    String          @map("user_id")
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind      NameVariantKind
-  value     String
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+// One piece of data in the user's vault. A kind can hold several values, each
+// with a user label ("Personal", "Work") and at most one default per kind.
+model VaultItem {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        VaultKind
+  label       String?
+  value       String
+  detail      Json? // document only: { type, issueDate, issuePlace }
+  isDefault   Boolean      @default(false) @map("is_default")
+  nameContext NameContext? @map("name_context")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
-  @@unique([userId, kind])
-  @@map("name_variant")
-}
-
-// A single profile field (email, phone, ...) the user can share.
-model ProfileField {
-  id        String          @id @default(uuid())
-  userId    String          @map("user_id")
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  key       ProfileFieldKey
-  value     String
-  sensitive Boolean         @default(false)
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
-
-  @@unique([userId, key])
-  @@map("profile_field")
+  @@index([userId, kind])
+  @@map("vault_item")
 }
 
 // A relying party (an app/institution) that can request user data. Its primary
 // key is the OAuth client_id used during "Connect with Persona".
 model Client {
-  id            String       @id
-  name          String
-  purpose       String
-  allowedScopes String[]     @map("allowed_scopes")
-  redirectUris  String[]     @map("redirect_uris")
-  secretHash    String       @map("secret_hash")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
-  consents      Consent[]
-  auditEntries  AuditEntry[]
+  id             String       @id
+  name           String
+  purpose        String
+  allowedScopes  String[]     @map("allowed_scopes")
+  requiredScopes String[]     @map("required_scopes")
+  redirectUris   String[]     @map("redirect_uris")
+  secretHash     String       @map("secret_hash")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  consents       Consent[]
+  auditEntries   AuditEntry[]
 
   @@map("client")
 }
 
-// A user's standing consent for a client to receive a set of scopes.
+// A user's standing consent for a client: which scopes were granted and which
+// vault items back each one (with a snapshot of the values at approval).
 model Consent {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clientId  String   @map("client_id")
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  scopes    String[]
-  grantId   String?  @map("grant_id")
-  grantedAt DateTime @default(now()) @map("granted_at")
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId   String   @map("client_id")
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scopes     String[]
+  selections Json
+  grantId    String?  @map("grant_id")
+  grantedAt  DateTime @default(now()) @map("granted_at")
 
   @@unique([userId, clientId])
   @@map("consent")
 }
 
-// A record of one release of data to a client.
+// A record of one consent grant, data release, or revocation.
 model AuditEntry {
-  id             String   @id @default(uuid())
-  at             DateTime @default(now())
-  userId         String   @map("user_id")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clientId       String   @map("client_id")
-  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid())
+  at             DateTime  @default(now())
+  userId         String    @map("user_id")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId       String    @map("client_id")
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  type           AuditType @default(release)
   context        String
-  scopesReleased String[] @map("scopes_released")
-  fieldsReleased String[] @map("fields_released")
+  scopesReleased String[]  @map("scopes_released")
+  fieldsReleased String[]  @map("fields_released")
 
   @@map("audit_entry")
 }

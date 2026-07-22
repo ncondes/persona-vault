@@ -1,9 +1,10 @@
-import { Consent } from '../models';
+import { Consent, ConsentSelection } from '../models';
 
 export interface RecordConsentInput {
   userId: string;
   clientId: string;
   scopes: string[];
+  selections: ConsentSelection[];
   grantId: string;
 }
 

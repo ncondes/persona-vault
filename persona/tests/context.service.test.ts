@@ -1,95 +1,111 @@
-import { resolveClaims } from '../src/services/context.service';
+import { resolveDefaultClaims } from '../src/services/context.service';
+import { VaultItem, VaultKind } from '../src/domain/models';
 
-const names = {
-  legal: 'María de los Ángeles Pérez Ruiz',
-  preferred: 'Mara',
-  professional: 'Dr. M. Pérez Ruiz',
-  public: 'Mara P.',
-};
+let counter = 0;
+function item(
+  kind: VaultKind,
+  value: string,
+  extra: Partial<VaultItem> = {},
+): VaultItem {
+  counter += 1;
+  return {
+    id: `item-${counter}`,
+    userId: 'user-1',
+    kind,
+    label: null,
+    value,
+    detail: null,
+    isDefault: false,
+    nameContext: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...extra,
+  };
+}
 
-const fields = {
-  email: 'mara@example.com',
-  phone: '+44 7700 900123',
-  address: '12 Kings Road, London',
-  dob: '1990-04-12',
-};
+const items: VaultItem[] = [
+  item('name', 'Camila Andrea Rodríguez García', { nameContext: 'legal' }),
+  item('name', 'Cami Rodríguez', { nameContext: 'preferred', isDefault: true }),
+  item('name', 'Camila R.', { nameContext: 'public' }),
+  item('email', 'personal@example.com', { label: 'Personal', isDefault: true }),
+  item('email', 'work@acme.co', { label: 'Work' }),
+  item('document', '1032456789', {
+    isDefault: true,
+    detail: { type: 'CC', issueDate: '2012-09-01', issuePlace: 'Bogotá D.C.' },
+  }),
+  item('allergy', 'Penicillin'),
+  item('allergy', 'Peanuts'),
+];
 
-describe('resolveClaims (context engine)', () => {
-  it('a healthcare client gets the legal name + consented contact fields', () => {
-    const out = resolveClaims({
-      names,
-      fields,
+describe('resolveDefaultClaims (context engine, vault defaults)', () => {
+  it('a healthcare client gets the legal name and the default email', () => {
+    const out = resolveDefaultClaims({
       purpose: 'healthcare',
-      allowedScopes: ['name', 'email', 'phone', 'address'],
-      requestedScopes: ['name', 'email', 'phone', 'address'],
-      consentedScopes: ['name', 'email', 'phone', 'address'],
+      allowedScopes: ['name', 'email'],
+      grantedScopes: ['name', 'email'],
+      items,
     });
     expect(out.context).toBe('healthcare');
-    expect(out.claims.name).toBe(names.legal);
-    expect(out.claims.email).toBe(fields.email);
-    expect(out.claims.phone).toBe(fields.phone);
-    expect(out.claims.address).toBe(fields.address);
+    expect(out.claims.name).toBe('Camila Andrea Rodríguez García');
+    expect(out.claims.email).toBe('personal@example.com');
   });
 
-  // --- LEAK / minimisation tests ---
-
-  it('a social client only ever gets the public name, never contact fields', () => {
-    const out = resolveClaims({
-      names,
-      fields,
+  it('a social client only ever gets the public name, never other scopes', () => {
+    const out = resolveDefaultClaims({
       purpose: 'social',
       allowedScopes: ['name'],
-      requestedScopes: ['name', 'email', 'phone', 'address', 'dob'], // asks for everything
-      consentedScopes: ['name', 'email', 'phone', 'address', 'dob'],
+      grantedScopes: ['name', 'email', 'document', 'allergies'], // asks for everything
+      items,
     });
-    expect(out.claims.name).toBe(names.public);
+    expect(out.claims.name).toBe('Camila R.');
     expect(out.claims).not.toHaveProperty('email');
-    expect(out.claims).not.toHaveProperty('phone');
-    expect(out.claims).not.toHaveProperty('address');
-    expect(JSON.stringify(out.claims)).not.toContain(names.legal);
+    expect(out.claims).not.toHaveProperty('document');
+    expect(out.claims).not.toHaveProperty('allergies');
   });
 
-  it('withholds a scope the user did not consent to, even when allowed and requested', () => {
-    const out = resolveClaims({
-      names,
-      fields,
+  it('falls back to the preferred name for an unknown purpose', () => {
+    const out = resolveDefaultClaims({
+      purpose: 'mystery',
+      allowedScopes: ['name'],
+      grantedScopes: ['name'],
+      items,
+    });
+    expect(out.claims.name).toBe('Cami Rodríguez');
+  });
+
+  it('releases a document as an object with its detail parts', () => {
+    const out = resolveDefaultClaims({
       purpose: 'healthcare',
-      allowedScopes: ['name', 'email', 'phone', 'address'],
-      requestedScopes: ['name', 'email', 'phone'],
-      consentedScopes: ['name', 'email'], // no phone
+      allowedScopes: ['document'],
+      grantedScopes: ['document'],
+      items,
     });
-    expect(out.claims).toHaveProperty('email');
-    expect(out.claims).not.toHaveProperty('phone');
+    expect(out.claims.document).toEqual({
+      type: 'CC',
+      number: '1032456789',
+      issueDate: '2012-09-01',
+      issuePlace: 'Bogotá D.C.',
+    });
   });
 
-  it('selects the name variant from the purpose, defaulting to preferred', () => {
-    const pick = (purpose: string) =>
-      resolveClaims({
-        names,
-        fields,
-        purpose,
-        allowedScopes: ['name'],
-        requestedScopes: ['name'],
-        consentedScopes: ['name'],
-      }).claims.name;
-
-    expect(pick('healthcare')).toBe(names.legal);
-    expect(pick('employment')).toBe(names.professional);
-    expect(pick('social')).toBe(names.public);
-    expect(pick('mystery')).toBe(names.preferred); // fallback
+  it('releases every allergy as a list', () => {
+    const out = resolveDefaultClaims({
+      purpose: 'healthcare',
+      allowedScopes: ['allergies'],
+      grantedScopes: ['allergies'],
+      items,
+    });
+    expect(out.claims.allergies).toEqual(['Penicillin', 'Peanuts']);
   });
 
-  it('omits a scope when the underlying data is missing', () => {
-    const out = resolveClaims({
-      names: { public: 'Only Public' },
-      fields: {},
-      purpose: 'healthcare', // wants legal, which is missing
-      allowedScopes: ['name', 'email'],
-      requestedScopes: ['name', 'email'],
-      consentedScopes: ['name', 'email'],
+  it('omits a scope when the vault has no data for it', () => {
+    const out = resolveDefaultClaims({
+      purpose: 'healthcare',
+      allowedScopes: ['name', 'eps'],
+      grantedScopes: ['name', 'eps'],
+      items: [],
     });
-    expect(out.claims).not.toHaveProperty('name');
-    expect(out.claims).not.toHaveProperty('email');
+    expect(out.claims).toEqual({});
     expect(out.scopesReleased).toEqual([]);
   });
 });
