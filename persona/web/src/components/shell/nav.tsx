@@ -1,0 +1,45 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Compass, IdCard, Link2, Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { t } from "@/lib/strings";
+
+export const NAV_ITEMS = [
+  { href: "/vault", label: t.nav.vault, icon: IdCard },
+  { href: "/connections", label: t.nav.connections, icon: Link2 },
+  { href: "/contexts", label: t.nav.contexts, icon: Compass },
+  { href: "/settings", label: t.nav.settings, icon: Settings },
+] as const;
+
+export function pageTitle(pathname: string): string {
+  return NAV_ITEMS.find((item) => pathname.startsWith(item.href))?.label ?? t.appName;
+}
+
+export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  return (
+    <nav className="flex flex-col gap-1">
+      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        const active = pathname.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              active
+                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                : "text-zinc-600 hover:bg-zinc-100",
+            )}
+          >
+            <Icon className="size-4" />
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
