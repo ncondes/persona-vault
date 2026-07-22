@@ -22,12 +22,13 @@ interface ItemFormProps {
   kind: VaultKind;
   catalog: Catalog | null;
   item?: VaultItem;
+  submitLabel?: string;
   onSaved: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 // Add/edit form for one vault item; the controls adapt to the kind.
-export function ItemForm({ kind, catalog, item, onSaved, onCancel }: ItemFormProps) {
+export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }: ItemFormProps) {
   const [value, setValue] = useState(item?.value ?? "");
   const [label, setLabel] = useState(item?.label ?? "");
   const [nameContext, setNameContext] = useState<NameContext>(item?.nameContext ?? "preferred");
@@ -154,11 +155,13 @@ export function ItemForm({ kind, catalog, item, onSaved, onCancel }: ItemFormPro
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <div className="flex gap-2">
         <Button type="submit" disabled={busy}>
-          {t.common.save}
+          {submitLabel ?? t.common.save}
         </Button>
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
-          {t.common.cancel}
-        </Button>
+        {onCancel ? (
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
+            {t.common.cancel}
+          </Button>
+        ) : null}
       </div>
     </form>
   );

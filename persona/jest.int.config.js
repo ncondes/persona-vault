@@ -9,4 +9,5 @@ module.exports = {
   // Integration tests share one database, so run them serially for determinism.
   maxWorkers: 1,
   forceExit: true,
+  setupFiles: ['<rootDir>/tests/int.setup.js'],
 };

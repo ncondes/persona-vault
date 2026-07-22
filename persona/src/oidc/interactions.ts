@@ -30,6 +30,8 @@ function interactionHandler(fn: (req: Request, res: Response) => Promise<unknown
           res.status(410).json({
             error: { code: 'INTERACTION_EXPIRED', message: 'This request has expired' },
           });
+        } else if (config.webUrl) {
+          res.redirect(303, `${config.webUrl}/authorize/${String(req.params.uid)}`);
         } else {
           res.status(400).send(renderExpired());
         }
@@ -101,6 +103,9 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
               : { id: clientId },
           });
         }
+        if (config.webUrl) {
+          return res.redirect(303, `${config.webUrl}/authorize/${uid}`);
+        }
         return res.send(renderLogin(uid));
       }
 
@@ -113,6 +118,9 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
         );
         if (wantsJson(req)) {
           return res.json(payload);
+        }
+        if (config.webUrl) {
+          return res.redirect(303, `${config.webUrl}/authorize/${uid}`);
         }
         return res.send(renderConsent(uid, clientId, String(params.scope ?? '')));
       }

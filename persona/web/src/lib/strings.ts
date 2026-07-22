@@ -190,13 +190,18 @@ const en = {
   },
 
   consent: {
-    wantsAccess: (n: number) => `wants to access ${n} item${n === 1 ? "" : "s"}`,
+    wantsAccess: "wants to access",
+    itemCount: (n: number) => `${n} item${n === 1 ? "" : "s"}`,
     verified: "Verified identity · only what you enable",
     sensitiveDivider: "Sensitive data",
     missingBadge: "Missing from your vault",
     addAndSave: "Add and save to my vault",
     missingNote: "We'll keep it for next time. It's only shared if you approve it here.",
     trivialNote: "Nothing sensitive. This is one click.",
+    optionalMissing: "Not in your vault — it won't be shared.",
+    confirmTitle: "Share sensitive data?",
+    confirmBody: (n: number) =>
+      `${n} sensitive item${n === 1 ? "" : "s"} will be shared. You can switch them off before approving.`,
     approve: "Share this data",
     approveMissing: "Complete the missing data to continue",
     dontShare: "Don't share",
