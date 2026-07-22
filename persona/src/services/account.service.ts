@@ -1,5 +1,6 @@
 import { KIND_META } from '../constants/vault';
 import { SCOPE_KIND } from '../constants/scopes';
+import { NotFoundError } from '../domain/errors';
 import { Repositories } from '../domain/interfaces/unit-of-work';
 import { AuditEntry, ConsentSelection } from '../domain/models';
 
@@ -22,10 +23,33 @@ export interface AuditView extends AuditEntry {
   clientName: string;
 }
 
+export interface SettingsView {
+  confirmSensitive: boolean;
+  notifyAccess: boolean;
+}
+
+export interface SettingsPatch {
+  confirmSensitive?: boolean;
+  notifyAccess?: boolean;
+}
+
+export interface DataExport {
+  user: { email: string; createdAt: Date; settings: SettingsView };
+  vault: unknown[];
+  connections: ConnectionView[];
+  audit: AuditView[];
+}
+
 export interface AccountService {
   auditHistory(userId: string): Promise<AuditView[]>;
   connections(userId: string): Promise<ConnectionView[]>;
   revokeConnection(userId: string, clientId: string): Promise<string | null>;
+  settings(userId: string): Promise<SettingsView>;
+  updateSettings(userId: string, patch: SettingsPatch): Promise<SettingsView>;
+  exportData(userId: string): Promise<DataExport>;
+  // Deletes the account (the vault, consents and audit cascade with it) and
+  // returns the live grant ids so the caller can revoke them.
+  deleteAccount(userId: string): Promise<string[]>;
 }
 
 export class AccountServiceImpl implements AccountService {
@@ -86,5 +110,50 @@ export class AccountServiceImpl implements AccountService {
       fieldsReleased: [],
     });
     return consent.grantId;
+  }
+
+  async settings(userId: string): Promise<SettingsView> {
+    const user = await this.repositories.users.findById(userId);
+    if (!user) throw new NotFoundError('User not found', 'USER_NOT_FOUND');
+    return { confirmSensitive: user.confirmSensitive, notifyAccess: user.notifyAccess };
+  }
+
+  async updateSettings(userId: string, patch: SettingsPatch): Promise<SettingsView> {
+    const user = await this.repositories.users.updateSettings(userId, patch);
+    return { confirmSensitive: user.confirmSensitive, notifyAccess: user.notifyAccess };
+  }
+
+  async exportData(userId: string): Promise<DataExport> {
+    const user = await this.repositories.users.findById(userId);
+    if (!user) throw new NotFoundError('User not found', 'USER_NOT_FOUND');
+
+    const [vault, connections, audit] = await Promise.all([
+      this.repositories.vault.listForUser(userId),
+      this.connections(userId),
+      this.auditHistory(userId),
+    ]);
+
+    return {
+      user: {
+        email: user.email,
+        createdAt: user.createdAt,
+        settings: { confirmSensitive: user.confirmSensitive, notifyAccess: user.notifyAccess },
+      },
+      vault: vault.map((item) => ({
+        ...item,
+        sensitive: KIND_META[item.kind].sensitive,
+      })),
+      connections,
+      audit,
+    };
+  }
+
+  async deleteAccount(userId: string): Promise<string[]> {
+    const consents = await this.repositories.consents.listForUser(userId);
+    const grantIds = consents
+      .map((consent) => consent.grantId)
+      .filter((id): id is string => Boolean(id));
+    await this.repositories.users.deleteById(userId);
+    return grantIds;
   }
 }
