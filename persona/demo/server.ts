@@ -18,7 +18,7 @@ interface DemoClient {
 const CLIENTS: Record<string, DemoClient> = {
   clinic: {
     secret: 'clinic-dev-secret',
-    scope: 'openid name email phone address',
+    scope: 'openid name email address blood_type',
     label: 'City Health Clinic',
     emoji: '🏥',
     tagline: 'New patient intake — skip the paperwork.',
@@ -29,6 +29,13 @@ const CLIENTS: Record<string, DemoClient> = {
     label: 'Hobbyist Forum',
     emoji: '💬',
     tagline: 'Join the conversation under your public name.',
+  },
+  store: {
+    secret: 'store-dev-secret',
+    scope: 'openid username',
+    label: 'Tiger Store',
+    emoji: '🛍️',
+    tagline: 'One-click sign-in with just your username.',
   },
 };
 
@@ -143,7 +150,10 @@ app.get('/result/:client', (req, res) => {
   }
   const rows = Object.entries(claims)
     .filter(([k]) => k !== 'sub')
-    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`)
+    .map(([k, v]) => {
+      const text = typeof v === 'string' ? v : JSON.stringify(v);
+      return `<dt>${esc(k)}</dt><dd>${esc(text)}</dd>`;
+    })
     .join('');
   res.send(page(`<h1>${client.emoji} ${esc(client.label)}</h1>
     <p class="muted">Persona shared the following:</p>
