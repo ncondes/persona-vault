@@ -15,7 +15,7 @@ application; the academic write-ups live under `../tasks/`.
 - PostgreSQL via Prisma (runs in Docker)
 - node-oidc-provider for OAuth 2.0 / OpenID Connect
 - Jest + Supertest for tests
-- React (Vite) front end (added in a later stage)
+- Next.js + Tailwind + shadcn/ui front end (in `web/`)
 
 ## How sharing works
 
@@ -72,6 +72,16 @@ npm run db:seed         # demo user + demo clients
 npm run dev             # starts the API on http://localhost:4400
 ```
 
+The web app (onboarding, vault, consent screen, connections, settings):
+
+```bash
+cd web && npm install && npm run dev   # http://localhost:4420
+```
+
+`WEB_URL` in `.env` sends the OIDC login/consent pages to the web app. It is
+deliberately unset in tests (`tests/int.setup.js`) so the built-in HTML
+fallback stays covered — don't "clean that up".
+
 Demo relying parties (clinic, forum, store):
 
 ```bash
@@ -94,3 +104,4 @@ npm run test:int  # integration (needs the Docker database)
 | Persona API | 4400 |
 | PostgreSQL (host) | 55432 (container 5432) |
 | Demo relying parties | 4410 |
+| Persona web app | 4420 |

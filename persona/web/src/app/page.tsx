@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/common/logo";
 import { t } from "@/lib/strings";
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="3">
+      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default async function LandingPage() {
   const cookieStore = await cookies();
@@ -21,7 +28,7 @@ export default async function LandingPage() {
           {t.landing.points.map((point) => (
             <li key={point} className="flex items-center gap-3 text-[15px] text-zinc-800">
               <span className="bg-brand-tint text-brand flex size-7 shrink-0 items-center justify-center rounded-lg">
-                <Check className="size-4" />
+                <CheckIcon />
               </span>
               {point}
             </li>
