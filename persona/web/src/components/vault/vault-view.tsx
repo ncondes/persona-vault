@@ -38,13 +38,17 @@ export function VaultView() {
       <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{t.vault.title}</h1>
 
       <Tabs value={section.id} onValueChange={(id) => router.replace(`/vault?tab=${id}`)} className="mt-0 lg:mt-5">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          {SECTIONS.map((s) => (
-            <TabsTrigger key={s.id} value={s.id}>
-              {t.vault.sections[s.id]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {/* horizontal scroll on small screens, with an edge fade as the cue */}
+        <div className="relative">
+          <TabsList className="w-full justify-start gap-2 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {SECTIONS.map((s) => (
+              <TabsTrigger key={s.id} value={s.id} className="shrink-0 px-4">
+                {t.vault.sections[s.id]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-lg bg-gradient-to-l from-muted to-transparent lg:hidden" />
+        </div>
       </Tabs>
 
       <div className="mt-5 flex flex-col gap-4">
