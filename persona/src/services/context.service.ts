@@ -1,14 +1,20 @@
 import { DEFAULT_VARIANT, PURPOSE_VARIANT, SCOPE_KIND } from '../constants/scopes';
+import { KIND_META } from '../constants/vault';
 import { ClientRepository } from '../domain/interfaces/client.repository';
+import { ConsentRepository } from '../domain/interfaces/consent.repository';
 import { VaultRepository } from '../domain/interfaces/vault.repository';
 import { NotFoundError } from '../domain/errors';
-import { VaultItem } from '../domain/models';
+import { ConsentSelection, VaultItem, VaultKind } from '../domain/models';
 
-export interface ResolveDefaultsInput {
-  purpose: string;
-  allowedScopes: string[];
-  grantedScopes: string[];
-  items: VaultItem[];
+// What the consent screen shows for one requested scope: the user's candidate
+// values, the context-suggested pick, and whether the vault lacks data for it.
+export interface ScopeSuggestion {
+  scope: string;
+  kind: VaultKind;
+  sensitive: boolean;
+  missing: boolean;
+  suggestedIds: string[];
+  options: VaultItem[];
 }
 
 export interface ResolvedClaims {
@@ -17,21 +23,48 @@ export interface ResolvedClaims {
   claims: Record<string, unknown>;
 }
 
-// Picks the vault item that backs a scope when the user made no explicit
-// choice: for `name`, the context matching the client's purpose; for any other
-// kind, the default value.
-export function pickDefaultItem(
-  scope: string,
-  purpose: string,
-  candidates: VaultItem[],
-): VaultItem | undefined {
-  if (candidates.length === 0) return undefined;
+// Picks the item a client should get by default: for `name`, the context that
+// matches the client's purpose (healthcare -> legal, social -> public, ...);
+// for any other kind, the user's default value.
+function pickSuggested(scope: string, purpose: string, candidates: VaultItem[]): VaultItem[] {
+  if (candidates.length === 0) return [];
+  const kind = candidates[0].kind;
+  if (kind === 'allergy') return candidates;
   if (scope === 'name') {
     const wanted = PURPOSE_VARIANT[purpose] ?? DEFAULT_VARIANT;
     const match = candidates.find((item) => item.nameContext === wanted);
-    if (match) return match;
+    if (match) return [match];
   }
-  return candidates.find((item) => item.isDefault) ?? candidates[0];
+  return [candidates.find((item) => item.isDefault) ?? candidates[0]];
+}
+
+// The consent screen's pre-selection engine: for every requested scope the
+// client may have, the options in the vault and the context-aware suggestion.
+export function suggestSelections(
+  purpose: string,
+  allowedScopes: string[],
+  requestedScopes: string[],
+  items: VaultItem[],
+): ScopeSuggestion[] {
+  const allowed = new Set(allowedScopes);
+  const suggestions: ScopeSuggestion[] = [];
+
+  for (const scope of requestedScopes) {
+    const kind = SCOPE_KIND[scope];
+    if (!kind || !allowed.has(scope)) continue;
+
+    const options = items.filter((item) => item.kind === kind);
+    suggestions.push({
+      scope,
+      kind,
+      sensitive: KIND_META[kind].sensitive,
+      missing: options.length === 0,
+      suggestedIds: pickSuggested(scope, purpose, options).map((item) => item.id),
+      options,
+    });
+  }
+
+  return suggestions;
 }
 
 // Turns a vault item into the claim value for its scope. A document becomes an
@@ -48,31 +81,41 @@ export function itemClaimValue(item: VaultItem): unknown {
   return item.value;
 }
 
-// The data-minimisation core: releases only scopes the client may request,
-// resolved from the vault's default values. `allergies` releases every allergy
-// item as a list.
-export function resolveDefaultClaims(input: ResolveDefaultsInput): ResolvedClaims {
+export interface ResolveInput {
+  purpose: string;
+  allowedScopes: string[];
+  grantedScopes: string[];
+  selections: ConsentSelection[];
+  items: VaultItem[];
+}
+
+// The data-minimisation core: releases exactly what the user approved. Each
+// granted scope resolves through its stored selection to the LIVE vault items,
+// so later edits propagate and deleted items silently drop out. Scopes without
+// a stored selection fall back to the context-aware suggestion.
+export function resolveClaims(input: ResolveInput): ResolvedClaims {
   const allowed = new Set(input.allowedScopes);
-  const effective = input.grantedScopes.filter((scope) => allowed.has(scope));
+  const byScope = new Map(input.selections.map((s) => [s.scope, s]));
 
   const claims: Record<string, unknown> = {};
   const scopesReleased: string[] = [];
 
-  for (const scope of effective) {
+  for (const scope of input.grantedScopes) {
     const kind = SCOPE_KIND[scope];
-    if (!kind) continue;
+    if (!kind || !allowed.has(scope)) continue;
+
     const candidates = input.items.filter((item) => item.kind === kind);
-    if (candidates.length === 0) continue;
+    const selection = byScope.get(scope);
+    const chosen = selection
+      ? candidates.filter((item) => selection.itemIds.includes(item.id))
+      : pickSuggested(scope, input.purpose, candidates);
+    if (chosen.length === 0) continue;
 
     if (kind === 'allergy') {
-      claims[scope] = candidates.map((item) => item.value);
-      scopesReleased.push(scope);
-      continue;
+      claims[scope] = chosen.map((item) => item.value);
+    } else {
+      claims[scope] = itemClaimValue(chosen[0]);
     }
-
-    const item = pickDefaultItem(scope, input.purpose, candidates);
-    if (!item) continue;
-    claims[scope] = itemClaimValue(item);
     scopesReleased.push(scope);
   }
 
@@ -91,6 +134,7 @@ export class ContextServiceImpl implements ContextService {
   constructor(
     private readonly vault: VaultRepository,
     private readonly clients: ClientRepository,
+    private readonly consents: ConsentRepository,
   ) {}
 
   async resolveForClient(
@@ -103,11 +147,16 @@ export class ContextServiceImpl implements ContextService {
       throw new NotFoundError(`Unknown client: ${clientId}`, 'UNKNOWN_CLIENT');
     }
 
-    const items = await this.vault.listForUser(userId);
-    return resolveDefaultClaims({
+    const [items, consent] = await Promise.all([
+      this.vault.listForUser(userId),
+      this.consents.findByUserAndClient(userId, clientId),
+    ]);
+
+    return resolveClaims({
       purpose: client.purpose,
       allowedScopes: client.allowedScopes,
       grantedScopes,
+      selections: consent?.selections ?? [],
       items,
     });
   }

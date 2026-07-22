@@ -35,7 +35,11 @@ export class Container {
     // services
     this.authService = new AuthServiceImpl(this.repositories.users, this.unitOfWork);
     this.vaultService = new VaultServiceImpl(this.repositories, this.unitOfWork);
-    this.contextService = new ContextServiceImpl(this.repositories.vault, this.repositories.clients);
+    this.contextService = new ContextServiceImpl(
+      this.repositories.vault,
+      this.repositories.clients,
+      this.repositories.consents,
+    );
     this.accountService = new AccountServiceImpl(this.repositories);
 
     // controllers
