@@ -30,8 +30,14 @@ describe('account API (integration)', () => {
     await container.repositories.consents.record({
       userId,
       clientId: 'clinic',
-      scopes: ['openid', 'name', 'email'],
-      selections: [],
+      scopes: ['name', 'email'],
+      selections: [
+        {
+          scope: 'email',
+          itemIds: ['item-x'],
+          snapshot: [{ label: 'Personal', value: email, detail: null }],
+        },
+      ],
       grantId: 'grant-test-1',
     });
   });
@@ -46,25 +52,34 @@ describe('account API (integration)', () => {
     expect((await request(app).get('/api/connections')).status).toBe(401);
   });
 
-  it('returns the audit history', async () => {
+  it('returns the audit history with type and client name', async () => {
     const res = await agent.get('/api/audit');
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     expect(res.body.data[0].clientId).toBe('clinic');
+    expect(res.body.data[0].clientName).toBe('City Health Clinic');
+    expect(res.body.data[0].type).toBe('release');
     expect(res.body.data[0].fieldsReleased).toContain('email');
   });
 
-  it('lists connections with the client name, then revokes one', async () => {
+  it('lists connections with the exact values shared, then revokes one', async () => {
     let res = await agent.get('/api/connections');
     expect(res.status).toBe(200);
     const clinic = res.body.data.find((c: { clientId: string }) => c.clientId === 'clinic');
     expect(clinic).toBeDefined();
     expect(clinic.clientName).toBe('City Health Clinic');
+    expect(clinic.purpose).toBe('healthcare');
+    expect(clinic.shared[0].scope).toBe('email');
+    expect(clinic.shared[0].snapshot[0].value).toBe(email);
 
     res = await agent.delete('/api/connections/clinic');
     expect(res.status).toBe(204);
 
     res = await agent.get('/api/connections');
     expect(res.body.data.find((c: { clientId: string }) => c.clientId === 'clinic')).toBeUndefined();
+
+    // the revocation itself is on the audit trail
+    res = await agent.get('/api/audit');
+    expect(res.body.data.some((a: { type: string }) => a.type === 'revoke')).toBe(true);
   });
 });

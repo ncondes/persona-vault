@@ -1,6 +1,6 @@
-import { AuditEntry, VaultItem } from '../domain/models';
+import { VaultItem } from '../domain/models';
 import { escapeHtml, page } from '../oidc/views';
-import { ConnectionView } from '../services/account.service';
+import { AuditView, ConnectionView } from '../services/account.service';
 
 export function renderSignup(error?: string): string {
   return page('Create your Persona', `
@@ -37,7 +37,7 @@ interface AccountData {
   email: string;
   items: VaultItem[];
   connections: ConnectionView[];
-  audit: AuditEntry[];
+  audit: AuditView[];
 }
 
 export function renderAccount(data: AccountData): string {
@@ -71,8 +71,8 @@ export function renderAccount(data: AccountData): string {
         .slice(0, 10)
         .map(
           (a) =>
-            `<li>${escapeHtml(a.clientId)} received ${escapeHtml(
-              a.fieldsReleased.join(', '),
+            `<li>${escapeHtml(a.clientName)} — ${escapeHtml(a.type)}: ${escapeHtml(
+              a.fieldsReleased.join(', ') || a.scopesReleased.join(', ') || '—',
             )} <span class="muted">· ${escapeHtml(a.context)}</span></li>`,
         )
         .join('')
