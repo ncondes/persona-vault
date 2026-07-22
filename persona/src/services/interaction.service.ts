@@ -1,13 +1,13 @@
 import { AppError, NotFoundError } from '../domain/errors';
 import { Repositories } from '../domain/interfaces/unit-of-work';
-import { ConsentSelection, DocumentDetail, NameContext, VaultItem } from '../domain/models';
+import { ConsentSelection, ItemDetail, NameContext, VaultItem } from '../domain/models';
 import { suggestSelections } from './context.service';
 
 export interface InteractionOption {
   id: string;
   label: string | null;
   value: string;
-  detail: DocumentDetail | null;
+  detail: ItemDetail | null;
   isDefault: boolean;
   nameContext: NameContext | null;
 }

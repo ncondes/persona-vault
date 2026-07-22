@@ -34,7 +34,8 @@ export class WebController {
   signup = async (req: Request, res: Response): Promise<void> => {
     try {
       const user = await this.authService.register(
-        req.body.fullName,
+        req.body.firstName,
+        req.body.lastName,
         req.body.email,
         req.body.password,
       );

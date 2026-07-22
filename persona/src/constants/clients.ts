@@ -18,6 +18,8 @@ export const DEMO_CLIENTS: DemoClient[] = [
     purpose: 'healthcare',
     allowedScopes: [
       'name',
+      'given_name',
+      'family_name',
       'email',
       'phone',
       'address',

@@ -32,13 +32,37 @@ export interface DocumentDetail {
   issuePlace: string;
 }
 
+// Parts of a name item; the item's `value` holds the composed full name.
+export interface NameDetail {
+  firstName: string;
+  lastName: string;
+}
+
+// Parts of a phone item; the item's `value` holds "+57 300 555 1234".
+export interface PhoneDetail {
+  countryCode: string;
+  number: string;
+}
+
+// Parts of an address item; the item's `value` holds a one-line summary.
+export interface AddressDetail {
+  street: string;
+  city: string;
+  region?: string;
+  postalCode?: string;
+  country: string;
+  details?: string;
+}
+
+export type ItemDetail = DocumentDetail | NameDetail | PhoneDetail | AddressDetail;
+
 export interface VaultItem {
   id: string;
   userId: string;
   kind: VaultKind;
   label: string | null;
   value: string;
-  detail: DocumentDetail | null;
+  detail: ItemDetail | null;
   isDefault: boolean;
   nameContext: NameContext | null;
   createdAt: Date;
@@ -65,7 +89,7 @@ export interface ConsentSelection {
   snapshot: Array<{
     label: string | null;
     value: string;
-    detail: DocumentDetail | null;
+    detail: ItemDetail | null;
   }>;
 }
 

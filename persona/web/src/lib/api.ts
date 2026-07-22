@@ -53,8 +53,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 // Auth
-export const register = (fullName: string, email: string, password: string) =>
-  request<User>("/api/auth/register", { method: "POST", body: { fullName, email, password } });
+export const register = (firstName: string, lastName: string, email: string, password: string) =>
+  request<User>("/api/auth/register", {
+    method: "POST",
+    body: { firstName, lastName, email, password },
+  });
 export const login = (email: string, password: string) =>
   request<User>("/api/auth/login", { method: "POST", body: { email, password } });
 export const logout = () => request<void>("/api/auth/logout", { method: "POST" });

@@ -35,7 +35,8 @@ const en = {
     signIn: "Sign in",
     signInLead: "Sign in to choose what you share.",
     signUp: "Create account",
-    fullName: "Full name",
+    firstName: "First name",
+    lastName: "Last name",
     email: "Email",
     password: "Password",
     noAccount: "New here? Create your Persona",
@@ -58,7 +59,7 @@ const en = {
     welcomeNote: "Takes less than 2 minutes",
     essentials: {
       title: "The essentials",
-      lead: "Let's start with the basics. Just three fields.",
+      lead: "Let's start with the basics.",
       emailHint: "We'll use it to identify you. We never share it without your permission.",
     },
     contact: {
@@ -111,6 +112,15 @@ const en = {
       public: "Public",
     } as Record<string, string>,
     documentFields: { type: "Type", number: "Number", issueDate: "Issued", issuePlace: "Place" },
+    phoneFields: { countryCode: "Prefix", number: "Number" },
+    addressFields: {
+      street: "Street",
+      details: "Details (apt, unit…)",
+      city: "City",
+      region: "Region / department",
+      postalCode: "Postal code",
+      country: "Country",
+    },
     nameContextLabel: "Context",
     label: "Label",
     labelHint: "e.g. Personal, Work",
@@ -148,6 +158,8 @@ const en = {
 
   scopes: {
     name: "Full name",
+    given_name: "First name",
+    family_name: "Last name",
     username: "Username",
     email: "Email",
     phone: "Phone",

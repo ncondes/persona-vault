@@ -4,7 +4,14 @@ import { ClientRepository } from '../domain/interfaces/client.repository';
 import { ConsentRepository } from '../domain/interfaces/consent.repository';
 import { VaultRepository } from '../domain/interfaces/vault.repository';
 import { NotFoundError } from '../domain/errors';
-import { ConsentSelection, VaultItem, VaultKind } from '../domain/models';
+import {
+  AddressDetail,
+  ConsentSelection,
+  DocumentDetail,
+  NameDetail,
+  VaultItem,
+  VaultKind,
+} from '../domain/models';
 
 // What the consent screen shows for one requested scope: the user's candidate
 // values, the context-suggested pick, and whether the vault lacks data for it.
@@ -26,11 +33,11 @@ export interface ResolvedClaims {
 // Picks the item a client should get by default: for `name`, the context that
 // matches the client's purpose (healthcare -> legal, social -> public, ...);
 // for any other kind, the user's default value.
-function pickSuggested(scope: string, purpose: string, candidates: VaultItem[]): VaultItem[] {
+function pickSuggested(purpose: string, candidates: VaultItem[]): VaultItem[] {
   if (candidates.length === 0) return [];
   const kind = candidates[0].kind;
   if (kind === 'allergy') return candidates;
-  if (scope === 'name') {
+  if (kind === 'name') {
     const wanted = PURPOSE_VARIANT[purpose] ?? DEFAULT_VARIANT;
     const match = candidates.find((item) => item.nameContext === wanted);
     if (match) return [match];
@@ -59,7 +66,7 @@ export function suggestSelections(
       kind,
       sensitive: KIND_META[kind].sensitive,
       missing: options.length === 0,
-      suggestedIds: pickSuggested(scope, purpose, options).map((item) => item.id),
+      suggestedIds: pickSuggested(purpose, options).map((item) => item.id),
       options,
     });
   }
@@ -67,15 +74,35 @@ export function suggestSelections(
   return suggestions;
 }
 
-// Turns a vault item into the claim value for its scope. A document becomes an
-// object (number + detail); every other kind releases its plain value.
-export function itemClaimValue(item: VaultItem): unknown {
+// Turns a vault item into the claim value for a scope. Documents and
+// addresses become objects, given/family name release one part of the chosen
+// name, everything else releases its plain value.
+export function itemClaimValue(scope: string, item: VaultItem): unknown {
+  if (scope === 'given_name') {
+    return (item.detail as NameDetail | null)?.firstName ?? null;
+  }
+  if (scope === 'family_name') {
+    return (item.detail as NameDetail | null)?.lastName ?? null;
+  }
   if (item.kind === 'document') {
+    const detail = item.detail as DocumentDetail | null;
     return {
-      type: item.detail?.type ?? null,
+      type: detail?.type ?? null,
       number: item.value,
-      issueDate: item.detail?.issueDate ?? null,
-      issuePlace: item.detail?.issuePlace ?? null,
+      issueDate: detail?.issueDate ?? null,
+      issuePlace: detail?.issuePlace ?? null,
+    };
+  }
+  if (item.kind === 'address' && item.detail) {
+    const detail = item.detail as AddressDetail;
+    return {
+      formatted: item.value,
+      street: detail.street,
+      city: detail.city,
+      region: detail.region ?? null,
+      postalCode: detail.postalCode ?? null,
+      country: detail.country,
+      details: detail.details ?? null,
     };
   }
   return item.value;
@@ -108,13 +135,15 @@ export function resolveClaims(input: ResolveInput): ResolvedClaims {
     const selection = byScope.get(scope);
     const chosen = selection
       ? candidates.filter((item) => selection.itemIds.includes(item.id))
-      : pickSuggested(scope, input.purpose, candidates);
+      : pickSuggested(input.purpose, candidates);
     if (chosen.length === 0) continue;
 
     if (kind === 'allergy') {
       claims[scope] = chosen.map((item) => item.value);
     } else {
-      claims[scope] = itemClaimValue(chosen[0]);
+      const value = itemClaimValue(scope, chosen[0]);
+      if (value === null) continue;
+      claims[scope] = value;
     }
     scopesReleased.push(scope);
   }

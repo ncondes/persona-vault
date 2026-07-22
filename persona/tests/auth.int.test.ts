@@ -19,7 +19,7 @@ describe('auth flow (integration)', () => {
 
     const reg = await agent
       .post('/api/auth/register')
-      .send({ fullName: 'Auth Tester', email, password: 'password123' });
+      .send({ firstName: 'Auth', lastName: 'Tester', email, password: 'password123' });
     expect(reg.status).toBe(201);
     expect(reg.body.data.email).toBe(email);
     expect(reg.body.data.passwordHash).toBeUndefined();
@@ -59,7 +59,7 @@ describe('auth flow (integration)', () => {
   it('rejects registration with an invalid body', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ fullName: '', email: 'not-an-email', password: 'short' });
+      .send({ firstName: '', lastName: '', email: 'not-an-email', password: 'short' });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });

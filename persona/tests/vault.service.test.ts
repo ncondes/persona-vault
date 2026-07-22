@@ -130,7 +130,7 @@ describe('VaultService', () => {
         value: 'a@example.com',
         detail: { type: 'CC', issueDate: '2020-01-01', issuePlace: 'Bogotá' },
       }),
-    ).rejects.toMatchObject({ fields: { detail: expect.stringMatching(/only document/i) } });
+    ).rejects.toMatchObject({ fields: { detail: expect.stringMatching(/does not carry/i) } });
   });
 
   it('rejects a name context on a non-name kind', async () => {
@@ -138,6 +138,46 @@ describe('VaultService', () => {
     await expect(
       service.addItem(USER, { kind: 'email', value: 'a@example.com', nameContext: 'legal' }),
     ).rejects.toMatchObject({ fields: { nameContext: expect.stringMatching(/only name items/i) } });
+  });
+
+  it('composes a name from its parts and requires both', async () => {
+    const service = makeService();
+    const item = await service.addItem(USER, {
+      kind: 'name',
+      detail: { firstName: 'Ada', lastName: 'Lovelace' },
+      nameContext: 'legal',
+    });
+    expect(item.value).toBe('Ada Lovelace');
+
+    await expect(
+      service.addItem(USER, { kind: 'name', detail: { firstName: 'Solo', lastName: '' } }),
+    ).rejects.toMatchObject({ fields: { 'detail.lastName': expect.any(String) } });
+  });
+
+  it('composes a phone from its dial code and validates the prefix', async () => {
+    const service = makeService();
+    const item = await service.addItem(USER, {
+      kind: 'phone',
+      detail: { countryCode: '+57', number: '300 111 2233' },
+    });
+    expect(item.value).toBe('+57 300 111 2233');
+
+    await expect(
+      service.addItem(USER, { kind: 'phone', detail: { countryCode: '+999', number: '1' } }),
+    ).rejects.toMatchObject({ fields: { 'detail.countryCode': expect.any(String) } });
+  });
+
+  it('composes an address and requires street, city and a known country', async () => {
+    const service = makeService();
+    const item = await service.addItem(USER, {
+      kind: 'address',
+      detail: { street: 'Cra 7 # 45-10', city: 'Bogotá', country: 'CO' },
+    });
+    expect(item.value).toBe('Cra 7 # 45-10, Bogotá');
+
+    await expect(
+      service.addItem(USER, { kind: 'address', detail: { street: '', city: '', country: 'CO' } }),
+    ).rejects.toMatchObject({ fields: { 'detail.street': expect.any(String) } });
   });
 
   it('deleting the default promotes the oldest remaining value', async () => {

@@ -4,16 +4,16 @@ import {
   VaultRepository,
 } from '../domain/interfaces/vault.repository';
 import { NotFoundError } from '../domain/errors';
-import { DocumentDetail, VaultItem, VaultKind } from '../domain/models';
+import { ItemDetail, VaultItem, VaultKind } from '../domain/models';
 import { DbClient } from '../infrastructure/db/db-client';
 import { Prisma } from '../generated/prisma/client';
 
-// Prisma stores `detail` as Json; the domain types it as DocumentDetail.
+// Prisma stores `detail` as Json; the domain types it per kind.
 function toItem(row: Omit<VaultItem, 'detail'> & { detail: unknown }): VaultItem {
-  return { ...row, detail: (row.detail as DocumentDetail | null) ?? null };
+  return { ...row, detail: (row.detail as ItemDetail | null) ?? null };
 }
 
-function toJson(detail: DocumentDetail | null | undefined): Prisma.InputJsonValue | undefined {
+function toJson(detail: ItemDetail | null | undefined): Prisma.InputJsonValue | undefined {
   return detail == null ? undefined : (detail as unknown as Prisma.InputJsonValue);
 }
 

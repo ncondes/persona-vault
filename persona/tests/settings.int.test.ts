@@ -19,7 +19,7 @@ describe('settings, export & delete account (integration)', () => {
     await prisma.user.deleteMany({ where: { email } });
     await agent
       .post('/api/auth/register')
-      .send({ fullName: 'Settings Tester', email, password: 'password123' });
+      .send({ firstName: 'Settings', lastName: 'Tester', email, password: 'password123' });
   });
 
   afterAll(async () => {

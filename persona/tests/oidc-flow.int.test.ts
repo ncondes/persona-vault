@@ -44,12 +44,14 @@ describe('Connect with Persona — end to end', () => {
         userId: user.id,
         kind: 'name',
         value: 'María de los Ángeles',
+        detail: { firstName: 'María', lastName: 'de los Ángeles' },
         nameContext: 'legal',
       });
       await add('publicName', {
         userId: user.id,
         kind: 'name',
         value: 'Mara P.',
+        detail: { firstName: 'Mara', lastName: 'P.' },
         nameContext: 'public',
         isDefault: true,
       });
@@ -167,6 +169,22 @@ describe('Connect with Persona — end to end', () => {
     expect(claims.name).toBe('María de los Ángeles'); // suggestion applied
     expect(claims.email).toBe('work@acme.co'); // user's pick applied
     expect(claims.eps).toBe('SANITAS');
+  });
+
+  it('a client can request just one part of the name', async () => {
+    const user = await makeUser(true);
+    const agent = request.agent(app);
+    const { consentUid, redirectUri } = await startConsent(
+      agent,
+      'clinic',
+      'openid given_name email eps',
+      user.email,
+    );
+
+    const { claims } = await completeConsent(agent, 'clinic', 'clinic-dev-secret', consentUid, redirectUri);
+    expect(claims.given_name).toBe('María'); // first part of the legal name
+    expect(claims).not.toHaveProperty('name');
+    expect(claims).not.toHaveProperty('family_name');
   });
 
   it('the user can override the suggested name — their choice wins at userinfo', async () => {

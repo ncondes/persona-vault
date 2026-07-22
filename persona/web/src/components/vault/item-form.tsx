@@ -2,8 +2,19 @@
 
 import { useState } from "react";
 import { ApiError, createItem, updateItem } from "@/lib/api";
+import { flagOf } from "@/lib/sections";
 import { t } from "@/lib/strings";
-import type { Catalog, NameContext, VaultItem, VaultKind } from "@/lib/types";
+import {
+  addressDetail,
+  docDetail,
+  nameDetail,
+  phoneDetail,
+  type Catalog,
+  type ItemDetail,
+  type NameContext,
+  type VaultItem,
+  type VaultKind,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,27 +38,54 @@ interface ItemFormProps {
   onCancel?: () => void;
 }
 
-// Add/edit form for one vault item; the controls adapt to the kind.
+// Add/edit form for one vault item; the controls adapt to the kind. For name,
+// phone and address the parts are sent and the server composes the value.
 export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }: ItemFormProps) {
   const [value, setValue] = useState(item?.value ?? "");
   const [label, setLabel] = useState(item?.label ?? "");
   const [nameContext, setNameContext] = useState<NameContext>(item?.nameContext ?? "preferred");
-  const [docType, setDocType] = useState(item?.detail?.type ?? "CC");
-  const [issueDate, setIssueDate] = useState(item?.detail?.issueDate ?? "");
-  const [issuePlace, setIssuePlace] = useState(item?.detail?.issuePlace ?? "");
+  const [parts, setParts] = useState<Record<string, string>>(() => {
+    const detail = item?.detail as Record<string, string> | undefined;
+    return {
+      countryCode: "+57",
+      country: "CO",
+      ...(detail ?? {}),
+    };
+  });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const part = (key: string) => parts[key] ?? "";
+  const setPart = (key: string, v: string) => setParts((p) => ({ ...p, [key]: v }));
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
 
+    let detail: ItemDetail | undefined;
+    if (kind === "name") detail = { firstName: part("firstName"), lastName: part("lastName") };
+    if (kind === "phone") detail = { countryCode: part("countryCode"), number: part("number") };
+    if (kind === "address") {
+      detail = {
+        street: part("street"),
+        city: part("city"),
+        region: part("region") || undefined,
+        postalCode: part("postalCode") || undefined,
+        country: part("country"),
+        details: part("details") || undefined,
+      };
+    }
+    if (kind === "document") {
+      detail = { type: part("type") || "CC", issueDate: part("issueDate"), issuePlace: part("issuePlace") };
+    }
+
+    const composed = kind === "name" || kind === "phone" || kind === "address";
     const payload = {
-      value: value.trim(),
+      value: composed ? undefined : value.trim(),
       label: LABELED_KINDS.includes(kind) && label.trim() ? label.trim() : null,
       nameContext: kind === "name" ? nameContext : undefined,
-      detail: kind === "document" ? { type: docType, issueDate, issuePlace } : undefined,
+      detail,
     };
 
     try {
@@ -82,23 +120,95 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
     </Select>
   );
 
+  const countrySelect = (key: string) => (
+    <Select value={part(key)} onValueChange={(v) => setPart(key, v)}>
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {(catalog?.countries ?? []).map((c) => (
+          <SelectItem key={c.code} value={c.code}>
+            {flagOf(c.code)} {c.code}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <form onSubmit={submit} className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
       {kind === "name" ? (
-        <Field label={t.vault.nameContextLabel}>
-          <Select value={nameContext} onValueChange={(v) => setNameContext(v as NameContext)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {NAME_CONTEXTS.map((context) => (
-                <SelectItem key={context} value={context}>
-                  {t.vault.nameContexts[context]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t.auth.firstName}>
+              <Input required value={part("firstName")} onChange={(e) => setPart("firstName", e.target.value)} />
+            </Field>
+            <Field label={t.auth.lastName}>
+              <Input required value={part("lastName")} onChange={(e) => setPart("lastName", e.target.value)} />
+            </Field>
+          </div>
+          <Field label={t.vault.nameContextLabel}>
+            <Select value={nameContext} onValueChange={(v) => setNameContext(v as NameContext)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NAME_CONTEXTS.map((context) => (
+                  <SelectItem key={context} value={context}>
+                    {t.vault.nameContexts[context]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </>
+      ) : null}
+
+      {kind === "phone" ? (
+        <div className="grid grid-cols-[7.5rem_1fr] gap-3">
+          <Field label={t.vault.phoneFields.countryCode}>
+            <Select value={part("countryCode")} onValueChange={(v) => setPart("countryCode", v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(catalog?.countries ?? []).map((c) => (
+                  <SelectItem key={c.code} value={c.dial}>
+                    {flagOf(c.code)} {c.dial}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label={t.vault.phoneFields.number}>
+            <Input type="tel" required value={part("number")} onChange={(e) => setPart("number", e.target.value)} />
+          </Field>
+        </div>
+      ) : null}
+
+      {kind === "address" ? (
+        <>
+          <Field label={t.vault.addressFields.street}>
+            <Input required value={part("street")} onChange={(e) => setPart("street", e.target.value)} />
+          </Field>
+          <Field label={t.vault.addressFields.details}>
+            <Input value={part("details")} onChange={(e) => setPart("details", e.target.value)} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t.vault.addressFields.city}>
+              <Input required value={part("city")} onChange={(e) => setPart("city", e.target.value)} />
+            </Field>
+            <Field label={t.vault.addressFields.region}>
+              <Input value={part("region")} onChange={(e) => setPart("region", e.target.value)} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t.vault.addressFields.postalCode}>
+              <Input value={part("postalCode")} onChange={(e) => setPart("postalCode", e.target.value)} />
+            </Field>
+            <Field label={t.vault.addressFields.country}>{countrySelect("country")}</Field>
+          </div>
+        </>
       ) : null}
 
       {kind === "blood_type" ? (
@@ -109,7 +219,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
         <Field label={t.vault.kinds.eps}>
           {codeSelect(catalog?.epsProviders ?? [], t.catalog.epsProviders)}
         </Field>
-      ) : (
+      ) : kind === "name" || kind === "phone" || kind === "address" ? null : (
         <Field label={kind === "document" ? t.vault.documentFields.number : t.vault.kinds[kind]}>
           <Input
             type={kind === "birth_date" ? "date" : kind === "email" ? "email" : "text"}
@@ -124,7 +234,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       {kind === "document" ? (
         <div className="grid grid-cols-3 gap-3">
           <Field label={t.vault.documentFields.type}>
-            <Select value={docType} onValueChange={setDocType}>
+            <Select value={part("type") || "CC"} onValueChange={(v) => setPart("type", v)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -138,10 +248,10 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
             </Select>
           </Field>
           <Field label={t.vault.documentFields.issueDate}>
-            <Input type="date" required value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
+            <Input type="date" required value={part("issueDate")} onChange={(e) => setPart("issueDate", e.target.value)} />
           </Field>
           <Field label={t.vault.documentFields.issuePlace}>
-            <Input required value={issuePlace} onChange={(e) => setIssuePlace(e.target.value)} />
+            <Input required value={part("issuePlace")} onChange={(e) => setPart("issuePlace", e.target.value)} />
           </Field>
         </div>
       ) : null}

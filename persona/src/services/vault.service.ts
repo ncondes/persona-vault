@@ -1,4 +1,4 @@
-import { BLOOD_TYPES, DOCUMENT_TYPES, EPS_PROVIDERS } from '../constants/catalog';
+import { BLOOD_TYPES, COUNTRIES, DOCUMENT_TYPES, EPS_PROVIDERS } from '../constants/catalog';
 import { KIND_META } from '../constants/vault';
 import { ConflictError, ValidationError } from '../domain/errors';
 import {
@@ -6,7 +6,16 @@ import {
   UpdateVaultItemInput,
 } from '../domain/interfaces/vault.repository';
 import { Repositories, UnitOfWork } from '../domain/interfaces/unit-of-work';
-import { DocumentDetail, NameContext, VaultItem, VaultKind } from '../domain/models';
+import {
+  AddressDetail,
+  DocumentDetail,
+  ItemDetail,
+  NameContext,
+  NameDetail,
+  PhoneDetail,
+  VaultItem,
+  VaultKind,
+} from '../domain/models';
 
 // A vault item as the API returns it: the stored fields plus the sensitivity
 // derived from the kind.
@@ -16,9 +25,9 @@ export interface VaultItemView extends VaultItem {
 
 export interface NewVaultItem {
   kind: VaultKind;
-  value: string;
+  value?: string;
   label?: string | null;
-  detail?: DocumentDetail | null;
+  detail?: ItemDetail | null;
   isDefault?: boolean;
   nameContext?: NameContext | null;
 }
@@ -26,7 +35,7 @@ export interface NewVaultItem {
 export interface VaultItemPatch {
   value?: string;
   label?: string | null;
-  detail?: DocumentDetail | null;
+  detail?: ItemDetail | null;
   isDefault?: boolean;
   nameContext?: NameContext | null;
 }
@@ -39,14 +48,34 @@ export interface VaultService {
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DIAL_CODES = new Set<string>(COUNTRIES.map((c) => c.dial));
+const COUNTRY_CODES = new Set<string>(COUNTRIES.map((c) => c.code));
+
+// Kinds whose parts live in `detail`; their `value` is composed from them.
+const COMPOSED_KINDS: VaultKind[] = ['name', 'phone', 'address'];
+
+function composeValue(kind: VaultKind, detail: ItemDetail): string {
+  if (kind === 'name') {
+    const name = detail as NameDetail;
+    return `${name.firstName} ${name.lastName}`.trim();
+  }
+  if (kind === 'phone') {
+    const phone = detail as PhoneDetail;
+    return `${phone.countryCode} ${phone.number}`.trim();
+  }
+  const address = detail as AddressDetail;
+  return [address.street, address.city, address.region].filter(Boolean).join(', ');
+}
 
 // Kind-specific rules shared by create and update: catalog codes for coded
-// kinds, a full detail block for documents, name contexts only on names.
+// kinds, a complete detail block for structured kinds, name contexts only on
+// names. Returns field errors instead of throwing so callers can aggregate.
 function validateForKind(
   kind: VaultKind,
-  payload: { value?: string; detail?: DocumentDetail | null; nameContext?: NameContext | null },
-): void {
+  payload: { value?: string; detail?: ItemDetail | null; nameContext?: NameContext | null },
+): Record<string, string> {
   const fields: Record<string, string> = {};
+  const detail = (payload.detail ?? undefined) as Record<string, string | undefined> | undefined;
 
   if (payload.value !== undefined) {
     if (kind === 'blood_type' && !(BLOOD_TYPES as readonly string[]).includes(payload.value)) {
@@ -63,29 +92,56 @@ function validateForKind(
     }
   }
 
+  if (kind === 'name' && detail) {
+    if (!detail.firstName) fields['detail.firstName'] = 'is required';
+    if (!detail.lastName) fields['detail.lastName'] = 'is required';
+  }
+
+  if (kind === 'phone' && detail) {
+    if (!detail.countryCode || !DIAL_CODES.has(detail.countryCode)) {
+      fields['detail.countryCode'] = `must be one of: ${[...DIAL_CODES].join(', ')}`;
+    }
+    if (!detail.number) fields['detail.number'] = 'is required';
+  }
+
+  if (kind === 'address' && detail) {
+    if (!detail.street) fields['detail.street'] = 'is required';
+    if (!detail.city) fields['detail.city'] = 'is required';
+    if (!detail.country || !COUNTRY_CODES.has(detail.country)) {
+      fields['detail.country'] = `must be one of: ${[...COUNTRY_CODES].join(', ')}`;
+    }
+  }
+
   if (kind === 'document') {
-    if (payload.value !== undefined && payload.detail === undefined) {
+    if (payload.value !== undefined && detail === undefined) {
       fields.detail = 'a document needs its detail (type, issueDate, issuePlace)';
     }
-    if (payload.detail != null) {
-      if (!(DOCUMENT_TYPES as readonly string[]).includes(payload.detail.type)) {
+    if (detail) {
+      if (!detail.type || !(DOCUMENT_TYPES as readonly string[]).includes(detail.type)) {
         fields['detail.type'] = `must be one of: ${DOCUMENT_TYPES.join(', ')}`;
       }
-      if (!DATE_PATTERN.test(payload.detail.issueDate)) {
+      if (!detail.issueDate || !DATE_PATTERN.test(detail.issueDate)) {
         fields['detail.issueDate'] = 'must be a date in YYYY-MM-DD format';
       }
-      if (!payload.detail.issuePlace) {
+      if (!detail.issuePlace) {
         fields['detail.issuePlace'] = 'is required';
       }
     }
-  } else if (payload.detail != null) {
-    fields.detail = 'only document items carry a detail';
+  }
+
+  const structured: VaultKind[] = [...COMPOSED_KINDS, 'document'];
+  if (!structured.includes(kind) && detail) {
+    fields.detail = 'this kind does not carry a detail';
   }
 
   if (payload.nameContext != null && kind !== 'name') {
     fields.nameContext = 'only name items carry a name context';
   }
 
+  return fields;
+}
+
+function assertValid(fields: Record<string, string>): void {
   if (Object.keys(fields).length > 0) {
     throw new ValidationError('Validation failed', fields);
   }
@@ -101,13 +157,19 @@ export class VaultServiceImpl implements VaultService {
     return { ...item, sensitive: KIND_META[item.kind].sensitive };
   }
 
-  async list(userId: string): Promise<VaultItemView[]> {
-    const items = await this.repositories.vault.listForUser(userId);
-    return items.map((item) => this.toView(item));
-  }
-
   async addItem(userId: string, input: NewVaultItem): Promise<VaultItemView> {
-    validateForKind(input.kind, input);
+    const fields = validateForKind(input.kind, input);
+    if (COMPOSED_KINDS.includes(input.kind) && !input.detail) {
+      fields.detail = 'is required';
+    }
+    if (!COMPOSED_KINDS.includes(input.kind) && !input.value) {
+      fields.value = 'is required';
+    }
+    assertValid(fields);
+
+    const value = COMPOSED_KINDS.includes(input.kind)
+      ? composeValue(input.kind, input.detail!)
+      : input.value!;
 
     const item = await this.unitOfWork.run(async (repos) => {
       const existing = await repos.vault.listByKind(userId, input.kind);
@@ -123,10 +185,15 @@ export class VaultServiceImpl implements VaultService {
       if (isDefault) {
         await repos.vault.clearDefault(userId, input.kind);
       }
-      return repos.vault.create({ ...input, userId, isDefault } as CreateVaultItemInput);
+      return repos.vault.create({ ...input, userId, value, isDefault } as CreateVaultItemInput);
     });
 
     return this.toView(item);
+  }
+
+  async list(userId: string): Promise<VaultItemView[]> {
+    const items = await this.repositories.vault.listForUser(userId);
+    return items.map((item) => this.toView(item));
   }
 
   async updateItem(userId: string, id: string, patch: VaultItemPatch): Promise<VaultItemView> {
@@ -137,12 +204,17 @@ export class VaultServiceImpl implements VaultService {
         return repos.vault.update(userId, id, {});
       }
 
-      validateForKind(existing.kind, patch);
+      assertValid(validateForKind(existing.kind, patch));
+
+      const applied: UpdateVaultItemInput = { ...patch };
+      if (COMPOSED_KINDS.includes(existing.kind) && patch.detail) {
+        applied.value = composeValue(existing.kind, patch.detail);
+      }
 
       if (patch.isDefault === true) {
         await repos.vault.clearDefault(userId, existing.kind);
       }
-      return repos.vault.update(userId, id, patch as UpdateVaultItemInput);
+      return repos.vault.update(userId, id, applied);
     });
 
     return this.toView(item);

@@ -6,18 +6,15 @@ const kindSchema = z.enum(VAULT_KINDS as [VaultKind, ...VaultKind[]]);
 
 const nameContextSchema = z.enum(['legal', 'preferred', 'professional', 'public']);
 
-const detailSchema = z.object({
-  type: z.string().min(1),
-  issueDate: z.string().min(1),
-  issuePlace: z.string().min(1),
-});
+// Details are flat string maps (name, phone, address or document parts); the
+// vault service enforces the kind-specific shape and catalog codes. Composed
+// kinds (name, phone, address) derive `value` server-side.
+const detailSchema = z.record(z.string(), z.string());
 
-// Structural checks only; kind-specific rules (catalog codes, document detail)
-// live in the vault service, which also covers updates.
 export const createVaultItemSchema = z
   .object({
     kind: kindSchema,
-    value: z.string().min(1),
+    value: z.string().min(1).optional(),
     label: z.string().min(1).max(60).nullish(),
     detail: detailSchema.nullish(),
     isDefault: z.boolean().optional(),

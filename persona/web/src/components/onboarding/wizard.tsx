@@ -31,7 +31,7 @@ export function OnboardingWizard() {
       return <EssentialsStep total={TOTAL} done={1} onDone={advance} onName={setFullName} />;
     case 1:
       // no back once the account exists
-      return <ContactStep total={TOTAL} done={2} onDone={advance} />;
+      return <ContactStep total={TOTAL} done={2} onDone={advance} catalog={catalog} />;
     case 2:
       return (
         <DocumentStep

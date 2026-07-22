@@ -1,11 +1,11 @@
-import { DocumentDetail, NameContext, VaultItem, VaultKind } from '../models';
+import { ItemDetail, NameContext, VaultItem, VaultKind } from '../models';
 
 export interface CreateVaultItemInput {
   userId: string;
   kind: VaultKind;
   value: string;
   label?: string | null;
-  detail?: DocumentDetail | null;
+  detail?: ItemDetail | null;
   isDefault?: boolean;
   nameContext?: NameContext | null;
 }
@@ -13,7 +13,7 @@ export interface CreateVaultItemInput {
 export interface UpdateVaultItemInput {
   value?: string;
   label?: string | null;
-  detail?: DocumentDetail | null;
+  detail?: ItemDetail | null;
   isDefault?: boolean;
   nameContext?: NameContext | null;
 }

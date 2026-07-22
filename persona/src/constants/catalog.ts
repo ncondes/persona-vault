@@ -28,6 +28,24 @@ export const EPS_PROVIDERS = [
   'MUTUAL_SER',
 ] as const;
 
+// Countries offered for phone prefixes and addresses (ISO code + dial code).
+// The frontend derives the flag from the ISO code.
+export const COUNTRIES = [
+  { code: 'CO', dial: '+57' },
+  { code: 'AR', dial: '+54' },
+  { code: 'BR', dial: '+55' },
+  { code: 'CA', dial: '+1' },
+  { code: 'CL', dial: '+56' },
+  { code: 'EC', dial: '+593' },
+  { code: 'ES', dial: '+34' },
+  { code: 'GB', dial: '+44' },
+  { code: 'MX', dial: '+52' },
+  { code: 'PA', dial: '+507' },
+  { code: 'PE', dial: '+51' },
+  { code: 'US', dial: '+1' },
+  { code: 'VE', dial: '+58' },
+] as const;
+
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 export type BloodType = (typeof BLOOD_TYPES)[number];
 export type EpsProvider = (typeof EPS_PROVIDERS)[number];

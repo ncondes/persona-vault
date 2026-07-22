@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { BLOOD_TYPES, DOCUMENT_TYPES, EPS_PROVIDERS } from '../constants/catalog';
+import { BLOOD_TYPES, COUNTRIES, DOCUMENT_TYPES, EPS_PROVIDERS } from '../constants/catalog';
 import { KIND_META } from '../constants/vault';
 
 // Public code lists + per-kind metadata, so the frontend can build forms and
@@ -13,6 +13,7 @@ export function buildCatalogRoutes(): Router {
         documentTypes: DOCUMENT_TYPES,
         bloodTypes: BLOOD_TYPES,
         epsProviders: EPS_PROVIDERS,
+        countries: COUNTRIES,
         kinds: KIND_META,
       },
     });

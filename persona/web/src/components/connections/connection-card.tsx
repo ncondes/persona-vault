@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { revokeConnection } from "@/lib/api";
 import { t } from "@/lib/strings";
-import type { Connection } from "@/lib/types";
+import { docDetail, nameDetail, type Connection } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,9 +16,13 @@ function snapshotText(shared: Connection["shared"][number]): string {
   return shared.snapshot
     .map((s) => {
       let value = s.value;
+      const name = nameDetail(s.detail);
+      if (shared.scope === "given_name" && name) value = name.firstName;
+      if (shared.scope === "family_name" && name) value = name.lastName;
       if (shared.scope === "blood_type") value = t.catalog.bloodTypes[value] ?? value;
       if (shared.scope === "eps") value = t.catalog.epsProviders[value] ?? value;
-      if (shared.scope === "document" && s.detail) value = `${s.detail.type} ${value}`;
+      const doc = shared.scope === "document" ? docDetail(s.detail) : null;
+      if (doc) value = `${doc.type} ${value}`;
       return s.label ? `${value} (${s.label})` : value;
     })
     .join(", ");

@@ -2,7 +2,7 @@
 
 import { Pencil, Trash2 } from "lucide-react";
 import { t } from "@/lib/strings";
-import type { VaultItem } from "@/lib/types";
+import { docDetail, type VaultItem } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -38,13 +38,15 @@ export function ValueRow({ item, canMakeDefault, onMakeDefault, onEdit, onDelete
             </Badge>
           ) : null}
         </div>
-        {item.kind === "document" && item.detail ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {t.catalog.documentTypes[item.detail.type] ?? item.detail.type} ·{" "}
-            {t.vault.documentFields.issueDate.toLowerCase()} {item.detail.issueDate},{" "}
-            {item.detail.issuePlace}
-          </p>
-        ) : null}
+        {(() => {
+          const doc = item.kind === "document" ? docDetail(item.detail) : null;
+          return doc ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t.catalog.documentTypes[doc.type] ?? doc.type} ·{" "}
+              {t.vault.documentFields.issueDate.toLowerCase()} {doc.issueDate}, {doc.issuePlace}
+            </p>
+          ) : null;
+        })()}
       </div>
 
       <div className="flex shrink-0 items-center gap-1">

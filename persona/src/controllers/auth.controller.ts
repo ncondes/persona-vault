@@ -34,7 +34,12 @@ export class AuthController {
   ) {}
 
   register = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.authService.register(req.body.fullName, req.body.email, req.body.password);
+    const user = await this.authService.register(
+      req.body.firstName,
+      req.body.lastName,
+      req.body.email,
+      req.body.password,
+    );
     res.cookie(TOKEN_COOKIE, signAuthToken(user.id), { ...cookieOptions, maxAge: COOKIE_MAX_AGE });
     res.status(201).json({ data: toPublicUser(user) });
   };

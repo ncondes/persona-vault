@@ -34,7 +34,7 @@ describe('web UI (integration)', () => {
     let res = await agent
       .post('/signup')
       .type('form')
-      .send({ fullName: 'Web Signup', email, password: 'password123' });
+      .send({ firstName: 'Web', lastName: 'Signup', email, password: 'password123' });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('/account');
 

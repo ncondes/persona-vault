@@ -16,7 +16,7 @@ describe('account API (integration)', () => {
     await prisma.user.deleteMany({ where: { email } });
     const reg = await agent
       .post('/api/auth/register')
-      .send({ fullName: 'Account Tester', email, password: 'password123' });
+      .send({ firstName: 'Account', lastName: 'Tester', email, password: 'password123' });
     userId = reg.body.data.id;
 
     await container.repositories.audit.record({

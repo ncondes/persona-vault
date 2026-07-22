@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 import { t } from "@/lib/strings";
-import type { InteractionField, InteractionOption } from "@/lib/types";
+import { docDetail, nameDetail, type InteractionField, type InteractionOption } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -16,11 +16,13 @@ import { cn } from "@/lib/utils";
 
 function optionText(field: InteractionField, option: InteractionOption): string {
   let value = option.value;
+  const name = nameDetail(option.detail);
+  if (field.scope === "given_name" && name) value = name.firstName;
+  if (field.scope === "family_name" && name) value = name.lastName;
   if (field.kind === "blood_type") value = t.catalog.bloodTypes[value] ?? value;
   if (field.kind === "eps") value = t.catalog.epsProviders[value] ?? value;
-  if (field.kind === "document" && option.detail) {
-    value = `${option.detail.type} ${value}`;
-  }
+  const doc = field.kind === "document" ? docDetail(option.detail) : null;
+  if (doc) value = `${doc.type} ${value}`;
   const chip = option.nameContext
     ? t.vault.nameContexts[option.nameContext]
     : option.label;

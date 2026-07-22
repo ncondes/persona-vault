@@ -13,7 +13,7 @@ describe('vault API (integration)', () => {
     await prisma.user.deleteMany({ where: { email } });
     await agent
       .post('/api/auth/register')
-      .send({ fullName: 'Vault Tester', email, password: 'password123' });
+      .send({ firstName: 'Vault', lastName: 'Tester', email, password: 'password123' });
   });
 
   afterAll(async () => {
@@ -34,10 +34,41 @@ describe('vault API (integration)', () => {
     const name = items.find((i: { kind: string }) => i.kind === 'name');
     const mail = items.find((i: { kind: string }) => i.kind === 'email');
     expect(name.value).toBe('Vault Tester');
+    expect(name.detail).toEqual({ firstName: 'Vault', lastName: 'Tester' });
     expect(name.isDefault).toBe(true);
     expect(name.sensitive).toBe(false);
     expect(mail.value).toBe(email);
     expect(mail.isDefault).toBe(true);
+  });
+
+  it('composes phone and address values from their parts', async () => {
+    const phone = await agent.post('/api/vault/items').send({
+      kind: 'phone',
+      detail: { countryCode: '+57', number: '300 555 7788' },
+    });
+    expect(phone.status).toBe(201);
+    expect(phone.body.data.value).toBe('+57 300 555 7788');
+
+    const address = await agent.post('/api/vault/items').send({
+      kind: 'address',
+      label: 'Home',
+      detail: {
+        street: 'Cra 7 # 45-10',
+        city: 'Bogotá',
+        region: 'Bogotá D.C.',
+        postalCode: '110111',
+        country: 'CO',
+      },
+    });
+    expect(address.status).toBe(201);
+    expect(address.body.data.value).toBe('Cra 7 # 45-10, Bogotá, Bogotá D.C.');
+
+    // an unknown country code is rejected
+    const bad = await agent.post('/api/vault/items').send({
+      kind: 'address',
+      detail: { street: 'X', city: 'Y', country: 'ZZ' },
+    });
+    expect(bad.status).toBe(400);
   });
 
   it('adds a second email and switches the default', async () => {
@@ -96,7 +127,7 @@ describe('vault API (integration)', () => {
   it('deletes an item', async () => {
     const created = await agent
       .post('/api/vault/items')
-      .send({ kind: 'phone', value: '+57 300 555 0000' });
+      .send({ kind: 'allergy', value: 'Dust' });
     const res = await agent.delete(`/api/vault/items/${created.body.data.id}`);
     expect(res.status).toBe(204);
 

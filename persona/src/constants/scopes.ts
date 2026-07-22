@@ -2,10 +2,13 @@ import { NameContext, VaultKind } from '../domain/models';
 
 export const NAME_SCOPE = 'name';
 
-// Each data scope maps one-to-one to a vault kind. Claim names mirror scope
-// names; `allergies` releases every `allergy` item as a list.
+// Each data scope maps to a vault kind. Claim names mirror scope names;
+// `given_name`/`family_name` release one part of the chosen name (the standard
+// OIDC claim names), and `allergies` releases every `allergy` item as a list.
 export const SCOPE_KIND: Record<string, VaultKind> = {
   name: 'name',
+  given_name: 'name',
+  family_name: 'name',
   username: 'username',
   email: 'email',
   phone: 'phone',

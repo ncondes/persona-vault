@@ -22,9 +22,23 @@ function item(kind: VaultKind, value: string, extra: Partial<VaultItem> = {}): V
   };
 }
 
-const legalName = item('name', 'Camila Andrea Rodríguez García', { nameContext: 'legal' });
-const preferredName = item('name', 'Cami Rodríguez', { nameContext: 'preferred', isDefault: true });
-const publicName = item('name', 'Camila R.', { nameContext: 'public' });
+const legalName = item('name', 'Camila Andrea Rodríguez García', {
+  nameContext: 'legal',
+  detail: { firstName: 'Camila Andrea', lastName: 'Rodríguez García' },
+});
+const preferredName = item('name', 'Cami Rodríguez', {
+  nameContext: 'preferred',
+  isDefault: true,
+  detail: { firstName: 'Cami', lastName: 'Rodríguez' },
+});
+const publicName = item('name', 'Camila R.', {
+  nameContext: 'public',
+  detail: { firstName: 'Camila', lastName: 'R.' },
+});
+const homeAddress = item('address', 'Cra 7 # 45-10, Bogotá', {
+  isDefault: true,
+  detail: { street: 'Cra 7 # 45-10', city: 'Bogotá', country: 'CO' },
+});
 const personalEmail = item('email', 'personal@example.com', { label: 'Personal', isDefault: true });
 const workEmail = item('email', 'work@acme.co', { label: 'Work' });
 const cedula = item('document', '1032456789', {
@@ -38,6 +52,7 @@ const items = [
   legalName,
   preferredName,
   publicName,
+  homeAddress,
   personalEmail,
   workEmail,
   cedula,
@@ -131,6 +146,38 @@ describe('resolveClaims (release from stored selections)', () => {
       number: '1032456789',
       issueDate: '2012-09-01',
       issuePlace: 'Bogotá D.C.',
+    });
+  });
+
+  it('releases one part of the chosen name for given_name/family_name', () => {
+    const out = resolveClaims({
+      purpose: 'healthcare', // suggests the legal name
+      allowedScopes: ['given_name', 'family_name'],
+      grantedScopes: ['given_name', 'family_name'],
+      selections: [],
+      items,
+    });
+    expect(out.claims.given_name).toBe('Camila Andrea');
+    expect(out.claims.family_name).toBe('Rodríguez García');
+    expect(out.claims).not.toHaveProperty('name');
+  });
+
+  it('releases an address as a structured object', () => {
+    const out = resolveClaims({
+      purpose: 'retail',
+      allowedScopes: ['address'],
+      grantedScopes: ['address'],
+      selections: [],
+      items,
+    });
+    expect(out.claims.address).toEqual({
+      formatted: 'Cra 7 # 45-10, Bogotá',
+      street: 'Cra 7 # 45-10',
+      city: 'Bogotá',
+      region: null,
+      postalCode: null,
+      country: 'CO',
+      details: null,
     });
   });
 

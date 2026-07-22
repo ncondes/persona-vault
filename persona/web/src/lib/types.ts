@@ -19,12 +19,49 @@ export interface DocumentDetail {
   issuePlace: string;
 }
 
+export interface NameDetail {
+  firstName: string;
+  lastName: string;
+}
+
+export interface PhoneDetail {
+  countryCode: string;
+  number: string;
+}
+
+export interface AddressDetail {
+  street: string;
+  city: string;
+  region?: string;
+  postalCode?: string;
+  country: string;
+  details?: string;
+}
+
+export type ItemDetail = DocumentDetail | NameDetail | PhoneDetail | AddressDetail;
+
+export function docDetail(detail: ItemDetail | null): DocumentDetail | null {
+  return detail && "issueDate" in detail ? detail : null;
+}
+
+export function nameDetail(detail: ItemDetail | null): NameDetail | null {
+  return detail && "firstName" in detail ? detail : null;
+}
+
+export function phoneDetail(detail: ItemDetail | null): PhoneDetail | null {
+  return detail && "countryCode" in detail ? detail : null;
+}
+
+export function addressDetail(detail: ItemDetail | null): AddressDetail | null {
+  return detail && "street" in detail ? detail : null;
+}
+
 export interface VaultItem {
   id: string;
   kind: VaultKind;
   label: string | null;
   value: string;
-  detail: DocumentDetail | null;
+  detail: ItemDetail | null;
   isDefault: boolean;
   nameContext: NameContext | null;
   sensitive: boolean;
@@ -34,9 +71,9 @@ export interface VaultItem {
 
 export interface NewVaultItem {
   kind: VaultKind;
-  value: string;
+  value?: string;
   label?: string | null;
-  detail?: DocumentDetail | null;
+  detail?: ItemDetail | null;
   isDefault?: boolean;
   nameContext?: NameContext | null;
 }
@@ -45,6 +82,7 @@ export interface Catalog {
   documentTypes: string[];
   bloodTypes: string[];
   epsProviders: string[];
+  countries: Array<{ code: string; dial: string }>;
   kinds: Record<VaultKind, { sensitive: boolean; multi: boolean }>;
 }
 
@@ -57,7 +95,7 @@ export interface User {
 export interface SharedScope {
   scope: string;
   sensitive: boolean;
-  snapshot: Array<{ label: string | null; value: string; detail: DocumentDetail | null }>;
+  snapshot: Array<{ label: string | null; value: string; detail: ItemDetail | null }>;
 }
 
 export interface Connection {
@@ -95,7 +133,7 @@ export interface InteractionOption {
   id: string;
   label: string | null;
   value: string;
-  detail: DocumentDetail | null;
+  detail: ItemDetail | null;
   isDefault: boolean;
   nameContext: NameContext | null;
 }

@@ -67,12 +67,17 @@ describe('AuthService', () => {
   it('registers a user with a hashed password and starts the vault', async () => {
     const { service, created } = makeService();
 
-    const user = await service.register('Ada Lovelace', 'a@example.com', 'password123');
+    const user = await service.register('Ada', 'Lovelace', 'a@example.com', 'password123');
     expect(user.email).toBe('a@example.com');
     expect(user.passwordHash).not.toBe('password123');
 
     expect(created).toHaveLength(2);
-    expect(created[0]).toMatchObject({ kind: 'name', value: 'Ada Lovelace', isDefault: true });
+    expect(created[0]).toMatchObject({
+      kind: 'name',
+      value: 'Ada Lovelace',
+      detail: { firstName: 'Ada', lastName: 'Lovelace' },
+      isDefault: true,
+    });
     expect(created[1]).toMatchObject({ kind: 'email', value: 'a@example.com', isDefault: true });
 
     const loggedIn = await service.login('a@example.com', 'password123');
@@ -81,13 +86,15 @@ describe('AuthService', () => {
 
   it('rejects duplicate registration', async () => {
     const { service } = makeService();
-    await service.register('Dup', 'dup@example.com', 'password123');
-    await expect(service.register('Dup', 'dup@example.com', 'password123')).rejects.toThrow();
+    await service.register('Dup', 'User', 'dup@example.com', 'password123');
+    await expect(
+      service.register('Dup', 'User', 'dup@example.com', 'password123'),
+    ).rejects.toThrow();
   });
 
   it('rejects login with a wrong password', async () => {
     const { service } = makeService();
-    await service.register('B', 'b@example.com', 'password123');
+    await service.register('B', 'User', 'b@example.com', 'password123');
     await expect(service.login('b@example.com', 'wrong-password')).rejects.toThrow();
   });
 

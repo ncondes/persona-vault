@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { ApiError, createItem, register } from "@/lib/api";
+import { flagOf } from "@/lib/sections";
 import { t } from "@/lib/strings";
 import type { Catalog } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,8 @@ export function EssentialsStep({
   onDone,
   onName,
 }: StepProps & { onName: (fullName: string) => void }) {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +50,8 @@ export function EssentialsStep({
     setBusy(true);
     setError(null);
     try {
-      await register(fullName, email, password);
-      onName(fullName);
+      await register(firstName, lastName, email, password);
+      onName(`${firstName} ${lastName}`.trim());
       onDone(2); // the vault starts with name + email
     } catch (err) {
       setError(errorText(err));
@@ -67,9 +69,14 @@ export function EssentialsStep({
       busy={busy}
       error={error}
     >
-      <Field label={t.auth.fullName} htmlFor="fullName">
-        <Input id="fullName" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t.auth.firstName} htmlFor="firstName">
+          <Input id="firstName" autoComplete="given-name" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+        </Field>
+        <Field label={t.auth.lastName} htmlFor="lastName">
+          <Input id="lastName" autoComplete="family-name" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+        </Field>
+      </div>
       <Field label={t.auth.email} htmlFor="email" hint={t.onboarding.essentials.emailHint}>
         <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
@@ -87,9 +94,18 @@ export function EssentialsStep({
   );
 }
 
-export function ContactStep({ total, done, onDone, onBack }: StepProps) {
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+export function ContactStep({
+  total,
+  done,
+  onDone,
+  onBack,
+  catalog,
+}: StepProps & { catalog: Catalog | null }) {
+  const [dial, setDial] = useState("+57");
+  const [number, setNumber] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("CO");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -99,12 +115,18 @@ export function ContactStep({ total, done, onDone, onBack }: StepProps) {
     setError(null);
     try {
       let added = 0;
-      if (phone.trim()) {
-        await createItem({ kind: "phone", value: phone.trim() });
+      if (number.trim()) {
+        await createItem({
+          kind: "phone",
+          detail: { countryCode: dial, number: number.trim() },
+        });
         added += 1;
       }
-      if (address.trim()) {
-        await createItem({ kind: "address", value: address.trim() });
+      if (street.trim() || city.trim()) {
+        await createItem({
+          kind: "address",
+          detail: { street: street.trim(), city: city.trim(), country },
+        });
         added += 1;
       }
       onDone(added);
@@ -127,12 +149,47 @@ export function ContactStep({ total, done, onDone, onBack }: StepProps) {
       busy={busy}
       error={error}
     >
-      <Field label={t.vault.kinds.phone} htmlFor="phone">
-        <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <div className="grid grid-cols-[7.5rem_1fr] gap-3">
+        <Field label={t.vault.phoneFields.countryCode} htmlFor="dial">
+          <Select value={dial} onValueChange={setDial}>
+            <SelectTrigger id="dial" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(catalog?.countries ?? []).map((c) => (
+                <SelectItem key={c.code} value={c.dial}>
+                  {flagOf(c.code)} {c.dial}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label={t.vault.kinds.phone} htmlFor="phone">
+          <Input id="phone" type="tel" value={number} onChange={(e) => setNumber(e.target.value)} />
+        </Field>
+      </div>
+      <Field label={t.vault.addressFields.street} htmlFor="street">
+        <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} />
       </Field>
-      <Field label={t.vault.kinds.address} htmlFor="address">
-        <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
-      </Field>
+      <div className="grid grid-cols-[1fr_7.5rem] gap-3">
+        <Field label={t.vault.addressFields.city} htmlFor="city">
+          <Input id="city" required={street.trim().length > 0} value={city} onChange={(e) => setCity(e.target.value)} />
+        </Field>
+        <Field label={t.vault.addressFields.country} htmlFor="country">
+          <Select value={country} onValueChange={setCountry}>
+            <SelectTrigger id="country" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(catalog?.countries ?? []).map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  {flagOf(c.code)} {c.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
     </StepShell>
   );
 }

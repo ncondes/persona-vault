@@ -5,7 +5,7 @@ import { User } from '../domain/models';
 import { hashPassword, verifyPassword } from '../infrastructure/auth/password';
 
 export interface AuthService {
-  register(fullName: string, email: string, password: string): Promise<User>;
+  register(firstName: string, lastName: string, email: string, password: string): Promise<User>;
   login(email: string, password: string): Promise<User>;
 }
 
@@ -15,9 +15,14 @@ export class AuthServiceImpl implements AuthService {
     private readonly unitOfWork: UnitOfWork,
   ) {}
 
-  // Creates the account and starts the vault with the essentials: the full
-  // name and the sign-up email, both as defaults.
-  async register(fullName: string, email: string, password: string): Promise<User> {
+  // Creates the account and starts the vault with the essentials: the name
+  // (kept as first + last parts) and the sign-up email, both as defaults.
+  async register(
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+  ): Promise<User> {
     const existing = await this.users.findByEmail(email);
     if (existing) {
       throw new ConflictError('An account with that email already exists', 'EMAIL_TAKEN');
@@ -29,7 +34,8 @@ export class AuthServiceImpl implements AuthService {
       await repos.vault.create({
         userId: user.id,
         kind: 'name',
-        value: fullName,
+        value: `${firstName} ${lastName}`.trim(),
+        detail: { firstName, lastName },
         nameContext: 'preferred',
         isDefault: true,
       });
