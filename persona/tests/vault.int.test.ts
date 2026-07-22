@@ -53,20 +53,20 @@ describe('vault API (integration)', () => {
       kind: 'address',
       label: 'Home',
       detail: {
-        street: 'Cra 7 # 45-10',
+        line1: 'Cra 7 # 45-10',
+        line2: 'Apto 302',
         city: 'Bogotá',
-        region: 'Bogotá D.C.',
         postalCode: '110111',
         country: 'CO',
       },
     });
     expect(address.status).toBe(201);
-    expect(address.body.data.value).toBe('Cra 7 # 45-10, Bogotá, Bogotá D.C.');
+    expect(address.body.data.value).toBe('Cra 7 # 45-10, Apto 302, Bogotá');
 
     // an unknown country code is rejected
     const bad = await agent.post('/api/vault/items').send({
       kind: 'address',
-      detail: { street: 'X', city: 'Y', country: 'ZZ' },
+      detail: { line1: 'X', city: 'Y', country: 'ZZ' },
     });
     expect(bad.status).toBe(400);
   });

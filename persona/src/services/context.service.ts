@@ -97,12 +97,12 @@ export function itemClaimValue(scope: string, item: VaultItem): unknown {
     const detail = item.detail as AddressDetail;
     return {
       formatted: item.value,
-      street: detail.street,
+      line1: detail.line1,
+      line2: detail.line2 ?? null,
+      line3: detail.line3 ?? null,
       city: detail.city,
-      region: detail.region ?? null,
       postalCode: detail.postalCode ?? null,
       country: detail.country,
-      details: detail.details ?? null,
     };
   }
   return item.value;

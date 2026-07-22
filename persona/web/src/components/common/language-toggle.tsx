@@ -23,7 +23,7 @@ export function LanguageToggle({ className }: { className?: string }) {
           onClick={() => setLocale(option)}
           className={cn(
             "rounded-full px-2.5 py-1 uppercase transition-colors",
-            option === locale ? "bg-zinc-900 text-white" : "text-zinc-500 hover:text-zinc-800",
+            option === locale ? "bg-brand text-white" : "text-zinc-500 hover:text-zinc-800",
           )}
         >
           {option}

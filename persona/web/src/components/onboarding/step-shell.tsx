@@ -20,6 +20,7 @@ interface StepShellProps {
   error?: string | null;
   onSubmit: (event: React.FormEvent) => void;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 // The frame every onboarding step shares: progress on top, form in the
@@ -38,6 +39,7 @@ export function StepShell({
   error,
   onSubmit,
   children,
+  footer,
 }: StepShellProps) {
   const t = useStrings();
   return (
@@ -76,6 +78,7 @@ export function StepShell({
           ) : null}
         </div>
       </form>
+      {footer ? <div className="mt-5 text-center text-sm">{footer}</div> : null}
     </div>
   );
 }

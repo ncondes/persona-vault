@@ -3,12 +3,7 @@
 import { useState } from "react";
 import { ApiError, createItem, updateItem } from "@/lib/api";
 import { useStrings } from "@/lib/locale";
-import { flagOf } from "@/lib/sections";
 import {
-  addressDetail,
-  docDetail,
-  nameDetail,
-  phoneDetail,
   type Catalog,
   type ItemDetail,
   type NameContext,
@@ -25,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field } from "@/components/common/field";
+import { Flag } from "@/components/common/flag";
 
 const LABELED_KINDS: VaultKind[] = ["email", "phone", "address", "document"];
 const NAME_CONTEXTS: NameContext[] = ["legal", "preferred", "professional", "public"];
@@ -69,12 +65,12 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
     if (kind === "phone") detail = { countryCode: part("countryCode"), number: part("number") };
     if (kind === "address") {
       detail = {
-        street: part("street"),
+        line1: part("line1"),
+        line2: part("line2") || undefined,
+        line3: part("line3") || undefined,
         city: part("city"),
-        region: part("region") || undefined,
         postalCode: part("postalCode") || undefined,
         country: part("country"),
-        details: part("details") || undefined,
       };
     }
     if (kind === "document") {
@@ -129,7 +125,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       <SelectContent>
         {(catalog?.countries ?? []).map((c) => (
           <SelectItem key={c.code} value={c.code}>
-            {flagOf(c.code)} {c.code}
+            {t.catalog.countries[c.code] ?? c.code}
           </SelectItem>
         ))}
       </SelectContent>
@@ -166,7 +162,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       ) : null}
 
       {kind === "phone" ? (
-        <div className="grid grid-cols-[7.5rem_1fr] gap-3">
+        <div className="grid grid-cols-[6.5rem_1fr] gap-3">
           <Field label={t.vault.phoneFields.countryCode}>
             <Select value={part("countryCode")} onValueChange={(v) => setPart("countryCode", v)}>
               <SelectTrigger className="w-full">
@@ -175,7 +171,9 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
               <SelectContent>
                 {(catalog?.countries ?? []).map((c) => (
                   <SelectItem key={c.code} value={c.dial}>
-                    {flagOf(c.code)} {c.dial}
+                    <span className="flex items-center gap-2">
+                      <Flag code={c.code} /> {c.dial}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -189,26 +187,24 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
 
       {kind === "address" ? (
         <>
-          <Field label={t.vault.addressFields.street}>
-            <Input required value={part("street")} onChange={(e) => setPart("street", e.target.value)} />
+          <Field label={t.vault.addressFields.line1}>
+            <Input required value={part("line1")} onChange={(e) => setPart("line1", e.target.value)} />
           </Field>
-          <Field label={t.vault.addressFields.details}>
-            <Input value={part("details")} onChange={(e) => setPart("details", e.target.value)} />
+          <Field label={t.vault.addressFields.line2}>
+            <Input value={part("line2")} onChange={(e) => setPart("line2", e.target.value)} />
+          </Field>
+          <Field label={t.vault.addressFields.line3}>
+            <Input value={part("line3")} onChange={(e) => setPart("line3", e.target.value)} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label={t.vault.addressFields.city}>
               <Input required value={part("city")} onChange={(e) => setPart("city", e.target.value)} />
             </Field>
-            <Field label={t.vault.addressFields.region}>
-              <Input value={part("region")} onChange={(e) => setPart("region", e.target.value)} />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <Field label={t.vault.addressFields.postalCode}>
               <Input value={part("postalCode")} onChange={(e) => setPart("postalCode", e.target.value)} />
             </Field>
-            <Field label={t.vault.addressFields.country}>{countrySelect("country")}</Field>
           </div>
+          <Field label={t.vault.addressFields.country}>{countrySelect("country")}</Field>
         </>
       ) : null}
 

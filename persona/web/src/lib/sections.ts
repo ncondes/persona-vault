@@ -15,13 +15,6 @@ export const SECTIONS: Section[] = [
   { id: "health", kinds: ["blood_type", "eps", "allergy"] },
 ];
 
-// Turns an ISO country code into its flag emoji (regional indicator pair).
-export function flagOf(code: string): string {
-  return [...code.toUpperCase()]
-    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join("");
-}
-
 // OAuth scope released for each kind (they match except allergies).
 export const KIND_SCOPE: Record<VaultKind, string> = {
   name: "name",

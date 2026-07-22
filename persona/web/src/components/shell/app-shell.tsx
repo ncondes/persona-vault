@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { getMe } from "@/lib/api";
@@ -21,10 +22,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const brand = (
-    <div className="flex items-center gap-2.5 px-2">
+    <Link href="/vault" className="flex w-fit items-center gap-2.5 px-2">
       <Logo size="sm" />
       <span className="text-base font-semibold tracking-tight">{t.appName}</span>
-    </div>
+    </Link>
   );
 
   return (

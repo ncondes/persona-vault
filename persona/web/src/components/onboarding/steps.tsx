@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import Link from "next/link";
+import { Check, Plus, X } from "lucide-react";
 import { ApiError, createItem, register } from "@/lib/api";
 import { useStrings } from "@/lib/locale";
-import { flagOf } from "@/lib/sections";
 import type { Strings } from "@/lib/strings";
 import type { Catalog } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field } from "@/components/common/field";
+import { Flag } from "@/components/common/flag";
 import { StepShell } from "./step-shell";
 
 interface StepProps {
@@ -70,6 +72,11 @@ export function EssentialsStep({
       onSubmit={submit}
       busy={busy}
       error={error}
+      footer={
+        <Link href="/login" className="text-brand hover:underline">
+          {t.auth.haveAccount}
+        </Link>
+      }
     >
       <div className="grid grid-cols-2 gap-3">
         <Field label={t.auth.firstName} htmlFor="firstName">
@@ -106,7 +113,7 @@ export function ContactStep({
   const t = useStrings();
   const [dial, setDial] = useState("+57");
   const [number, setNumber] = useState("");
-  const [street, setStreet] = useState("");
+  const [line1, setLine1] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("CO");
   const [error, setError] = useState<string | null>(null);
@@ -125,10 +132,10 @@ export function ContactStep({
         });
         added += 1;
       }
-      if (street.trim() || city.trim()) {
+      if (line1.trim()) {
         await createItem({
           kind: "address",
-          detail: { street: street.trim(), city: city.trim(), country },
+          detail: { line1: line1.trim(), city: city.trim(), country },
         });
         added += 1;
       }
@@ -152,7 +159,7 @@ export function ContactStep({
       busy={busy}
       error={error}
     >
-      <div className="grid grid-cols-[7.5rem_1fr] gap-3">
+      <div className="grid grid-cols-[6.5rem_1fr] gap-3">
         <Field label={t.vault.phoneFields.countryCode} htmlFor="dial">
           <Select value={dial} onValueChange={setDial}>
             <SelectTrigger id="dial" className="w-full">
@@ -161,7 +168,9 @@ export function ContactStep({
             <SelectContent>
               {(catalog?.countries ?? []).map((c) => (
                 <SelectItem key={c.code} value={c.dial}>
-                  {flagOf(c.code)} {c.dial}
+                  <span className="flex items-center gap-2">
+                    <Flag code={c.code} /> {c.dial}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -171,28 +180,26 @@ export function ContactStep({
           <Input id="phone" type="tel" value={number} onChange={(e) => setNumber(e.target.value)} />
         </Field>
       </div>
-      <Field label={t.vault.addressFields.street} htmlFor="street">
-        <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} />
+      <Field label={t.vault.addressFields.line1} htmlFor="line1">
+        <Input id="line1" value={line1} onChange={(e) => setLine1(e.target.value)} />
       </Field>
-      <div className="grid grid-cols-[1fr_7.5rem] gap-3">
-        <Field label={t.vault.addressFields.city} htmlFor="city">
-          <Input id="city" required={street.trim().length > 0} value={city} onChange={(e) => setCity(e.target.value)} />
-        </Field>
-        <Field label={t.vault.addressFields.country} htmlFor="country">
-          <Select value={country} onValueChange={setCountry}>
-            <SelectTrigger id="country" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(catalog?.countries ?? []).map((c) => (
-                <SelectItem key={c.code} value={c.code}>
-                  {flagOf(c.code)} {c.code}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      </div>
+      <Field label={t.vault.addressFields.city} htmlFor="city">
+        <Input id="city" required={line1.trim().length > 0} value={city} onChange={(e) => setCity(e.target.value)} />
+      </Field>
+      <Field label={t.vault.addressFields.country} htmlFor="country">
+        <Select value={country} onValueChange={setCountry}>
+          <SelectTrigger id="country" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(catalog?.countries ?? []).map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                {t.catalog.countries[c.code] ?? c.code}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
     </StepShell>
   );
 }
@@ -304,9 +311,14 @@ export function HealthStep({
   const t = useStrings();
   const [bloodType, setBloodType] = useState("");
   const [eps, setEps] = useState("");
-  const [allergies, setAllergies] = useState("");
+  const [allergies, setAllergies] = useState<string[]>([""]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const setAllergy = (i: number, v: string) =>
+    setAllergies((list) => list.map((a, idx) => (idx === i ? v : a)));
+  const addAllergy = () => setAllergies((list) => [...list, ""]);
+  const removeAllergy = (i: number) => setAllergies((list) => list.filter((_, idx) => idx !== i));
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -322,7 +334,7 @@ export function HealthStep({
         await createItem({ kind: "eps", value: eps });
         added += 1;
       }
-      for (const allergy of allergies.split(",").map((a) => a.trim()).filter(Boolean)) {
+      for (const allergy of allergies.map((a) => a.trim()).filter(Boolean)) {
         await createItem({ kind: "allergy", value: allergy });
         added += 1;
       }
@@ -375,9 +387,32 @@ export function HealthStep({
           {codeSelect("eps", eps, setEps, catalog?.epsProviders ?? [], t.catalog.epsProviders)}
         </Field>
       </div>
-      <Field label={t.vault.kinds.allergy} htmlFor="allergies" hint="Separate with commas">
-        <Input id="allergies" value={allergies} onChange={(e) => setAllergies(e.target.value)} />
-      </Field>
+      <div className="space-y-2">
+        <Label>{t.vault.kinds.allergy}</Label>
+        {allergies.map((allergy, i) => (
+          <div key={i} className="flex gap-2">
+            <Input
+              value={allergy}
+              placeholder={t.onboarding.health.allergyPlaceholder}
+              onChange={(e) => setAllergy(i, e.target.value)}
+            />
+            {allergies.length > 1 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeAllergy(i)}
+                aria-label={t.common.delete}
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        ))}
+        <Button type="button" variant="ghost" size="sm" onClick={addAllergy}>
+          <Plus className="size-4" /> {t.common.addAnother}
+        </Button>
+      </div>
     </StepShell>
   );
 }

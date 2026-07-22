@@ -64,7 +64,7 @@ function composeValue(kind: VaultKind, detail: ItemDetail): string {
     return `${phone.countryCode} ${phone.number}`.trim();
   }
   const address = detail as AddressDetail;
-  return [address.street, address.city, address.region].filter(Boolean).join(', ');
+  return [address.line1, address.line2, address.line3, address.city].filter(Boolean).join(', ');
 }
 
 // Kind-specific rules shared by create and update: catalog codes for coded
@@ -105,7 +105,7 @@ function validateForKind(
   }
 
   if (kind === 'address' && detail) {
-    if (!detail.street) fields['detail.street'] = 'is required';
+    if (!detail.line1) fields['detail.line1'] = 'is required';
     if (!detail.city) fields['detail.city'] = 'is required';
     if (!detail.country || !COUNTRY_CODES.has(detail.country)) {
       fields['detail.country'] = `must be one of: ${[...COUNTRY_CODES].join(', ')}`;

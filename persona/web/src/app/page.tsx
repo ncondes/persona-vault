@@ -2,13 +2,12 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { LanguageToggle } from "@/components/common/language-toggle";
-import { Logo } from "@/components/common/logo";
+import { PublicHeader } from "@/components/common/public-header";
 import { getStrings } from "@/lib/strings";
 
 function CheckIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="3">
+    <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="3.5">
       <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -20,19 +19,24 @@ export default async function LandingPage() {
   const t = getStrings(cookieStore.get("locale")?.value);
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-page p-6">
-      <div className="fixed top-4 right-4">
-        <LanguageToggle />
-      </div>
-      <div className="flex w-full max-w-sm flex-col">
-        <Logo size="lg" className="mb-7" />
-        <h1 className="text-3xl font-semibold tracking-tight">{t.landing.title}</h1>
-        <p className="mt-3 text-zinc-600">{t.landing.body}</p>
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-b from-[#268494] via-brand to-[#144b57] px-6 text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-28 left-1/2 size-[540px] -translate-x-1/2 rounded-full bg-white/15 blur-[130px]"
+      />
 
-        <ul className="mt-8 space-y-4">
+      <PublicHeader tone="light" wordmark />
+
+      <div className="animate-in fade-in slide-in-from-bottom-4 relative z-10 flex w-full max-w-sm flex-col duration-700">
+        <h1 className="text-[2.6rem] font-semibold leading-[1.05] tracking-tight">
+          {t.landing.title}
+        </h1>
+        <p className="mt-4 text-[15px] leading-relaxed text-white/75">{t.landing.body}</p>
+
+        <ul className="mt-8 space-y-3">
           {t.landing.points.map((point) => (
-            <li key={point} className="flex items-center gap-3 text-[15px] text-zinc-800">
-              <span className="bg-brand-tint text-brand flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <li key={point} className="flex items-center gap-3 text-[15px] text-white/90">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25">
                 <CheckIcon />
               </span>
               {point}
@@ -40,13 +44,18 @@ export default async function LandingPage() {
           ))}
         </ul>
 
-        <Button size="xl" className="mt-10 w-full" asChild>
+        <Button size="xl" className="mt-10 w-full bg-white text-brand hover:bg-white/90" asChild>
           <Link href="/signup">{t.landing.cta}</Link>
         </Button>
-        <Button size="xl" variant="ghost" className="mt-2 w-full" asChild>
+        <Button
+          size="xl"
+          variant="ghost"
+          className="mt-2 w-full text-white hover:bg-white/10 hover:text-white"
+          asChild
+        >
           <Link href="/login">{t.landing.signIn}</Link>
         </Button>
-        <p className="mt-4 text-center text-sm text-muted-foreground">{t.onboarding.welcomeNote}</p>
+        <p className="mt-5 text-center text-sm text-white/55">{t.onboarding.welcomeNote}</p>
       </div>
     </div>
   );

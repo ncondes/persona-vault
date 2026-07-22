@@ -68,11 +68,11 @@ async function main() {
           {
             kind: 'address',
             label: 'Home',
-            value: 'Cra 7 # 45-10, Bogotá, Bogotá D.C.',
+            value: 'Cra 7 # 45-10, Apto 302, Bogotá',
             detail: {
-              street: 'Cra 7 # 45-10',
+              line1: 'Cra 7 # 45-10',
+              line2: 'Apto 302',
               city: 'Bogotá',
-              region: 'Bogotá D.C.',
               postalCode: '110111',
               country: 'CO',
             },

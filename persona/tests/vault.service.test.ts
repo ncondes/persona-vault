@@ -167,17 +167,17 @@ describe('VaultService', () => {
     ).rejects.toMatchObject({ fields: { 'detail.countryCode': expect.any(String) } });
   });
 
-  it('composes an address and requires street, city and a known country', async () => {
+  it('composes an address and requires line1, city and a known country', async () => {
     const service = makeService();
     const item = await service.addItem(USER, {
       kind: 'address',
-      detail: { street: 'Cra 7 # 45-10', city: 'Bogotá', country: 'CO' },
+      detail: { line1: 'Cra 7 # 45-10', city: 'Bogotá', country: 'CO' },
     });
     expect(item.value).toBe('Cra 7 # 45-10, Bogotá');
 
     await expect(
-      service.addItem(USER, { kind: 'address', detail: { street: '', city: '', country: 'CO' } }),
-    ).rejects.toMatchObject({ fields: { 'detail.street': expect.any(String) } });
+      service.addItem(USER, { kind: 'address', detail: { line1: '', city: '', country: 'CO' } }),
+    ).rejects.toMatchObject({ fields: { 'detail.line1': expect.any(String) } });
   });
 
   it('deleting the default promotes the oldest remaining value', async () => {

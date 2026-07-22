@@ -30,12 +30,12 @@ export interface PhoneDetail {
 }
 
 export interface AddressDetail {
-  street: string;
+  line1: string;
+  line2?: string;
+  line3?: string;
   city: string;
-  region?: string;
   postalCode?: string;
   country: string;
-  details?: string;
 }
 
 export type ItemDetail = DocumentDetail | NameDetail | PhoneDetail | AddressDetail;
@@ -53,7 +53,7 @@ export function phoneDetail(detail: ItemDetail | null): PhoneDetail | null {
 }
 
 export function addressDetail(detail: ItemDetail | null): AddressDetail | null {
-  return detail && "street" in detail ? detail : null;
+  return detail && "line1" in detail ? detail : null;
 }
 
 export interface VaultItem {

@@ -7,7 +7,6 @@ import { useStrings } from "@/lib/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
-import { Logo } from "@/components/common/logo";
 
 export function LoginForm() {
   const t = useStrings();
@@ -32,7 +31,6 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
-      <Logo className="mb-5" />
       <h1 className="text-2xl font-semibold tracking-tight">{t.auth.signIn}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t.auth.signInLead}</p>
 

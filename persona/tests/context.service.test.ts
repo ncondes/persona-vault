@@ -37,7 +37,7 @@ const publicName = item('name', 'Camila R.', {
 });
 const homeAddress = item('address', 'Cra 7 # 45-10, Bogotá', {
   isDefault: true,
-  detail: { street: 'Cra 7 # 45-10', city: 'Bogotá', country: 'CO' },
+  detail: { line1: 'Cra 7 # 45-10', city: 'Bogotá', country: 'CO' },
 });
 const personalEmail = item('email', 'personal@example.com', { label: 'Personal', isDefault: true });
 const workEmail = item('email', 'work@acme.co', { label: 'Work' });
@@ -172,12 +172,12 @@ describe('resolveClaims (release from stored selections)', () => {
     });
     expect(out.claims.address).toEqual({
       formatted: 'Cra 7 # 45-10, Bogotá',
-      street: 'Cra 7 # 45-10',
+      line1: 'Cra 7 # 45-10',
+      line2: null,
+      line3: null,
       city: 'Bogotá',
-      region: null,
       postalCode: null,
       country: 'CO',
-      details: null,
     });
   });
 

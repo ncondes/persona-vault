@@ -46,12 +46,12 @@ export interface PhoneDetail {
 
 // Parts of an address item; the item's `value` holds a one-line summary.
 export interface AddressDetail {
-  street: string;
+  line1: string;
+  line2?: string;
+  line3?: string;
   city: string;
-  region?: string;
   postalCode?: string;
   country: string;
-  details?: string;
 }
 
 export type ItemDetail = DocumentDetail | NameDetail | PhoneDetail | AddressDetail;
