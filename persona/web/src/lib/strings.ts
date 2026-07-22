@@ -111,6 +111,7 @@ const en = {
       public: "Public",
     } as Record<string, string>,
     documentFields: { type: "Type", number: "Number", issueDate: "Issued", issuePlace: "Place" },
+    nameContextLabel: "Context",
     label: "Label",
     labelHint: "e.g. Personal, Work",
     addValue: (kind: string) => `Add ${kind.toLowerCase()}`,

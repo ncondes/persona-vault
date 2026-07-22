@@ -1,5 +1,10 @@
-import { t } from "@/lib/strings";
+import { Suspense } from "react";
+import { VaultView } from "@/components/vault/vault-view";
 
 export default function VaultPage() {
-  return <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{t.vault.title}</h1>;
+  return (
+    <Suspense>
+      <VaultView />
+    </Suspense>
+  );
 }

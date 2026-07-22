@@ -14,3 +14,18 @@ export const SECTIONS: Section[] = [
   { id: "location", kinds: ["address"] },
   { id: "health", kinds: ["blood_type", "eps", "allergy"] },
 ];
+
+// OAuth scope released for each kind (they match except allergies).
+export const KIND_SCOPE: Record<VaultKind, string> = {
+  name: "name",
+  username: "username",
+  avatar: "avatar",
+  birth_date: "birth_date",
+  document: "document",
+  email: "email",
+  phone: "phone",
+  address: "address",
+  blood_type: "blood_type",
+  eps: "eps",
+  allergy: "allergies",
+};
