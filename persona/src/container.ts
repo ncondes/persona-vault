@@ -9,6 +9,8 @@ import { PrismaUnitOfWork } from './repositories/unit-of-work';
 import { AccountService, AccountServiceImpl } from './services/account.service';
 import { AuthService, AuthServiceImpl } from './services/auth.service';
 import { ContextService, ContextServiceImpl } from './services/context.service';
+import { VaultService, VaultServiceImpl } from './services/vault.service';
+import { VaultController } from './controllers/vault.controller';
 
 // Wires the application's dependencies together at startup.
 // Order: infrastructure -> repositories -> services -> controllers.
@@ -16,10 +18,12 @@ export class Container {
   readonly repositories: Repositories;
   readonly unitOfWork: UnitOfWork;
   readonly authService: AuthService;
+  readonly vaultService: VaultService;
   readonly contextService: ContextService;
   readonly accountService: AccountService;
   readonly healthController: HealthController;
   readonly authController: AuthController;
+  readonly vaultController: VaultController;
   readonly accountController: AccountController;
   readonly webController: WebController;
 
@@ -29,13 +33,15 @@ export class Container {
     this.unitOfWork = new PrismaUnitOfWork(prisma);
 
     // services
-    this.authService = new AuthServiceImpl(this.repositories.users);
+    this.authService = new AuthServiceImpl(this.repositories.users, this.unitOfWork);
+    this.vaultService = new VaultServiceImpl(this.repositories, this.unitOfWork);
     this.contextService = new ContextServiceImpl(this.repositories.vault, this.repositories.clients);
     this.accountService = new AccountServiceImpl(this.repositories);
 
     // controllers
     this.healthController = new HealthController();
     this.authController = new AuthController(this.authService, this.repositories.users);
+    this.vaultController = new VaultController(this.vaultService);
     this.accountController = new AccountController(this.accountService);
     this.webController = new WebController(
       this.authService,

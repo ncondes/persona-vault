@@ -17,10 +17,18 @@ describe('auth flow (integration)', () => {
   it('registers, exposes /me, then logout ends the session', async () => {
     const agent = request.agent(app); // keeps the session cookie between calls
 
-    const reg = await agent.post('/api/auth/register').send({ email, password: 'password123' });
+    const reg = await agent
+      .post('/api/auth/register')
+      .send({ fullName: 'Auth Tester', email, password: 'password123' });
     expect(reg.status).toBe(201);
     expect(reg.body.data.email).toBe(email);
     expect(reg.body.data.passwordHash).toBeUndefined();
+
+    // Registration starts the vault with the essentials.
+    const vault = await agent.get('/api/vault');
+    const kinds = vault.body.data.items.map((i: { kind: string }) => i.kind);
+    expect(kinds).toContain('name');
+    expect(kinds).toContain('email');
 
     const me = await agent.get('/api/auth/me');
     expect(me.status).toBe(200);
@@ -51,7 +59,7 @@ describe('auth flow (integration)', () => {
   it('rejects registration with an invalid body', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ email: 'not-an-email', password: 'short' });
+      .send({ fullName: '', email: 'not-an-email', password: 'short' });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });

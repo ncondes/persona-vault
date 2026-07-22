@@ -7,6 +7,8 @@ export function renderSignup(error?: string): string {
     <h1>Create your Persona</h1>
     <p>One profile you control.</p>
     <form method="post" action="/signup">
+      <label for="fullName">Full name</label>
+      <input id="fullName" type="text" name="fullName" autocomplete="name" required>
       <label for="email">Email</label>
       <input id="email" type="email" name="email" autocomplete="email" required>
       <label for="password">Password</label>

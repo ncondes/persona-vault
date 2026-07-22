@@ -33,7 +33,11 @@ export class WebController {
 
   signup = async (req: Request, res: Response): Promise<void> => {
     try {
-      const user = await this.authService.register(req.body.email, req.body.password);
+      const user = await this.authService.register(
+        req.body.fullName,
+        req.body.email,
+        req.body.password,
+      );
       res.cookie('token', signAuthToken(user.id), cookieOptions);
       res.redirect('/account');
     } catch {
