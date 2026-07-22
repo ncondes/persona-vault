@@ -18,6 +18,7 @@ const en = {
     defaultBadge: "Default",
     requiredBadge: "Required",
     sensitiveBadge: "Sensitive",
+    optionalBadge: "Optional",
     loading: "Loading…",
     somethingWrong: "Something went wrong. Please try again.",
   },
