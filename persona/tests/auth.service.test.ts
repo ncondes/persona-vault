@@ -1,54 +1,14 @@
-import {
-  CreateUserInput,
-  UpdateSettingsInput,
-  UserRepository,
-} from '../src/domain/interfaces/user.repository';
 import { CreateVaultItemInput } from '../src/domain/interfaces/vault.repository';
 import { Repositories, UnitOfWork } from '../src/domain/interfaces/unit-of-work';
-import { User } from '../src/domain/models';
 import { AuthServiceImpl } from '../src/services/auth.service';
+import { FakeUsers } from './support/fakes';
 
-// In-memory fakes — possible because the service depends on interfaces, not on
-// Prisma. No database needed for these tests.
-class FakeUserRepository implements UserRepository {
-  private readonly users: User[] = [];
-
-  async create(input: CreateUserInput): Promise<User> {
-    const user: User = {
-      id: String(this.users.length + 1),
-      email: input.email,
-      passwordHash: input.passwordHash,
-      confirmSensitive: true,
-      notifyAccess: false,
-      createdAt: new Date(0),
-      updatedAt: new Date(0),
-    };
-    this.users.push(user);
-    return user;
-  }
-
-  async findById(id: string): Promise<User | null> {
-    return this.users.find((u) => u.id === id) ?? null;
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    return this.users.find((u) => u.email === email) ?? null;
-  }
-
-  async updateSettings(userId: string, patch: UpdateSettingsInput): Promise<User> {
-    const user = this.users.find((u) => u.id === userId)!;
-    Object.assign(user, patch);
-    return user;
-  }
-
-  async deleteById(userId: string): Promise<void> {
-    const index = this.users.findIndex((u) => u.id === userId);
-    if (index !== -1) this.users.splice(index, 1);
-  }
-}
-
+// The service depends on interfaces, not on Prisma, so in-memory fakes are
+// enough. No database needed for these tests.
 function makeService() {
-  const users = new FakeUserRepository();
+  const users = new FakeUsers();
+  // A recording stub rather than FakeVault: these tests assert on the exact
+  // input the service passes, not on what ends up stored.
   const created: CreateVaultItemInput[] = [];
   const repos = {
     users,
