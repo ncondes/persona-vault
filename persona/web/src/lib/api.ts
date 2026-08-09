@@ -1,9 +1,15 @@
 import type {
+  ActivityView,
+  AppPatch,
+  AppView,
+  AppWithSecret,
   Catalog,
   Connection,
   Decision,
   Interaction,
+  NewApp,
   NewVaultItem,
+  PreviewResult,
   Settings,
   User,
   VaultItem,
@@ -81,6 +87,20 @@ export const getSettings = () => request<Settings>("/api/settings");
 export const updateSettings = (patch: Partial<Settings>) =>
   request<Settings>("/api/settings", { method: "PUT", body: patch });
 export const deleteAccount = () => request<void>("/api/account", { method: "DELETE" });
+
+// Developer console
+export const getApps = () => request<AppView[]>("/api/apps");
+export const getApp = (id: string) => request<AppView>(`/api/apps/${id}`);
+export const createApp = (app: NewApp) =>
+  request<AppWithSecret>("/api/apps", { method: "POST", body: app });
+export const updateApp = (id: string, patch: AppPatch) =>
+  request<AppView>(`/api/apps/${id}`, { method: "PUT", body: patch });
+export const deleteApp = (id: string) => request<void>(`/api/apps/${id}`, { method: "DELETE" });
+export const rotateAppSecret = (id: string) =>
+  request<AppWithSecret>(`/api/apps/${id}/secret`, { method: "POST" });
+export const previewPayload = (purpose: string, scopes: string[]) =>
+  request<PreviewResult>("/api/apps/preview", { method: "POST", body: { purpose, scopes } });
+export const getAppActivity = (id: string) => request<ActivityView>(`/api/apps/${id}/activity`);
 
 // OIDC interaction (consent app)
 export const getInteraction = (uid: string) =>

@@ -7,6 +7,7 @@ import { useStrings } from "@/lib/locale";
 import { SECTIONS } from "@/lib/sections";
 import { useLoad } from "@/lib/useLoad";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/common/page-header";
 import { Spinner } from "@/components/common/spinner";
 import { FieldGroupCard } from "./field-group-card";
 
@@ -36,7 +37,7 @@ export function VaultView() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{t.vault.title}</h1>
+      <PageHeader title={t.vault.title} />
 
       <Tabs value={section.id} onValueChange={(id) => router.replace(`/vault?tab=${id}`)} className="mt-0 lg:mt-5">
         {/* horizontal scroll on small screens, with an edge fade as the cue */}

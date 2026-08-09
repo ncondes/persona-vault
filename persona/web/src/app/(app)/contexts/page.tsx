@@ -1,14 +1,14 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/common/page-header";
 import { useStrings } from "@/lib/locale";
 
 export default function ContextsPage() {
   const t = useStrings();
   return (
     <div className="max-w-2xl">
-      <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{t.contexts.title}</h1>
-      <p className="mt-1 text-muted-foreground">{t.contexts.lead}</p>
+      <PageHeader title={t.contexts.title} lead={t.contexts.lead} />
       <div className="mt-6 flex flex-col gap-3">
         {t.contexts.cards.map((card) => (
           <Card key={card.title}>

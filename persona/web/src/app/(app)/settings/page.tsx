@@ -9,6 +9,7 @@ import type { Settings } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { PageHeader } from "@/components/common/page-header";
 import { Spinner } from "@/components/common/spinner";
 import { initialsOf } from "@/components/shell/user-card";
 
@@ -23,9 +24,8 @@ export default function SettingsPage() {
 
   const toggle = (key: keyof Settings, value: boolean) => {
     if (!current) return;
-    const next = { ...current, [key]: value };
-    setLocal(next); // optimistic; the PUT confirms it
-    void updateSettings({ [key]: value });
+    setLocal({ ...current, [key]: value }); // optimistic; the PUT confirms it
+    updateSettings({ [key]: value }).catch(() => setLocal(current));
   };
 
   const signOut = async () => {
@@ -43,7 +43,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{t.settings.title}</h1>
+      <PageHeader title={t.settings.title} />
 
       <Card className="mt-0 lg:mt-5">
         <CardContent className="flex items-center gap-3.5">

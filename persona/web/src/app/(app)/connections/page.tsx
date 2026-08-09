@@ -7,6 +7,7 @@ import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import { ConnectionCard } from "@/components/connections/connection-card";
 import { EmptyState } from "@/components/common/empty-state";
+import { PageHeader } from "@/components/common/page-header";
 import { Spinner } from "@/components/common/spinner";
 
 export default function ConnectionsPage() {
@@ -26,10 +27,7 @@ export default function ConnectionsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">
-        {t.connections.title}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t.connections.lead}</p>
+      <PageHeader title={t.connections.title} lead={t.connections.lead} />
 
       <div className="mt-5 flex flex-col gap-3">
         {data.length === 0 ? (

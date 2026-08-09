@@ -78,12 +78,80 @@ export interface NewVaultItem {
   nameContext?: NameContext | null;
 }
 
+export type ScopeGroup = "identity" | "contact" | "document" | "health";
+
+export interface ScopeMeta {
+  scope: string;
+  kind: VaultKind;
+  group: ScopeGroup;
+  sensitive: boolean;
+  label: string;
+  sample: unknown;
+}
+
 export interface Catalog {
+  issuer: string;
   documentTypes: string[];
   bloodTypes: string[];
   epsProviders: string[];
   countries: Array<{ code: string; dial: string }>;
-  kinds: Record<VaultKind, { sensitive: boolean; multi: boolean }>;
+  purposes: string[];
+  scopeGroups: ScopeGroup[];
+  scopes: ScopeMeta[];
+  kinds: Record<VaultKind, { sensitive: boolean; multi: boolean; scope: string | null }>;
+}
+
+export type AppStatus = "active" | "disabled";
+
+export interface AppView {
+  id: string;
+  name: string;
+  description: string | null;
+  purpose: string;
+  accent: string;
+  allowedScopes: string[];
+  requiredScopes: string[];
+  redirectUris: string[];
+  status: AppStatus;
+  secretLastFour: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Only ever returned by create and rotate; the plaintext is unrecoverable after.
+export interface AppWithSecret extends AppView {
+  secret: string;
+}
+
+export interface NewApp {
+  name: string;
+  description?: string | null;
+  purpose: string;
+  accent?: string;
+  allowedScopes: string[];
+  requiredScopes?: string[];
+  redirectUris: string[];
+}
+
+export type AppPatch = Partial<NewApp> & { status?: AppStatus };
+
+export interface PreviewResult {
+  claims: Record<string, unknown>;
+  missing: string[];
+}
+
+export interface ActivityEvent {
+  at: string;
+  type: "grant" | "release" | "revoke";
+  scopes: string[];
+}
+
+export interface ActivityView {
+  users: number;
+  grants: number;
+  releases: number;
+  revocations: number;
+  recent: ActivityEvent[];
 }
 
 export interface User {

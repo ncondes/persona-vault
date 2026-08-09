@@ -5,7 +5,6 @@ export type Locale = "en" | "es";
 
 const en = {
   appName: "Persona",
-  tagline: "Your data, shared on your terms",
 
   common: {
     save: "Save",
@@ -15,7 +14,6 @@ const en = {
     edit: "Edit",
     skip: "Add later",
     continue: "Continue",
-    back: "Back",
     makeDefault: "Make default",
     defaultBadge: "Default",
     requiredBadge: "Required",
@@ -31,13 +29,13 @@ const en = {
     connections: "Connections",
     settings: "Settings",
     contexts: "Contexts",
+    console: "Console",
     logout: "Log out",
   },
 
   auth: {
     signIn: "Sign in",
     signInLead: "Sign in to choose what you share.",
-    signUp: "Create account",
     firstName: "First name",
     lastName: "Last name",
     email: "Email",
@@ -128,7 +126,6 @@ const en = {
     nameContextLabel: "Context",
     label: "Label",
     labelHint: "e.g. Personal, Work",
-    addValue: (kind: string) => `Add ${kind.toLowerCase()}`,
     emptyGroup: (kind: string) => `No ${kind.toLowerCase()} added yet`,
     usedIn: "used in:",
     deleteConfirm: "Delete this value? Apps it was shared with will stop receiving it.",
@@ -266,13 +263,171 @@ const en = {
     deleteConfirm:
       "Delete your account and everything in your vault? Connected apps lose access immediately. This can't be undone.",
   },
+  console: {
+    title: "Developer console",
+    lead: "Apps that ask for data with \u201cConnect with Persona\u201d.",
+    register: "Register an app",
+    empty: "No apps yet",
+    emptyBody: "Register one to get a client ID and choose what it may ask each person for.",
+    emptyHint: "Browse the scope catalogue before you start.",
+    scopeCount: (n: number) => `${n} ${n === 1 ? "scope" : "scopes"}`,
+    sensitiveCount: (n: number) => `${n} sensitive`,
+    status: { active: "Active", disabled: "Paused" },
+    back: "My apps",
+    purposes: {
+      healthcare: "Healthcare",
+      employment: "Employment",
+      social: "Social",
+      retail: "Retail",
+      education: "Education",
+      government: "Government",
+      finance: "Finance",
+      other: "Other",
+    } as Record<string, string>,
+
+    tabs: { overview: "Overview", scopes: "Scopes", activity: "Activity" },
+
+    form: {
+      title: "Register an app",
+      lead: "Set out how your app introduces itself and what it will ask for. You can change all of it later.",
+      identity: "App identity",
+      name: "Name",
+      description: "Description",
+      descriptionHint: "one line, shown on the consent screen",
+      purpose: "Purpose",
+      purposeHint:
+        "Persona uses the purpose to suggest the right value to each person. Declare healthcare and people are offered their legal name; declare social and they are offered their public one.",
+      accent: "Accent colour",
+      accentHint: "Used for the monogram, here and on the consent screen.",
+      redirect: "Redirect",
+      redirectUris: "Redirect URIs",
+      addUri: "Add URI",
+      removeUri: "Remove",
+      create: "Create app",
+      cancel: "Cancel",
+      createHint: "You will get a client ID and secret when you create it.",
+      save: "Save changes",
+      saved: "Saved",
+    },
+
+    scopes: {
+      heading: "Data you will ask for",
+      lead: "Ask only for what your app needs to work. Each person sees this list and can decline the optional ones.",
+      catalogLink: "See the scope catalogue",
+      optional: "Optional",
+      required: "Required",
+      sensitive: "Sensitive",
+      sensitiveNote:
+        "Scopes in amber are sensitive. Asking for them as required lowers the number of people who connect, so ask only when your app genuinely cannot work without them.",
+      groups: {
+        identity: "Identity",
+        contact: "Contact",
+        document: "Document",
+        health: "Health",
+      },
+      groupHints: {
+        identity: "who the person is",
+        contact: "how to reach them",
+        document: "official verification",
+        health: "only with a health purpose",
+      },
+      nameNote:
+        "You ask for a name, not a version of it. Persona picks the version that fits your purpose and the person can choose another.",
+      narrowWarning:
+        "Removing a scope disconnects everyone who already approved it. They will be asked again next time they connect.",
+      empty: "No scopes selected yet.",
+      desc: {
+        name: "Full name, in the version that fits your purpose.",
+        given_name: "First name only.",
+        family_name: "Last name only.",
+        username: "The handle they chose in Persona.",
+        email: "One email address they pick.",
+        phone: "Phone number with country code.",
+        address: "Street address, as structured parts plus a formatted line.",
+        birth_date: "Date of birth.",
+        document: "Identity document: type, number, issue date and place.",
+        blood_type: "Blood group.",
+        eps: "Health insurer (EPS).",
+        allergies: "Declared allergies, as a list.",
+      } as Record<string, string>,
+    },
+
+    payload: {
+      title: "What your app receives",
+      lead: "The exact response from the userinfo endpoint, built from your own vault.",
+      noData: "no data in the vault",
+      alwaysPresent: "always present",
+      emptyBody: "Turn on a scope to see the payload.",
+    },
+
+    credentials: {
+      title: "Credentials",
+      clientId: "Client ID",
+      clientSecret: "Client secret",
+      copy: "Copy",
+      copied: "Copied",
+      rotate: "Rotate",
+      secretHint:
+        "Shown in full only when created or rotated. Rotating invalidates the previous secret immediately.",
+      revealTitle: "Save this secret now",
+      revealBody:
+        "This is the only time it is shown. Store it somewhere safe \u2014 if you lose it, rotate for a new one.",
+      revealDone: "I have saved it",
+      rotateConfirm:
+        "Rotate the client secret? The current one stops working immediately and any app still using it will fail to get a token.",
+    },
+
+    integration: {
+      title: "Integration",
+      authorize: "Authorization URL",
+      token: "Token exchange",
+      userinfo: "Userinfo call",
+      authorizeNote:
+        "Send the browser here to start consent. Build the query with URLSearchParams so everything is encoded for you.",
+      tokenNote:
+        "Server-side only. The secret goes in an HTTP Basic header, never in the body and never in the browser.",
+      userinfoNote: "Returns only the scopes that person approved. Anything else is absent.",
+    },
+
+    settings: {
+      title: "Redirects and status",
+      active: "App active",
+      activeHint: "While paused, nobody can connect and existing tokens stop working.",
+      danger: "Delete app",
+      dangerBody:
+        "Every connection is revoked and the client ID stops working. This can't be undone.",
+      delete: "Delete",
+      deleteConfirm:
+        "Delete this app? Everyone connected to it loses access immediately and the client ID stops working. This can't be undone.",
+    },
+
+    activity: {
+      title: "Activity",
+      lead: "Volume only. You never see who connected or which value they shared.",
+      users: "People connected",
+      grants: "Grants",
+      releases: "Releases",
+      revocations: "Revocations",
+      recent: "Recent",
+      empty: "Nothing yet",
+      emptyBody: "Once someone connects, grants and releases show up here.",
+      types: { grant: "Granted", release: "Released", revoke: "Revoked" },
+    },
+
+    reference: {
+      title: "Scope catalogue",
+      lead: "Everything Persona can release, what it returns, and an example value.",
+      returns: "Returns",
+      example: "Example",
+      unshareable: "Stored but never shared",
+    },
+  },
 };
 
 export type Strings = typeof en;
 
 const es: Strings = {
   appName: "Persona",
-  tagline: "Tus datos, compartidos en tus términos",
 
   common: {
     save: "Guardar",
@@ -282,7 +437,6 @@ const es: Strings = {
     edit: "Editar",
     skip: "Añadir luego",
     continue: "Continuar",
-    back: "Atrás",
     makeDefault: "Marcar predeterminado",
     defaultBadge: "Predeterminado",
     requiredBadge: "Requerido",
@@ -298,13 +452,13 @@ const es: Strings = {
     connections: "Conexiones",
     settings: "Ajustes",
     contexts: "Contextos",
+    console: "Consola",
     logout: "Cerrar sesión",
   },
 
   auth: {
     signIn: "Iniciar sesión",
     signInLead: "Inicia sesión para elegir qué compartes.",
-    signUp: "Crear cuenta",
     firstName: "Nombre",
     lastName: "Apellido",
     email: "Correo electrónico",
@@ -395,7 +549,6 @@ const es: Strings = {
     nameContextLabel: "Contexto",
     label: "Etiqueta",
     labelHint: "p. ej. Personal, Trabajo",
-    addValue: (kind: string) => `Añadir ${kind.toLowerCase()}`,
     emptyGroup: (kind: string) => `Aún no has añadido ${kind.toLowerCase()}`,
     usedIn: "se usa en:",
     deleteConfirm: "¿Eliminar este valor? Las apps con las que se compartió dejarán de recibirlo.",
@@ -534,6 +687,166 @@ const es: Strings = {
     deleteWarning: "No se puede deshacer",
     deleteConfirm:
       "¿Eliminar tu cuenta y todo tu vault? Las apps conectadas pierden acceso de inmediato. No se puede deshacer.",
+  },
+  console: {
+    title: "Consola de desarrollador",
+    lead: "Aplicaciones que piden datos con \u00abConectar con Persona\u00bb.",
+    register: "Registrar app",
+    empty: "A\u00fan no tienes apps",
+    emptyBody:
+      "Registra una para obtener un client ID y elegir qu\u00e9 puede pedirle a cada persona.",
+    emptyHint: "Revisa el cat\u00e1logo de scopes antes de empezar.",
+    scopeCount: (n: number) => `${n} scope${n === 1 ? "" : "s"}`,
+    sensitiveCount: (n: number) => `${n} sensible${n === 1 ? "" : "s"}`,
+    status: { active: "Activa", disabled: "En pausa" },
+    back: "Mis apps",
+    purposes: {
+      healthcare: "Salud",
+      employment: "Empleo",
+      social: "Social",
+      retail: "Comercio",
+      education: "Educaci\u00f3n",
+      government: "Gobierno",
+      finance: "Finanzas",
+      other: "Otro",
+    },
+
+    tabs: { overview: "Resumen", scopes: "Scopes", activity: "Actividad" },
+
+    form: {
+      title: "Registrar una app",
+      lead: "Define c\u00f3mo se presenta tu app y qu\u00e9 datos pedir\u00e1. Puedes cambiarlo todo despu\u00e9s.",
+      identity: "Identidad de la app",
+      name: "Nombre",
+      description: "Descripci\u00f3n",
+      descriptionHint: "una l\u00ednea, visible en el consentimiento",
+      purpose: "Prop\u00f3sito",
+      purposeHint:
+        "Persona usa el prop\u00f3sito para sugerir el valor correcto a cada persona. Con salud se ofrece el nombre legal; con social, el p\u00fablico.",
+      accent: "Color de acento",
+      accentHint: "Se usa en el monograma, aqu\u00ed y en la pantalla de consentimiento.",
+      redirect: "Redirecci\u00f3n",
+      redirectUris: "URIs de redirecci\u00f3n",
+      addUri: "A\u00f1adir URI",
+      removeUri: "Quitar",
+      create: "Crear app",
+      cancel: "Cancelar",
+      createHint: "Obtendr\u00e1s client ID y secret al crearla.",
+      save: "Guardar cambios",
+      saved: "Guardado",
+    },
+
+    scopes: {
+      heading: "Datos que pedir\u00e1s",
+      lead: "Pide solo lo que tu app necesita para funcionar. Cada persona ver\u00e1 esta lista y podr\u00e1 declinar los opcionales.",
+      catalogLink: "Ver cat\u00e1logo de scopes",
+      optional: "Opcional",
+      required: "Obligatorio",
+      sensitive: "Sensible",
+      sensitiveNote:
+        "Los scopes en \u00e1mbar son sensibles. Pedirlos como obligatorios reduce cu\u00e1nta gente conecta, as\u00ed que p\u00eddelos solo si tu app de verdad no funciona sin ellos.",
+      groups: {
+        identity: "Identidad",
+        contact: "Contacto",
+        document: "Documento",
+        health: "Salud",
+      },
+      groupHints: {
+        identity: "qui\u00e9n es la persona",
+        contact: "c\u00f3mo llegar a ella",
+        document: "verificaci\u00f3n oficial",
+        health: "solo con prop\u00f3sito sanitario",
+      },
+      nameNote:
+        "Pides un nombre, no una versi\u00f3n concreta. Persona elige la que encaja con tu prop\u00f3sito y la persona puede cambiarla.",
+      narrowWarning:
+        "Quitar un scope desconecta a quienes ya lo aprobaron. Se les preguntar\u00e1 de nuevo la pr\u00f3xima vez que conecten.",
+      empty: "A\u00fan no has elegido scopes.",
+      desc: {
+        name: "Nombre completo, en la versi\u00f3n que encaja con tu prop\u00f3sito.",
+        given_name: "Solo el nombre.",
+        family_name: "Solo los apellidos.",
+        username: "El usuario que eligi\u00f3 en Persona.",
+        email: "Un correo que la persona elija.",
+        phone: "Tel\u00e9fono con indicativo de pa\u00eds.",
+        address: "Direcci\u00f3n en partes estructuradas m\u00e1s una l\u00ednea formateada.",
+        birth_date: "Fecha de nacimiento.",
+        document: "Documento de identidad: tipo, n\u00famero, fecha y lugar de expedici\u00f3n.",
+        blood_type: "Grupo sangu\u00edneo.",
+        eps: "EPS o aseguradora de salud.",
+        allergies: "Alergias declaradas, como lista.",
+      },
+    },
+
+    payload: {
+      title: "Lo que recibe tu app",
+      lead: "La respuesta exacta del endpoint userinfo, construida con tu propio vault.",
+      noData: "sin dato en el vault",
+      alwaysPresent: "siempre presente",
+      emptyBody: "Activa un scope para ver el payload.",
+    },
+
+    credentials: {
+      title: "Credenciales",
+      clientId: "Client ID",
+      clientSecret: "Client secret",
+      copy: "Copiar",
+      copied: "Copiado",
+      rotate: "Rotar",
+      secretHint:
+        "Solo se muestra completo al crearlo o al rotarlo. Rotar invalida el anterior de inmediato.",
+      revealTitle: "Guarda este secret ahora",
+      revealBody:
+        "Es la \u00fanica vez que se muestra. Gu\u00e1rdalo en un sitio seguro \u2014 si lo pierdes, rota para obtener otro.",
+      revealDone: "Ya lo guard\u00e9",
+      rotateConfirm:
+        "\u00bfRotar el client secret? El actual deja de funcionar de inmediato y cualquier app que lo use fallar\u00e1 al pedir el token.",
+    },
+
+    integration: {
+      title: "Integraci\u00f3n",
+      authorize: "URL de autorizaci\u00f3n",
+      token: "Intercambio de token",
+      userinfo: "Llamada a userinfo",
+      authorizeNote:
+        "Env\u00eda el navegador aqu\u00ed para iniciar el consentimiento. Construye la query con URLSearchParams y todo queda codificado.",
+      tokenNote:
+        "Solo desde tu servidor. El secret va en una cabecera HTTP Basic, nunca en el cuerpo ni en el navegador.",
+      userinfoNote: "Devuelve solo los scopes que esa persona aprob\u00f3. El resto no aparece.",
+    },
+
+    settings: {
+      title: "Redirecciones y estado",
+      active: "App activa",
+      activeHint: "En pausa, nadie puede conectar y los tokens existentes dejan de funcionar.",
+      danger: "Eliminar app",
+      dangerBody:
+        "Se revocan todas las conexiones y el client ID deja de funcionar. No se puede deshacer.",
+      delete: "Eliminar",
+      deleteConfirm:
+        "\u00bfEliminar esta app? Todas las personas conectadas pierden acceso de inmediato y el client ID deja de funcionar. No se puede deshacer.",
+    },
+
+    activity: {
+      title: "Actividad",
+      lead: "Solo volumen. Nunca ves qui\u00e9n conect\u00f3 ni qu\u00e9 valor comparti\u00f3.",
+      users: "Personas conectadas",
+      grants: "Concesiones",
+      releases: "Entregas",
+      revocations: "Revocaciones",
+      recent: "Reciente",
+      empty: "A\u00fan no hay nada",
+      emptyBody: "Cuando alguien conecte, las concesiones y entregas aparecer\u00e1n aqu\u00ed.",
+      types: { grant: "Concedido", release: "Entregado", revoke: "Revocado" },
+    },
+
+    reference: {
+      title: "Cat\u00e1logo de scopes",
+      lead: "Todo lo que Persona puede entregar, qu\u00e9 devuelve y un valor de ejemplo.",
+      returns: "Devuelve",
+      example: "Ejemplo",
+      unshareable: "Se guarda pero nunca se comparte",
+    },
   },
 };
 
