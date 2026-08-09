@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { useToast } from "@/components/common/toast";
 import { ItemForm } from "./item-form";
 import { ValueRow } from "./value-row";
 
@@ -25,6 +26,7 @@ interface FieldGroupCardProps {
 // One card per kind: its values, add/edit forms, and which apps use it.
 export function FieldGroupCard({ kind, items, catalog, connections, onChanged }: FieldGroupCardProps) {
   const t = useStrings();
+  const notify = useToast();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -116,6 +118,7 @@ export function FieldGroupCard({ kind, items, catalog, connections, onChanged }:
         confirmLabel={t.common.delete}
         onConfirm={async () => {
           if (deletingId) await deleteItem(deletingId);
+          notify.success(t.vault.deleted);
           onChanged();
         }}
       />

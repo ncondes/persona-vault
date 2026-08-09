@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { useToast } from "@/components/common/toast";
 import { CodeBlock } from "@/components/console/code-block";
 import { CopyField } from "@/components/console/copy-field";
 import { SecretDialog } from "@/components/console/secret-dialog";
@@ -32,6 +33,7 @@ export function AppOverview({
   onChanged: (next: AppView) => void;
 }) {
   const t = useStrings();
+  const notify = useToast();
   const router = useRouter();
   const [secret, setSecret] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
@@ -45,6 +47,7 @@ export function AppOverview({
 
   const remove = async () => {
     await deleteApp(app.id);
+    notify.success(t.console.appDeleted);
     router.push("/console");
   };
 
@@ -157,7 +160,15 @@ export function AppOverview({
         confirmLabel={t.console.settings.delete}
         onConfirm={remove}
       />
-      <SecretDialog secret={secret} onClose={() => setSecret(null)} />
+      {/* Told on the way out, not on success: the dialog itself is the news
+          while it is open, and a toast under it would just repeat it. */}
+      <SecretDialog
+        secret={secret}
+        onClose={() => {
+          setSecret(null);
+          notify.success(t.console.secretRotated);
+        }}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { useToast } from "@/components/common/toast";
 import { initialsOf } from "@/components/shell/user-card";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export function ConnectionCard({
   onRevoked: () => void;
 }) {
   const t = useStrings();
+  const notify = useToast();
   const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -92,6 +94,7 @@ export function ConnectionCard({
         confirmLabel={t.connections.revoke}
         onConfirm={async () => {
           await revokeConnection(connection.clientId);
+          notify.success(t.connections.revoked);
           onRevoked();
         }}
       />

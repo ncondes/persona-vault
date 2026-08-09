@@ -149,6 +149,7 @@ const en = {
     emptyGroup: (kind: string) => `No ${kind.toLowerCase()} added yet`,
     usedIn: "used in:",
     deleteConfirm: "Delete this value? Apps it was shared with will stop receiving it.",
+    deleted: "Value deleted",
     errors: {
       SINGLE_VALUE_KIND: "Only one value is allowed here — edit the existing one.",
     } as Record<string, string>,
@@ -266,6 +267,7 @@ const en = {
     revoke: "Revoke access",
     revokeConfirm: (name: string) =>
       `Revoke ${name}'s access? It will stop receiving your data immediately.`,
+    revoked: "Access revoked",
     empty: "You're not sharing with anyone yet",
     emptyBody: 'When you use "Sign in with Persona" in an app, you\'ll see here what you shared and can revoke it.',
   },
@@ -290,6 +292,8 @@ const en = {
     empty: "No apps yet",
     emptyBody: "Register one to get a client ID and choose what it may ask each person for.",
     emptyHint: "Browse the scope catalogue before you start.",
+    appDeleted: "App deleted",
+    secretRotated: "New client secret ready",
     scopeCount: (n: number) => `${n} ${n === 1 ? "scope" : "scopes"}`,
     sensitiveCount: (n: number) => `${n} sensitive`,
     status: { active: "Active", disabled: "Paused" },
@@ -332,6 +336,7 @@ const en = {
 
     scopes: {
       heading: "Data you will ask for",
+      saved: "Scopes updated",
       lead: "Ask only for what your app needs to work. Each person sees this list and can decline the optional ones.",
       catalogLink: "See the scope catalogue",
       optional: "Optional",
@@ -592,6 +597,7 @@ const es: Strings = {
     emptyGroup: (kind: string) => `Aún no has añadido ${kind.toLowerCase()}`,
     usedIn: "se usa en:",
     deleteConfirm: "¿Eliminar este valor? Las apps con las que se compartió dejarán de recibirlo.",
+    deleted: "Valor eliminado",
     errors: {
       SINGLE_VALUE_KIND: "Solo se permite un valor aquí — edita el existente.",
     },
@@ -711,6 +717,7 @@ const es: Strings = {
     revoke: "Revocar acceso",
     revokeConfirm: (name: string) =>
       `¿Revocar el acceso de ${name}? Dejará de recibir tus datos de inmediato.`,
+    revoked: "Acceso revocado",
     empty: "Aún no compartes con nadie",
     emptyBody: 'Cuando uses "Ingresar con Persona" en una app, verás aquí qué compartiste y podrás revocarlo.',
   },
@@ -736,6 +743,8 @@ const es: Strings = {
     emptyBody:
       "Registra una para obtener un client ID y elegir qu\u00e9 puede pedirle a cada persona.",
     emptyHint: "Revisa el cat\u00e1logo de scopes antes de empezar.",
+    appDeleted: "App eliminada",
+    secretRotated: "Nuevo client secret listo",
     scopeCount: (n: number) => `${n} scope${n === 1 ? "" : "s"}`,
     sensitiveCount: (n: number) => `${n} sensible${n === 1 ? "" : "s"}`,
     status: { active: "Activa", disabled: "En pausa" },
@@ -778,6 +787,7 @@ const es: Strings = {
 
     scopes: {
       heading: "Datos que pedir\u00e1s",
+      saved: "Scopes actualizados",
       lead: "Pide solo lo que tu app necesita para funcionar. Cada persona ver\u00e1 esta lista y podr\u00e1 declinar los opcionales.",
       catalogLink: "Ver cat\u00e1logo de scopes",
       optional: "Opcional",

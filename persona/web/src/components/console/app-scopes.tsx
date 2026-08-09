@@ -7,6 +7,7 @@ import type { AppView, Catalog, PreviewResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { useToast } from "@/components/common/toast";
 import { PayloadPreview } from "@/components/console/payload-preview";
 import { ScopeSummary } from "@/components/console/scope-summary";
 import { ScopePicker } from "@/components/console/scope-picker";
@@ -27,6 +28,7 @@ export function AppScopes({
   onSaved: (next: AppView) => void;
 }) {
   const t = useStrings();
+  const notify = useToast();
   const saved = selectionFrom(app.allowedScopes, app.requiredScopes);
 
   const [selection, setSelection] = useState<ScopeSelection>(saved);
@@ -65,11 +67,15 @@ export function AppScopes({
   const next = selectionToScopes(selection);
   const { dirty, removes } = diffScopes(app, next);
 
+  // Keeps its own catch on purpose, so ConfirmDialog's never fires for it: this
+  // screen has somewhere to put an error, right under the save bar, and a
+  // message that stays put beats one that fades after four seconds.
   const save = async () => {
     setBusy(true);
     setError(null);
     try {
       onSaved(await updateApp(app.id, next));
+      notify.success(t.console.scopes.saved);
     } catch {
       setError(t.common.somethingWrong);
     } finally {
