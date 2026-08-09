@@ -5,6 +5,7 @@ import { logout } from "@/lib/api";
 import { useStrings } from "@/lib/locale";
 import type { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/common/toast";
 
 export function initialsOf(text: string): string {
   return text.slice(0, 2).toUpperCase();
@@ -12,9 +13,16 @@ export function initialsOf(text: string): string {
 
 export function UserCard({ user }: { user: User | null }) {
   const t = useStrings();
+  const notify = useToast();
+  // Nothing to say on success: the login page is the confirmation, and a full
+  // page load would take the toast with it anyway.
   const signOut = async () => {
-    await logout();
-    window.location.assign("/login");
+    try {
+      await logout();
+      window.location.assign("/login");
+    } catch (err) {
+      notify.failure(err);
+    }
   };
 
   return (

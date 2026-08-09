@@ -39,6 +39,16 @@ export function FieldGroupCard({ kind, items, catalog, connections, onChanged }:
     .filter((c) => c.shared.some((s) => s.scope === KIND_SCOPE[kind]))
     .map((c) => c.clientName);
 
+  const makeDefault = async (id: string) => {
+    try {
+      await updateItem(id, { isDefault: true });
+      notify.success(t.vault.defaultSet);
+      onChanged();
+    } catch (err) {
+      notify.failure(err);
+    }
+  };
+
   const saved = () => {
     setAdding(false);
     setEditingId(null);
@@ -84,7 +94,7 @@ export function FieldGroupCard({ kind, items, catalog, connections, onChanged }:
                   key={item.id}
                   item={item}
                   canMakeDefault={(meta?.multi ?? false) && items.length > 1}
-                  onMakeDefault={() => updateItem(item.id, { isDefault: true }).then(onChanged)}
+                  onMakeDefault={() => void makeDefault(item.id)}
                   onEdit={() => setEditingId(item.id)}
                   onDelete={() => setDeletingId(item.id)}
                 />

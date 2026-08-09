@@ -11,10 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { PageHeader } from "@/components/common/page-header";
 import { Spinner } from "@/components/common/spinner";
+import { useToast } from "@/components/common/toast";
 import { initialsOf } from "@/components/shell/user-card";
 
 export default function SettingsPage() {
   const t = useStrings();
+  const notify = useToast();
   const me = useLoad(useCallback(() => getMe(), []));
   const settings = useLoad(useCallback(() => getSettings(), []));
   const [local, setLocal] = useState<Settings | null>(null);
@@ -22,15 +24,27 @@ export default function SettingsPage() {
 
   const current = local ?? settings.data;
 
+  // Optimistic, so the switch answers straight away. Both toasts share an id:
+  // toggling twice in a row replaces the message instead of stacking two.
   const toggle = (key: keyof Settings, value: boolean) => {
     if (!current) return;
     setLocal({ ...current, [key]: value }); // optimistic; the PUT confirms it
-    updateSettings({ [key]: value }).catch(() => setLocal(current));
+    updateSettings({ [key]: value }).then(
+      () => notify.success(t.settings.updated, { id: "settings" }),
+      (err) => {
+        setLocal(current);
+        notify.failure(err, { id: "settings" });
+      },
+    );
   };
 
   const signOut = async () => {
-    await logout();
-    window.location.assign("/login");
+    try {
+      await logout();
+      window.location.assign("/login");
+    } catch (err) {
+      notify.failure(err);
+    }
   };
 
   if (settings.loading || me.loading) {

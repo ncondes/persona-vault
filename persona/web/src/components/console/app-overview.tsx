@@ -37,6 +37,7 @@ export function AppOverview({
   const router = useRouter();
   const [secret, setSecret] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
+  const [pending, setPending] = useState<boolean | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const rotate = async () => {
@@ -51,8 +52,19 @@ export function AppOverview({
     router.push("/console");
   };
 
+  // `pending` is what the switch shows while the request is in flight. Without
+  // it a failure leaves the switch reading the opposite of the truth, because
+  // onChanged never fires and nothing re-renders it back.
   const toggleStatus = async (active: boolean) => {
-    onChanged(await updateApp(app.id, { status: active ? "active" : "disabled" }));
+    setPending(active);
+    try {
+      onChanged(await updateApp(app.id, { status: active ? "active" : "disabled" }));
+      notify.success(active ? t.console.statusOn : t.console.statusOff);
+    } catch (err) {
+      notify.failure(err);
+    } finally {
+      setPending(null);
+    }
   };
 
   return (
@@ -120,7 +132,8 @@ export function AppOverview({
                 </p>
               </div>
               <Switch
-                checked={app.status === "active"}
+                checked={pending ?? app.status === "active"}
+                disabled={pending !== null}
                 onCheckedChange={(value) => void toggleStatus(value)}
               />
             </div>

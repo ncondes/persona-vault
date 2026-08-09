@@ -17,6 +17,7 @@ import { useLoad } from "@/lib/useLoad";
 import type { ConsentPrompt, InteractionField } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { useToast } from "@/components/common/toast";
 import { ItemForm } from "@/components/vault/item-form";
 import { ConsentFieldCard } from "./consent-field-card";
 import { ConsentHeader } from "./consent-header";
@@ -28,6 +29,7 @@ interface ConsentScreenProps {
 
 export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
   const t = useStrings();
+  const notify = useToast();
   const { data: catalog } = useLoad(getCatalog);
   const [selections, setSelections] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(prompt.fields.map((field) => [field.scope, field.suggestedIds])),
@@ -67,9 +69,16 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
     }
   };
 
+  // Success leaves for the app's own site, so there is nowhere to say it. A
+  // failure keeps the person here, where a toast is the only thing on screen
+  // that can explain why nothing happened.
   const deny = async () => {
-    const { redirectTo } = await interactionAbort(prompt.uid);
-    window.location.assign(redirectTo);
+    try {
+      const { redirectTo } = await interactionAbort(prompt.uid);
+      window.location.assign(redirectTo);
+    } catch (err) {
+      notify.failure(err);
+    }
   };
 
   const renderField = (field: InteractionField) => {
