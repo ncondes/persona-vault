@@ -219,4 +219,79 @@ describe('resolveClaims (release from stored selections)', () => {
     expect(out.claims).toEqual({});
     expect(out.scopesReleased).toEqual([]);
   });
+
+  // A claim that resolves to null is not released at all. Sending
+  // `given_name: null` would tell the app the person has no first name, which is
+  // a different statement from not sharing one.
+  describe('claims that cannot be built', () => {
+    const bareName = {
+      id: 'bare-name',
+      userId: 'u1',
+      kind: 'name' as const,
+      label: null,
+      value: 'Prince',
+      detail: null,
+      isDefault: true,
+      nameContext: 'legal' as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it.each([['given_name'], ['family_name']])(
+      'omits %s when the name has no parts stored',
+      (scope) => {
+        const out = resolveClaims({
+          purpose: 'healthcare',
+          allowedScopes: [scope],
+          grantedScopes: [scope],
+          selections: [],
+          items: [bareName],
+        });
+
+        expect(out.claims).toEqual({});
+        expect(out.scopesReleased).toEqual([]);
+      },
+    );
+
+    it('releases an address with no detail as its plain formatted value', () => {
+      const out = resolveClaims({
+        purpose: 'retail',
+        allowedScopes: ['address'],
+        grantedScopes: ['address'],
+        selections: [],
+        items: [{ ...bareName, kind: 'address', value: '12 Kings Road', nameContext: null }],
+      });
+
+      expect(out.claims.address).toBe('12 Kings Road');
+    });
+
+    it('releases a document with no detail as an object of nulls around the number', () => {
+      const out = resolveClaims({
+        purpose: 'government',
+        allowedScopes: ['document'],
+        grantedScopes: ['document'],
+        selections: [],
+        items: [{ ...bareName, kind: 'document', value: '1020304050', nameContext: null }],
+      });
+
+      expect(out.claims.document).toEqual({
+        type: null,
+        number: '1020304050',
+        issueDate: null,
+        issuePlace: null,
+      });
+    });
+
+    it('ignores a granted scope the provider does not know', () => {
+      const out = resolveClaims({
+        purpose: 'retail',
+        allowedScopes: ['shoe_size'],
+        grantedScopes: ['shoe_size'],
+        selections: [],
+        items: [bareName],
+      });
+
+      expect(out.claims).toEqual({});
+    });
+  });
 });
