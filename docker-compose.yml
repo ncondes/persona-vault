@@ -1,0 +1,135 @@
+# The whole system: the Persona provider, its web app, and three unrelated
+# relying parties. `docker compose up` from a clean clone is enough — the API
+# migrates and seeds the database on boot, which is what registers the three
+# demo apps as OAuth clients.
+#
+# Two URLs point at Persona on purpose. The browser is redirected to
+# http://localhost:4400, which it can reach; the demo servers call the token and
+# userinfo endpoints at http://api:4400 over the compose network.
+
+x-persona-urls: &persona-urls
+  PERSONA_PUBLIC_URL: "http://localhost:4400"
+  PERSONA_INTERNAL_URL: "http://api:4400"
+  PERSONA_WEB_URL: "http://localhost:4420"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: persona-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: persona
+      POSTGRES_PASSWORD: persona
+      POSTGRES_DB: persona
+    ports:
+      - "55432:5432"
+    volumes:
+      - persona-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U persona -d persona"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: ./persona
+      dockerfile: Dockerfile.dev
+    container_name: persona-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: "4400"
+      DATABASE_URL: "postgresql://persona:persona@postgres:5432/persona?schema=public"
+      # Dev-only default. Set AUTH_SECRET in the environment for anything real:
+      # it signs session cookies and derives the client-secret encryption key.
+      AUTH_SECRET: "${AUTH_SECRET:-dev-secret-change-me}"
+      OIDC_ISSUER: "http://localhost:4400/oidc"
+      WEB_URL: "http://localhost:4420"
+    # Seeding is required, not convenience: clients live in the database now, so
+    # an unseeded database has no relying parties at all.
+    command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run dev"
+    ports:
+      - "4400:4400"
+    # Mount only the code for hot reload; node_modules stays the image's
+    # (correct Linux build, never shadowed by the host or left stale).
+    volumes:
+      - ./persona/src:/app/src
+      - ./persona/prisma:/app/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./persona/web
+      dockerfile: Dockerfile.dev
+    container_name: persona-web
+    restart: unless-stopped
+    environment:
+      # next.config.ts proxies /api, /interaction and /oidc here so cookies
+      # stay first-party.
+      API_URL: "http://api:4400"
+    ports:
+      - "4420:4420"
+    volumes:
+      - ./persona/web/src:/app/src
+    depends_on:
+      - api
+
+  clinic:
+    build:
+      context: ./demos/clinic
+      dockerfile: Dockerfile.dev
+    container_name: demo-clinic
+    restart: unless-stopped
+    environment:
+      <<: *persona-urls
+      CLIENT_ID: "clinic"
+      CLIENT_SECRET: "clinic-dev-secret"
+      APP_URL: "http://localhost:4411"
+    ports:
+      - "4411:4411"
+    volumes:
+      - ./demos/clinic/src:/app/src
+    depends_on:
+      - api
+
+  forum:
+    build:
+      context: ./demos/forum
+      dockerfile: Dockerfile.dev
+    container_name: demo-forum
+    restart: unless-stopped
+    environment:
+      <<: *persona-urls
+      CLIENT_ID: "forum"
+      CLIENT_SECRET: "forum-dev-secret"
+      APP_URL: "http://localhost:4412"
+    ports:
+      - "4412:4412"
+    volumes:
+      - ./demos/forum/src:/app/src
+    depends_on:
+      - api
+
+  store:
+    build:
+      context: ./demos/store
+      dockerfile: Dockerfile.dev
+    container_name: demo-store
+    restart: unless-stopped
+    environment:
+      <<: *persona-urls
+      CLIENT_ID: "store"
+      CLIENT_SECRET: "store-dev-secret"
+      APP_URL: "http://localhost:4413"
+    ports:
+      - "4413:4413"
+    volumes:
+      - ./demos/store/src:/app/src
+    depends_on:
+      - api
+
+volumes:
+  persona-pgdata:
