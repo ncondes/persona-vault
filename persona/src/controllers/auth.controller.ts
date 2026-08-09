@@ -1,20 +1,10 @@
 import { Request, Response } from 'express';
-import { config } from '../config/config';
 import { UserRepository } from '../domain/interfaces/user.repository';
 import { NotFoundError } from '../domain/errors';
 import { User } from '../domain/models';
+import { AUTH_COOKIE, authCookieOptions, authCookieSetOptions } from '../infrastructure/auth/cookie';
 import { signAuthToken } from '../infrastructure/auth/token';
 import { AuthService } from '../services/auth.service';
-
-const TOKEN_COOKIE = 'token';
-const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
-
-const cookieOptions = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: config.isProd,
-  path: '/',
-};
 
 interface PublicUser {
   id: string;
@@ -40,18 +30,18 @@ export class AuthController {
       req.body.email,
       req.body.password,
     );
-    res.cookie(TOKEN_COOKIE, signAuthToken(user.id), { ...cookieOptions, maxAge: COOKIE_MAX_AGE });
+    res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);
     res.status(201).json({ data: toPublicUser(user) });
   };
 
   login = async (req: Request, res: Response): Promise<void> => {
     const user = await this.authService.login(req.body.email, req.body.password);
-    res.cookie(TOKEN_COOKIE, signAuthToken(user.id), { ...cookieOptions, maxAge: COOKIE_MAX_AGE });
+    res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);
     res.json({ data: toPublicUser(user) });
   };
 
   logout = async (_req: Request, res: Response): Promise<void> => {
-    res.clearCookie(TOKEN_COOKIE, cookieOptions);
+    res.clearCookie(AUTH_COOKIE, authCookieOptions);
     res.status(204).send();
   };
 

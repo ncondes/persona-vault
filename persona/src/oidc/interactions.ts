@@ -1,16 +1,11 @@
 import { Request, RequestHandler, Response, Router, json, urlencoded } from 'express';
 import { config } from '../config/config';
 import type { Container } from '../container';
+import { AppError } from '../domain/errors';
+import { AUTH_COOKIE, authCookieSetOptions } from '../infrastructure/auth/cookie';
 import { signAuthToken, verifyAuthToken } from '../infrastructure/auth/token';
+import { revokeGrant } from './grants';
 import { renderConsent, renderExpired, renderLogin } from './views';
-
-const cookieOptions = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: config.isProd,
-  path: '/',
-  maxAge: 1000 * 60 * 60 * 24 * 7,
-};
 
 // The interaction endpoints serve two callers: the frontend consent app
 // (JSON, chosen via the Accept header) and plain HTML forms as a fallback.
@@ -145,7 +140,7 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
         }
         return res.status(401).send(renderLogin(String(req.params.uid), 'Invalid email or password'));
       }
-      res.cookie('token', signAuthToken(user.id), cookieOptions);
+      res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);
       return finish(req, res, { login: { accountId: user.id } }, false);
     }),
   );
@@ -158,6 +153,11 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
     interactionHandler(async (req, res) => {
       const details = await provider.interactionDetails(req, res);
       const { params, session } = details;
+      // No session means this interaction is still at the login step, so the
+      // decision arrived out of order. Treat it like an expired request.
+      if (!session) {
+        throw new AppError(410, 'INTERACTION_EXPIRED', 'This request has expired');
+      }
       const clientId = String(params.client_id);
       const requestedScopes = String(params.scope ?? '').split(' ').filter(Boolean);
 
@@ -168,6 +168,13 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
         req.body ?? {},
       );
 
+      const previous = await container.repositories.consents.findByUserAndClient(
+        session.accountId,
+        clientId,
+      );
+
+      // A fresh grant each time: Grant.rejected is sticky, so reusing the old
+      // one would keep subtracting a scope the user has since approved.
       const grant = new provider.Grant({ accountId: session.accountId, clientId });
       grant.addOIDCScope(['openid', ...decision.grantedScopes].join(' '));
       for (const scope of decision.rejectedScopes) {
@@ -175,21 +182,37 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
       }
       const grantId = await grant.save();
 
-      await container.repositories.consents.record({
-        userId: session.accountId,
-        clientId,
-        scopes: decision.grantedScopes,
-        selections: decision.selections,
-        grantId,
-      });
-      await container.repositories.audit.record({
-        userId: session.accountId,
-        clientId,
-        type: 'grant',
-        context: decision.purpose,
-        scopesReleased: decision.grantedScopes,
-        fieldsReleased: decision.grantedScopes,
-      });
+      try {
+        // The grant lives in the OIDC store and cannot join a Prisma
+        // transaction, so the two Persona rows commit together and the grant is
+        // rolled back by hand if they fail.
+        await container.unitOfWork.run(async (repos) => {
+          await repos.consents.record({
+            userId: session.accountId,
+            clientId,
+            scopes: decision.grantedScopes,
+            selections: decision.selections,
+            grantId,
+          });
+          await repos.audit.record({
+            userId: session.accountId,
+            clientId,
+            type: 'grant',
+            context: decision.purpose,
+            scopesReleased: decision.grantedScopes,
+            fieldsReleased: decision.grantedScopes,
+          });
+        });
+      } catch (err) {
+        await revokeGrant(provider, grantId);
+        throw err;
+      }
+
+      // Re-consenting replaces the previous decision; without this the
+      // superseded grant and its access tokens would stay valid.
+      if (previous?.grantId && previous.grantId !== grantId) {
+        await revokeGrant(provider, previous.grantId);
+      }
 
       return finish(req, res, { consent: { grantId } }, true);
     }),
