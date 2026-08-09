@@ -2,22 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, IdCard, Link2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStrings } from "@/lib/locale";
-import type { Strings } from "@/lib/strings";
-
-export const NAV_ITEMS = [
-  { href: "/vault", key: "vault", icon: IdCard },
-  { href: "/connections", key: "connections", icon: Link2 },
-  { href: "/contexts", key: "contexts", icon: Compass },
-  { href: "/settings", key: "settings", icon: Settings },
-] as const;
-
-export function pageTitle(pathname: string, t: Strings): string {
-  const item = NAV_ITEMS.find((entry) => pathname.startsWith(entry.href));
-  return item ? t.nav[item.key] : t.appName;
-}
+import { NAV_ITEMS } from "@/lib/nav";
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();

@@ -3,31 +3,15 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { revokeConnection } from "@/lib/api";
-import { useStrings } from "@/lib/locale";
-import type { Strings } from "@/lib/strings";
-import { docDetail, nameDetail, type Connection } from "@/lib/types";
+import { useLocale, useStrings } from "@/lib/locale";
+import { snapshotText } from "@/lib/shared-value";
+import type { Connection } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { initialsOf } from "@/components/shell/user-card";
 import { cn } from "@/lib/utils";
-
-function snapshotText(t: Strings, shared: Connection["shared"][number]): string {
-  return shared.snapshot
-    .map((s) => {
-      let value = s.value;
-      const name = nameDetail(s.detail);
-      if (shared.scope === "given_name" && name) value = name.firstName;
-      if (shared.scope === "family_name" && name) value = name.lastName;
-      if (shared.scope === "blood_type") value = t.catalog.bloodTypes[value] ?? value;
-      if (shared.scope === "eps") value = t.catalog.epsProviders[value] ?? value;
-      const doc = shared.scope === "document" ? docDetail(s.detail) : null;
-      if (doc) value = `${doc.type} ${value}`;
-      return s.label ? `${value} (${s.label})` : value;
-    })
-    .join(", ");
-}
 
 export function ConnectionCard({
   connection,
@@ -37,10 +21,11 @@ export function ConnectionCard({
   onRevoked: () => void;
 }) {
   const t = useStrings();
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  const grantedAt = new Date(connection.grantedAt).toLocaleDateString("en-GB", {
+  const grantedAt = new Date(connection.grantedAt).toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",

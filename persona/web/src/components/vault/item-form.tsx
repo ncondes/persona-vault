@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { ApiError, createItem, updateItem } from "@/lib/api";
-import { useStrings } from "@/lib/locale";
 import {
-  type Catalog,
-  type ItemDetail,
-  type NameContext,
-  type VaultItem,
-  type VaultKind,
-} from "@/lib/types";
+  itemPayload,
+  LABELED_KINDS,
+  NAME_CONTEXTS,
+} from "@/lib/item-payload";
+import { useStrings } from "@/lib/locale";
+import { type Catalog, type NameContext, type VaultItem, type VaultKind } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,9 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Field } from "@/components/common/field";
 import { Flag } from "@/components/common/flag";
-
-const LABELED_KINDS: VaultKind[] = ["email", "phone", "address", "document"];
-const NAME_CONTEXTS: NameContext[] = ["legal", "preferred", "professional", "public"];
 
 interface ItemFormProps {
   kind: VaultKind;
@@ -60,30 +56,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
     setBusy(true);
     setError(null);
 
-    let detail: ItemDetail | undefined;
-    if (kind === "name") detail = { firstName: part("firstName"), lastName: part("lastName") };
-    if (kind === "phone") detail = { countryCode: part("countryCode"), number: part("number") };
-    if (kind === "address") {
-      detail = {
-        line1: part("line1"),
-        line2: part("line2") || undefined,
-        line3: part("line3") || undefined,
-        city: part("city"),
-        postalCode: part("postalCode") || undefined,
-        country: part("country"),
-      };
-    }
-    if (kind === "document") {
-      detail = { type: part("type") || "CC", issueDate: part("issueDate"), issuePlace: part("issuePlace") };
-    }
-
-    const composed = kind === "name" || kind === "phone" || kind === "address";
-    const payload = {
-      value: composed ? undefined : value.trim(),
-      label: LABELED_KINDS.includes(kind) && label.trim() ? label.trim() : null,
-      nameContext: kind === "name" ? nameContext : undefined,
-      detail,
-    };
+    const payload = itemPayload(kind, { value, label, nameContext, parts });
 
     try {
       if (item) {

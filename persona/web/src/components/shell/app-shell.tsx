@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { LanguageToggle } from "@/components/common/language-toggle";
 import { Logo } from "@/components/common/logo";
-import { NavLinks, pageTitle } from "./nav";
+import { pageTitle } from "@/lib/nav";
+import { NavLinks } from "./nav";
 import { UserCard, initialsOf } from "./user-card";
 
 // The authenticated frame: fixed sidebar on desktop, top bar + drawer on mobile.

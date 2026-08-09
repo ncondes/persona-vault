@@ -3,6 +3,14 @@
 import { useMemo, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { ApiError, getCatalog, interactionAbort, interactionDecision } from "@/lib/api";
+import {
+  buildDecision,
+  isTrivial,
+  missingRequired,
+  needsConfirmation,
+  partitionFields,
+  sensitiveSharedCount,
+} from "@/lib/consent-decision";
 import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import type { ConsentPrompt, InteractionField } from "@/lib/types";
@@ -28,32 +36,16 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const { normal, sensitive } = useMemo(() => {
-    return {
-      normal: prompt.fields.filter((f) => !f.sensitive),
-      sensitive: prompt.fields.filter((f) => f.sensitive),
-    };
-  }, [prompt.fields]);
+  const { normal, sensitive } = useMemo(() => partitionFields(prompt.fields), [prompt.fields]);
 
-  const missingRequired = prompt.fields.filter((f) => f.missing && f.required);
-  const trivial =
-    prompt.fields.length === 1 &&
-    !prompt.fields[0].sensitive &&
-    !prompt.fields[0].missing &&
-    prompt.fields[0].options.length === 1;
+  const blocking = missingRequired(prompt.fields);
+  const trivial = isTrivial(prompt.fields);
 
   const submit = async () => {
     setBusy(true);
     setError(null);
     try {
-      const decision = {
-        selections: Object.fromEntries(
-          prompt.fields
-            .filter((f) => !excluded.has(f.scope) && (selections[f.scope]?.length ?? 0) > 0)
-            .map((f) => [f.scope, selections[f.scope]]),
-        ),
-        excludedScopes: [...excluded],
-      };
+      const decision = buildDecision(prompt.fields, selections, excluded);
       const { redirectTo } = await interactionDecision(prompt.uid, decision);
       window.location.assign(redirectTo);
     } catch (err) {
@@ -67,10 +59,7 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
   };
 
   const approve = () => {
-    const sensitiveShared = sensitive.filter(
-      (f) => !excluded.has(f.scope) && !f.missing,
-    ).length;
-    if (prompt.settings.confirmSensitive && sensitiveShared > 0) {
+    if (needsConfirmation(prompt, excluded)) {
       setConfirming(true);
     } else {
       void submit();
@@ -175,10 +164,10 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
         <Button
           size="xl"
           className="w-full"
-          disabled={busy || missingRequired.length > 0}
+          disabled={busy || blocking.length > 0}
           onClick={approve}
         >
-          {missingRequired.length > 0 ? t.consent.approveMissing : t.consent.approve}
+          {blocking.length > 0 ? t.consent.approveMissing : t.consent.approve}
         </Button>
         <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <button type="button" className="hover:text-foreground hover:underline" onClick={deny}>
@@ -193,9 +182,7 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
         open={confirming}
         onOpenChange={setConfirming}
         title={t.consent.confirmTitle}
-        body={t.consent.confirmBody(
-          sensitive.filter((f) => !excluded.has(f.scope) && !f.missing).length,
-        )}
+        body={t.consent.confirmBody(sensitiveSharedCount(prompt.fields, excluded))}
         confirmLabel={t.consent.approve}
         onConfirm={submit}
       />
