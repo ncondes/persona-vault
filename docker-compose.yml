@@ -37,13 +37,22 @@ services:
       dockerfile: Dockerfile.dev
     container_name: persona-api
     restart: unless-stopped
+    # Secrets come from persona/.env, the same file the API reads when it runs
+    # on the host. Not required: it is gitignored, and a hard requirement would
+    # fail every compose command on a fresh clone — including `npm run db:up`,
+    # which starts only Postgres and is what the test suite depends on. The API
+    # still refuses to boot without AUTH_SECRET and RESEND_API_KEY; config.ts
+    # says so by name.
+    env_file:
+      - path: ./persona/.env
+        required: false
+    # These override anything in env_file: inside the compose network the
+    # database and the API answer to different hostnames than they do on the
+    # host, so the file's host-facing values must not win here.
     environment:
       NODE_ENV: development
       PORT: "4400"
       DATABASE_URL: "postgresql://persona:persona@postgres:5432/persona?schema=public"
-      # Dev-only default. Set AUTH_SECRET in the environment for anything real:
-      # it signs session cookies and derives the client-secret encryption key.
-      AUTH_SECRET: "${AUTH_SECRET:-dev-secret-change-me}"
       OIDC_ISSUER: "http://localhost:4400/oidc"
       WEB_URL: "http://localhost:4420"
     # Seeding is required, not convenience: clients live in the database now, so
