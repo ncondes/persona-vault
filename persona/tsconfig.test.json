@@ -1,0 +1,12 @@
+// The main tsconfig excludes `tests` because `rootDir` is `src` and the build must
+// not emit them. That also means `npm run build` never type-checks a single test
+// file — only ts-jest transpiles them, and ts-jest does not report type errors.
+// This config exists so `npm run typecheck:tests` closes that hole.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "prisma/**/*.ts", "scripts/**/*.ts"]
+}

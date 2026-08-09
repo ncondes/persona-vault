@@ -10,4 +10,10 @@ module.exports = {
   },
   // Integration tests (*.int.test.ts) need a running database; run them with `npm run test:int`.
   testPathIgnorePatterns: ['/node_modules/', '\\.int\\.test\\.ts$'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/generated/**',
+    '!src/types/**',
+    '!src/**/*.d.ts',
+  ],
 };
