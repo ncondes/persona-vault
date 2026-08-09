@@ -4,6 +4,11 @@ node_modules/
 # build output
 dist/
 build/
+.next/
+*.tsbuildinfo
+
+# test output
+coverage/
 
 # generated code (Prisma client)
 persona/src/generated/
