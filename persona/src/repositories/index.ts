@@ -3,6 +3,7 @@ import { DbClient } from '../infrastructure/db/db-client';
 import { PrismaAuditRepository } from './audit.repository';
 import { PrismaClientRepository } from './client.repository';
 import { PrismaConsentRepository } from './consent.repository';
+import { PrismaOidcPayloadRepository } from './oidc-payload.repository';
 import { PrismaUserRepository } from './user.repository';
 import { PrismaVaultRepository } from './vault.repository';
 
@@ -15,5 +16,6 @@ export function createRepositories(db: DbClient): Repositories {
     clients: new PrismaClientRepository(db),
     consents: new PrismaConsentRepository(db),
     audit: new PrismaAuditRepository(db),
+    oidcPayloads: new PrismaOidcPayloadRepository(db),
   };
 }

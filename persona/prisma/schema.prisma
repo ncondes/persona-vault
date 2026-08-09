@@ -44,6 +44,13 @@ enum AuditType {
   @@map("audit_type")
 }
 
+enum ClientStatus {
+  active
+  disabled
+
+  @@map("client_status")
+}
+
 // A person who owns a vault in Persona.
 model User {
   id               String       @id @default(uuid())
@@ -56,6 +63,7 @@ model User {
   vaultItems       VaultItem[]
   consents         Consent[]
   auditEntries     AuditEntry[]
+  apps             Client[]
 
   @@map("user")
 }
@@ -69,7 +77,7 @@ model VaultItem {
   kind        VaultKind
   label       String?
   value       String
-  detail      Json? // document only: { type, issueDate, issuePlace }
+  detail      Json? // structured parts for name, phone, address and document
   isDefault   Boolean      @default(false) @map("is_default")
   nameContext NameContext? @map("name_context")
   createdAt   DateTime     @default(now()) @map("created_at")
@@ -79,21 +87,31 @@ model VaultItem {
   @@map("vault_item")
 }
 
-// A relying party (an app/institution) that can request user data. Its primary
-// key is the OAuth client_id used during "Connect with Persona".
+// A relying party registered through the developer console. Its primary key is
+// the OAuth client_id used during "Connect with Persona". The OIDC provider
+// reads clients from this table through the adapter in src/oidc/adapter.ts.
 model Client {
-  id             String       @id
-  name           String
-  purpose        String
-  allowedScopes  String[]     @map("allowed_scopes")
-  requiredScopes String[]     @map("required_scopes")
-  redirectUris   String[]     @map("redirect_uris")
-  secretHash     String       @map("secret_hash")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  consents       Consent[]
-  auditEntries   AuditEntry[]
+  id              String       @id
+  ownerId         String       @map("owner_id")
+  owner           User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  purpose         String
+  accent          String       @default("teal")
+  allowedScopes   String[]     @map("allowed_scopes")
+  requiredScopes  String[]     @map("required_scopes")
+  redirectUris    String[]     @map("redirect_uris")
+  // oidc-provider compares client secrets in plaintext, so they are encrypted
+  // at rest rather than hashed. See src/infrastructure/crypto/secret-box.ts.
+  secretEncrypted String       @map("secret_encrypted")
+  secretLastFour  String       @map("secret_last_four")
+  status          ClientStatus @default(active)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  consents        Consent[]
+  auditEntries    AuditEntry[]
 
+  @@index([ownerId])
   @@map("client")
 }
 
@@ -127,5 +145,29 @@ model AuditEntry {
   scopesReleased String[]  @map("scopes_released")
   fieldsReleased String[]  @map("fields_released")
 
+  @@index([clientId, at])
   @@map("audit_entry")
+}
+
+// oidc-provider's storage: one row per artifact (session, interaction, grant,
+// authorization code, token), keyed on model + id, plus the secondary lookups
+// its adapter contract requires. Clients are the exception — they live in
+// `client` and are read from there by the adapter.
+model OidcPayload {
+  model     String
+  id        String
+  payload   Json
+  grantId   String?   @map("grant_id")
+  userCode  String?   @map("user_code")
+  uid       String?
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@id([model, id])
+  @@unique([uid])
+  @@unique([userCode])
+  @@index([grantId])
+  @@index([expiresAt])
+  @@map("oidc_payload")
 }

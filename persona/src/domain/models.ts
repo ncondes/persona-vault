@@ -15,6 +15,8 @@ export type NameContext = 'legal' | 'preferred' | 'professional' | 'public';
 
 export type AuditType = 'grant' | 'release' | 'revoke';
 
+export type ClientStatus = 'active' | 'disabled';
+
 export interface User {
   id: string;
   email: string;
@@ -69,14 +71,21 @@ export interface VaultItem {
   updatedAt: Date;
 }
 
+// A relying party registered through the developer console. `secretEncrypted`
+// never leaves the service layer; the console only ever sees `secretLastFour`.
 export interface Client {
   id: string;
+  ownerId: string;
   name: string;
+  description: string | null;
   purpose: string;
+  accent: string;
   allowedScopes: string[];
   requiredScopes: string[];
   redirectUris: string[];
-  secretHash: string;
+  secretEncrypted: string;
+  secretLastFour: string;
+  status: ClientStatus;
   createdAt: Date;
   updatedAt: Date;
 }

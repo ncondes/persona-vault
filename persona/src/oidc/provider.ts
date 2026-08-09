@@ -1,20 +1,9 @@
 import type Provider from 'oidc-provider' with { 'resolution-mode': 'import' };
 import { config } from '../config/config';
-import { DEMO_CLIENTS } from '../constants/clients';
 import { ALL_SCOPES } from '../constants/scopes';
 import type { Container } from '../container';
+import { createOidcAdapter } from './adapter';
 import { loadDevJwks } from './keys';
-
-// Relying parties that may use "Connect with Persona", built from the same list
-// the database seed uses. client_id matches the Client row (purpose + scopes).
-const CLIENTS = DEMO_CLIENTS.map((client) => ({
-  client_id: client.id,
-  client_secret: client.devSecret,
-  redirect_uris: client.redirectUris,
-  grant_types: ['authorization_code'],
-  response_types: ['code'],
-  scope: ['openid', ...client.allowedScopes].join(' '),
-}));
 
 // Each data scope releases a claim of the same name.
 const CLAIMS = Object.fromEntries(ALL_SCOPES.map((scope) => [scope, [scope]]));
@@ -22,8 +11,10 @@ const CLAIMS = Object.fromEntries(ALL_SCOPES.map((scope) => [scope, [scope]]));
 export async function createOidcProvider(container: Container): Promise<Provider> {
   const { default: OidcProvider } = await import('oidc-provider');
 
+  // No static `clients`: relying parties are registered through the developer
+  // console and resolved from Postgres by the adapter.
   const provider = new OidcProvider(config.oidcIssuer, {
-    clients: CLIENTS,
+    adapter: createOidcAdapter(container.repositories),
     jwks: loadDevJwks(),
     scopes: ALL_SCOPES,
     claims: CLAIMS,

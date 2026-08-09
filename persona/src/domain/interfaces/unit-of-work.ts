@@ -1,6 +1,7 @@
 import { AuditRepository } from './audit.repository';
 import { ClientRepository } from './client.repository';
 import { ConsentRepository } from './consent.repository';
+import { OidcPayloadRepository } from './oidc-payload.repository';
 import { UserRepository } from './user.repository';
 import { VaultRepository } from './vault.repository';
 
@@ -11,6 +12,7 @@ export interface Repositories {
   clients: ClientRepository;
   consents: ConsentRepository;
   audit: AuditRepository;
+  oidcPayloads: OidcPayloadRepository;
 }
 
 // Runs a unit of work inside one database transaction: every repository call
