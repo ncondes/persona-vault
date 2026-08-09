@@ -48,6 +48,15 @@ export interface VaultService {
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+// The shape alone would accept 2025-13-45, so the parsed date has to round-trip
+// back to the same string — that rules out impossible months and days, and the
+// silent rollover Date does for them.
+function isCalendarDate(value: string): boolean {
+  if (!DATE_PATTERN.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
+}
 const DIAL_CODES = new Set<string>(COUNTRIES.map((c) => c.dial));
 const COUNTRY_CODES = new Set<string>(COUNTRIES.map((c) => c.code));
 
@@ -84,7 +93,7 @@ function validateForKind(
     if (kind === 'eps' && !(EPS_PROVIDERS as readonly string[]).includes(payload.value)) {
       fields.value = `must be one of: ${EPS_PROVIDERS.join(', ')}`;
     }
-    if (kind === 'birth_date' && !DATE_PATTERN.test(payload.value)) {
+    if (kind === 'birth_date' && !isCalendarDate(payload.value)) {
       fields.value = 'must be a date in YYYY-MM-DD format';
     }
     if (kind === 'email' && !payload.value.includes('@')) {
@@ -120,7 +129,7 @@ function validateForKind(
       if (!detail.type || !(DOCUMENT_TYPES as readonly string[]).includes(detail.type)) {
         fields['detail.type'] = `must be one of: ${DOCUMENT_TYPES.join(', ')}`;
       }
-      if (!detail.issueDate || !DATE_PATTERN.test(detail.issueDate)) {
+      if (!detail.issueDate || !isCalendarDate(detail.issueDate)) {
         fields['detail.issueDate'] = 'must be a date in YYYY-MM-DD format';
       }
       if (!detail.issuePlace) {
