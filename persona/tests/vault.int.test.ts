@@ -1,19 +1,23 @@
 import request from 'supertest';
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
+import { registerVerified } from './support/otp';
 import { buildApp } from '../src/server';
 import { prisma } from '../src/infrastructure/db/prisma';
 
 // Vault API against the real (Docker) database.
 describe('vault API (integration)', () => {
-  const app = buildApp(buildContainer());
+  const app = buildApp(testContainer());
   const email = `vault-int-${Date.now()}@example.com`;
   const agent = request.agent(app);
 
   beforeAll(async () => {
     await prisma.user.deleteMany({ where: { email } });
-    await agent
-      .post('/api/auth/register')
-      .send({ firstName: 'Vault', lastName: 'Tester', email, password: 'password123' });
+    await registerVerified(agent, {
+      firstName: 'Vault',
+      lastName: 'Tester',
+      email,
+      password: 'password123',
+    });
   });
 
   afterAll(async () => {

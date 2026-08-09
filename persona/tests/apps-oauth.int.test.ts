@@ -1,6 +1,8 @@
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
-import { buildContainer, Container } from '../src/container';
+import { Container } from '../src/container';
+import { testContainer } from './support/app';
+import { interactionLogin, registerVerified } from './support/otp';
 import { buildApp } from '../src/server';
 import { createOidcProvider } from '../src/oidc/provider';
 import { prisma } from '../src/infrastructure/db/prisma';
@@ -23,16 +25,14 @@ describe('a console-registered app can run the real OAuth flow', () => {
   let clientSecret = '';
 
   beforeAll(async () => {
-    container = buildContainer();
+    container = testContainer();
     const provider = await createOidcProvider(container);
     app = buildApp(container, provider);
 
     await prisma.user.deleteMany({ where: { email } });
     agent = request.agent(app);
 
-    await agent
-      .post('/api/auth/register')
-      .send({ firstName: 'Ada', lastName: 'Lovelace', email, password });
+    await registerVerified(agent, { firstName: 'Ada', lastName: 'Lovelace', email, password });
 
     // Registration seeds a name and an email; add a username so the app can
     // ask for something outside the defaults.
@@ -89,10 +89,7 @@ describe('a console-registered app can run the real OAuth flow', () => {
       if (details.body.prompt === 'consent') return uid;
 
       if (details.body.prompt === 'login') {
-        const login = await agent
-          .post(`/interaction/${uid}/login`)
-          .set(asJson)
-          .send({ email, password });
+        const login = await interactionLogin(agent, uid, email, password);
         expect(login.status).toBe(200);
         uid = uidFrom((await agent.get(toPath(login.body.redirectTo))).headers.location);
         continue;

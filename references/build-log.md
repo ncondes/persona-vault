@@ -1,10 +1,10 @@
 # Build log — developer console, demo apps, OIDC persistence
 
-Written 8 August 2026, extended 9 August with the testing stretch. A record of
-what was built and, more importantly, **why each choice was made** — including
-the things that were wrong first and had to be fixed. Not submission material,
-but Chapter 4 (Implementation) and Chapter 5 (Evaluation) should be written from
-it.
+Written 8 August 2026, extended 9 August with the testing stretch and then with
+email verification. A record of what was built and, more importantly, **why each
+choice was made** — including the things that were wrong first and had to be
+fixed. Not submission material, but Chapter 4 (Implementation) and Chapter 5
+(Evaluation) should be written from it.
 
 Awaiting manual review. Nothing has been committed.
 
@@ -393,6 +393,181 @@ The root `.gitignore` also had no rule for `.next/`, `coverage/` or
 course to be committed. Added. Nothing had been committed yet, so no history
 needed rewriting.
 
+## The email verification stretch
+
+Written 9 August 2026. Anyone could create an account with an address they had
+never seen. For a project whose whole claim is that the data in the vault is a
+real person's real data, that undercuts everything: a vault full of invented
+addresses makes the sharing story a demo rather than a system.
+
+Sign-up and sign-in now both send a 6-digit code to the address being claimed.
+Ten minutes, five attempts, a 60-second resend cooldown, four sends per cycle,
+stored as a SHA-256 digest and compared in constant time. Delivery is Resend.
+
+### The account is created by the verification, not before it
+
+The obvious shape is an `email_verified` column on `user`: create the row, flag
+it false, block sign-in until the code lands. It was rejected because it does not
+actually solve the stated problem — the junk rows are still in the users table,
+just marked. Something then has to sweep them, and every query that touches users
+has to remember the flag exists.
+
+Instead a sign-up parks in `otp_challenge` — name, address and password hash —
+and `POST /api/auth/register/verify` is where `user` and the two vault items are
+created, inside the same transaction that was there before. The `user` table only
+ever gains rows for addresses somebody reached.
+
+Two things fell out of that for free. No migration backfill: accounts made before
+this existed were never unverified, so there is nothing to reconcile, and the
+seeded demo logins needed no change at all. And no `emailVerified` flag anywhere
+in the domain model, so no code has to remember to check it.
+
+The cost is a second table with two mutually exclusive column groups — a sign-up
+carries a name and a password hash, a sign-in carries a user id. A SQL `CHECK`
+constraint would have expressed that, but Prisma cannot model one and its drift
+detection would keep trying to remove it. So `CreateChallengeInput` is a
+discriminated union instead: the wrong combination will not compile.
+
+### Asking again returns the same challenge, silently
+
+The first version treated a repeat `POST /api/auth/register` as a resend, and
+threw 429 inside the cooldown. Two problems showed up, one from a failing test
+and one from thinking about who else can call the endpoint.
+
+The failing test was ordinary use: sign in, abandon the code screen, sign in
+again 30 seconds later, and get "wait 30 seconds" with no way to type the code
+already sitting in the inbox. A dead end reached by doing nothing wrong.
+
+The second is worse. If a repeat request could replace the parked details, then
+someone who knows an address could re-post a sign-up with **their own** password
+while the real person's code was in flight — and that person, entering the code
+from an email they genuinely did request, would create an account the attacker
+could log into.
+
+Both are fixed by the same rule: **a live challenge is immutable**. `issue`
+returns it untouched, sends nothing, and errors about nothing. Resending is a
+separate, explicit endpoint, and it is the only place the cooldown and the send
+cap are felt — because there, somebody asked, and deserves to know why no email
+arrived. The accepted cost is that a sign-up typed with the wrong password cannot
+be corrected until the challenge expires. Ten minutes of waiting beats either
+hole, and allowing a "cancel this challenge" call to fix it would just reopen the
+mail-flood one.
+
+### The consent screen was the obvious way around it
+
+`POST /interaction/:uid/login` — the sign-in on the way to an app's consent
+screen — shares `AuthService` with the web app's. Guarding only `/api/auth/login`
+would have left a fully working password-only door: start an authorization, sign
+in there, get the same session cookie. It gets the same two steps, including the
+built-in HTML fallback, which `renderOtp` now serves alongside `renderLogin`.
+`WEB_URL` is unset in the integration environment precisely so that path stays
+covered, so this is tested rather than assumed.
+
+One ordering bug came out of writing that: `/login` sent the code before it
+touched the interaction, so an authorization that had already expired still cost
+somebody an email. It now loads the interaction first and 410s before anything
+is sent.
+
+### Rate limiting without any rate-limiting machinery
+
+There is no `express-rate-limit`, no Redis, no middleware. Because a live
+challenge is returned rather than replaced, the front door cannot send a second
+email at all, and the resend endpoint carries the cooldown and the cap on the
+row itself. One address can be made to receive four emails per ten minutes, and
+that is the whole story.
+
+Deliberately not solved: per-IP limiting. Behind the Next proxy every request
+arrives from the same address unless `trust proxy` is configured, so keying on
+IP here would look like a control and be nothing of the kind. Password guessing
+on `/api/auth/login` is also still unthrottled — pre-existing, and out of scope
+for this stretch. Both belong in a deployment that terminates TLS properly.
+
+### Requiring a real key without making the tests need one
+
+`RESEND_API_KEY` is required by the config schema, so the app cannot start
+without it. That is the point: a fallback transport that silently swallowed
+codes in production would be worse than not booting.
+
+The complication is that integration tests boot the real container against the
+real database, so they would have tried to reach Resend on every sign-up. The
+fix is constructor injection, which the container already used everywhere:
+`buildContainer({ mailer })`. Tests pass a stub. Nothing in `src/` knows tests
+exist — no `NODE_ENV === 'test'` branch anywhere.
+
+Getting past the code itself needed a second seam, and the same rule applied.
+Rather than a test-only endpoint or a mailer that leaks the code, tests plant a
+known digest through Prisma using the app's own `hashOtp`, so the helper cannot
+drift from the thing it is standing in for.
+
+### The email is a pure function
+
+`renderOtpEmail` takes a code and a purpose and returns `{ subject, html, text }`.
+No transport, no I/O, so it unit-tests without a network and
+`npm run preview:email` writes both versions to disk to look at in a browser.
+
+It is built from the web app's own tokens, copied in as literal hex because mail
+clients get no stylesheet and no custom properties — the same white card on
+`#ededec`, the same teal, the same logo mark rebuilt in nested tables. The name
+is the only value in it that came from a form, so it is the only one escaped;
+running our own copy through the escaper turned "Confirm it's you" into an entity,
+which a test caught.
+
+### Bugs found while building
+
+1. **A hijack window in the first draft of resend** (above). Found by asking who
+   else can call `POST /api/auth/register`, not by a test.
+2. **A dead end in the cooldown** (above). Found by an integration test that
+   signed in twice in one file.
+3. **`/interaction/:uid/login` emailed a code for an expired authorization.**
+   Now checks the interaction first.
+4. **`Date.now()` during render**, in three components. The lint rule caught it.
+   Fixed properly rather than suppressed: the challenge already reports
+   `expiresAt`, so the send time is `expiresAt - TTL` — derived, pure, and now a
+   tested function in `src/lib/otp.ts`.
+
+Two more only showed up running the thing for real, against a live Resend key
+and a real inbox:
+
+5. **`docker-compose.yml` used `${RESEND_API_KEY:?...}`**, which reads well and
+   breaks everything: compose interpolates the whole file for *every* command,
+   so `npm run db:up` — which starts only Postgres, and which the entire test
+   suite depends on — failed with a missing-variable error. Now passed through
+   as `${RESEND_API_KEY:-}`; the API still refuses to boot without a key, and
+   `config.ts` names it when it does.
+6. **The code field did not come back after a wrong code.** Verifying disables
+   the input, which blurs it, and nothing focused it again — so the form cleared
+   itself and then ignored everything typed at it until you clicked. A dead end
+   reached by mistyping once. `autoFocus` only fires on mount, so it is now an
+   effect that focuses whenever the field is not disabled.
+
+7. **Two countries, one dial code, one broken dropdown.** Not a new bug — the
+   phone prefix picker has always mapped the country catalogue straight onto
+   `SelectItem value={c.dial}`, and `CA` and `US` both dial `+1`. Radix keys its
+   internal option list by value, so React reported a duplicate key; underneath
+   that, the list offered two rows that looked different and saved identically,
+   and the trigger showed whichever flag came first regardless of which was
+   clicked. A phone item stores only the dial, never the country, so the control
+   is a dial picker wearing a country list. `dialOptions` in `src/lib` now
+   collapses it to one row per dial, keeping the flag only where a dial belongs
+   to a single country and holding the column with a spacer where it does not.
+   Fixed in both places that render it: the sign-up contact step and the vault's
+   phone form.
+
+Only the first four were found by tests or by reading. The last three needed the
+browser, which is the argument for doing this pass at all — and the seventh had
+been sitting in the console since long before this stretch.
+
+### Deliberately not built
+
+- **"Trust this device for 30 days."** A code every time is stronger and simpler
+  to reason about, and this is a project about being careful with data.
+- **Fixing the sign-up enumeration.** `POST /api/auth/register` still answers 409
+  for an address that already has an account, so it can be used to test whether
+  someone has one. That was true before this stretch; changing it means making
+  sign-up answer identically either way, which is a different piece of work.
+- **A cancel-this-challenge endpoint.** It would fix the wrong-password wait, and
+  reopen the mail-flood hole. See above.
+
 ## The evidence the report wants
 
 One person, one vault, three purposes, nothing chosen by hand:
@@ -414,3 +589,9 @@ a context-aware suggestion.
    The current behaviour is defensible but the word "pause" suggests otherwise.
 3. Deleting an app cascades away its audit entries, so a person loses the record
    that it ever had their data. Correct, or should the log outlive the app?
+4. A sign-up typed with the wrong password cannot be corrected for ten minutes.
+   Is that acceptable, or is it worth a "start over" call and the mail-flood
+   surface that comes with it?
+5. Sign-up still answers 409 for an address that already has an account, which
+   makes it an account-existence oracle. Worth closing, given that closing it
+   means sign-up can no longer tell an honest person they already have one?

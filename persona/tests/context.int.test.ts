@@ -1,10 +1,10 @@
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
 import { prisma } from '../src/infrastructure/db/prisma';
 
 // Resolves claims against the real database using the seeded clinic/forum
 // clients and a freshly created test user.
 describe('context engine (integration)', () => {
-  const container = buildContainer();
+  const container = testContainer();
   const email = `context-int-${Date.now()}@example.com`;
   let userId = '';
 

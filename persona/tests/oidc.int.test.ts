@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
 import { buildApp } from '../src/server';
 import { createOidcProvider } from '../src/oidc/provider';
 import { prisma } from '../src/infrastructure/db/prisma';
@@ -8,7 +8,7 @@ describe('OIDC provider (integration)', () => {
   let app: ReturnType<typeof buildApp>;
 
   beforeAll(async () => {
-    const container = buildContainer();
+    const container = testContainer();
     const provider = await createOidcProvider(container);
     app = buildApp(container, provider);
   });

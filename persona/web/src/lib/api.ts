@@ -9,6 +9,7 @@ import type {
   Interaction,
   NewApp,
   NewVaultItem,
+  OtpChallenge,
   PreviewResult,
   Settings,
   User,
@@ -58,14 +59,21 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return (options.raw ? payload : payload.data) as T;
 }
 
-// Auth
+// Auth. Both flows are two calls: the first sends a code to the address, the
+// second is where the account (or the session) actually appears.
 export const register = (firstName: string, lastName: string, email: string, password: string) =>
-  request<User>("/api/auth/register", {
+  request<OtpChallenge>("/api/auth/register", {
     method: "POST",
     body: { firstName, lastName, email, password },
   });
+export const verifySignup = (challengeId: string, code: string) =>
+  request<User>("/api/auth/register/verify", { method: "POST", body: { challengeId, code } });
 export const login = (email: string, password: string) =>
-  request<User>("/api/auth/login", { method: "POST", body: { email, password } });
+  request<OtpChallenge>("/api/auth/login", { method: "POST", body: { email, password } });
+export const verifyLogin = (challengeId: string, code: string) =>
+  request<User>("/api/auth/login/verify", { method: "POST", body: { challengeId, code } });
+export const resendCode = (challengeId: string) =>
+  request<OtpChallenge>("/api/auth/otp/resend", { method: "POST", body: { challengeId } });
 export const logout = () => request<void>("/api/auth/logout", { method: "POST" });
 export const getMe = () => request<User>("/api/auth/me");
 
@@ -106,9 +114,15 @@ export const getAppActivity = (id: string) => request<ActivityView>(`/api/apps/$
 export const getInteraction = (uid: string) =>
   request<Interaction>(`/interaction/${uid}`, { raw: true });
 export const interactionLogin = (uid: string, email: string, password: string) =>
-  request<{ redirectTo: string }>(`/interaction/${uid}/login`, {
+  request<OtpChallenge>(`/interaction/${uid}/login`, {
     method: "POST",
     body: { email, password },
+    raw: true,
+  });
+export const interactionVerify = (uid: string, challengeId: string, code: string) =>
+  request<{ redirectTo: string }>(`/interaction/${uid}/verify`, {
+    method: "POST",
+    body: { challengeId, code },
     raw: true,
   });
 export const interactionDecision = (uid: string, decision: Decision) =>

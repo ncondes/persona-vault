@@ -10,6 +10,9 @@ build/
 # test output
 coverage/
 
+# email templates rendered for a look (npm run preview:email)
+persona/.preview/
+
 # generated code (Prisma client)
 persona/src/generated/
 

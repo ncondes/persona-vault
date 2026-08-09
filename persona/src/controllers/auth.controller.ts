@@ -5,6 +5,7 @@ import { User } from '../domain/models';
 import { AUTH_COOKIE, authCookieOptions, authCookieSetOptions } from '../infrastructure/auth/cookie';
 import { signAuthToken } from '../infrastructure/auth/token';
 import { AuthService } from '../services/auth.service';
+import { IssuedChallenge, OtpService } from '../services/otp.service';
 
 interface PublicUser {
   id: string;
@@ -20,24 +21,49 @@ function toPublicUser(user: User): PublicUser {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly otpService: OtpService,
     private readonly users: UserRepository,
   ) {}
 
+  // 202, not 201: the request was taken, but nothing exists yet. Whether an
+  // account appears depends on the code that just went out by email.
+  private accepted(res: Response, challenge: IssuedChallenge): void {
+    res.status(202).json({ data: challenge });
+  }
+
   register = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.authService.register(
-      req.body.firstName,
-      req.body.lastName,
-      req.body.email,
-      req.body.password,
+    this.accepted(
+      res,
+      await this.authService.startRegistration(
+        req.body.firstName,
+        req.body.lastName,
+        req.body.email,
+        req.body.password,
+      ),
+    );
+  };
+
+  verifyRegistration = async (req: Request, res: Response): Promise<void> => {
+    const user = await this.authService.completeRegistration(
+      req.body.challengeId,
+      req.body.code,
     );
     res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);
     res.status(201).json({ data: toPublicUser(user) });
   };
 
   login = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.authService.login(req.body.email, req.body.password);
+    this.accepted(res, await this.authService.startLogin(req.body.email, req.body.password));
+  };
+
+  verifyLogin = async (req: Request, res: Response): Promise<void> => {
+    const user = await this.authService.completeLogin(req.body.challengeId, req.body.code);
     res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);
     res.json({ data: toPublicUser(user) });
+  };
+
+  resendCode = async (req: Request, res: Response): Promise<void> => {
+    this.accepted(res, await this.otpService.resend(req.body.challengeId));
   };
 
   logout = async (_req: Request, res: Response): Promise<void> => {

@@ -1,6 +1,8 @@
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
-import { buildContainer, Container } from '../src/container';
+import { Container } from '../src/container';
+import { testContainer } from './support/app';
+import { interactionLogin } from './support/otp';
 import { buildApp } from '../src/server';
 import { DEMO_CLIENTS } from '../src/constants/clients';
 import { createOidcProvider } from '../src/oidc/provider';
@@ -23,7 +25,7 @@ describe('Connect with Persona — end to end', () => {
   let counter = 0;
 
   beforeAll(async () => {
-    container = buildContainer();
+    container = testContainer();
     const provider = await createOidcProvider(container);
     app = buildApp(container, provider);
   });
@@ -112,10 +114,7 @@ describe('Connect with Persona — end to end', () => {
       .query({ client_id: clientId, response_type: 'code', scope, redirect_uri: redirectUri, state: 'xyz' });
     const loginUid = uidFrom(res.headers.location);
 
-    res = await agent
-      .post(`/interaction/${loginUid}/login`)
-      .set(asJson)
-      .send({ email, password });
+    res = await interactionLogin(agent, loginUid, email, password);
     expect(res.status).toBe(200);
 
     res = await agent.get(toPath(res.body.redirectTo));

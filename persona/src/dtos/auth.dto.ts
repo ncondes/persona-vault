@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { OTP_LENGTH } from '../constants/otp';
 
 export const registerSchema = z.object({
   firstName: z.string().min(1).max(60),
@@ -12,5 +13,18 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+// The code is digits only, so anything else is rejected before a lookup happens
+// and never costs the caller one of its five attempts.
+export const verifySchema = z.object({
+  challengeId: z.string().min(1),
+  code: z.string().regex(new RegExp(`^\\d{${OTP_LENGTH}}$`)),
+});
+
+export const resendSchema = z.object({
+  challengeId: z.string().min(1),
+});
+
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
+export type VerifyDto = z.infer<typeof verifySchema>;
+export type ResendDto = z.infer<typeof resendSchema>;

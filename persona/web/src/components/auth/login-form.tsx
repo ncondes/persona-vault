@@ -2,35 +2,107 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { login, ApiError } from "@/lib/api";
+import { login, verifyLogin, ApiError } from "@/lib/api";
 import { useStrings } from "@/lib/locale";
+import { maskEmail } from "@/lib/otp";
+import type { OtpChallenge } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
+import { OtpFields, ResendCode } from "./otp-fields";
+
+const CARD = "w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm";
 
 export function LoginForm() {
   const t = useStrings();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const message = (err: unknown) => {
+    const code = err instanceof ApiError ? err.code : "";
+    return t.auth.errors[code] ?? t.common.somethingWrong;
+  };
+
+  // The password is right, but nobody is signed in yet: the session cookie
+  // arrives with the code, not with this.
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await login(email, password);
+      setChallenge(await login(email, password));
+    } catch (err) {
+      setError(message(err));
+    }
+    setBusy(false);
+  };
+
+  const verify = async (value: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await verifyLogin(challenge!.challengeId, value);
       window.location.assign("/vault");
     } catch (err) {
-      const code = err instanceof ApiError ? err.code : "";
-      setError(t.auth.errors[code] ?? t.common.somethingWrong);
+      setError(message(err));
+      setCode("");
       setBusy(false);
     }
   };
 
+  if (challenge) {
+    return (
+      <div className={CARD}>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.auth.otp.title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t.auth.otp.lead(maskEmail(challenge.email))}
+        </p>
+
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void verify(code);
+          }}
+          className="mt-7 space-y-4"
+        >
+          <OtpFields
+            value={code}
+            onChange={setCode}
+            onComplete={(value) => void verify(value)}
+            disabled={busy}
+          />
+          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
+          <Button size="xl" type="submit" className="w-full" disabled={busy || code.length < 6}>
+            {t.auth.otp.verify}
+          </Button>
+        </form>
+
+        <div className="mt-5">
+          <ResendCode challenge={challenge} />
+        </div>
+        <p className="mt-2 text-center text-sm">
+          <button
+            type="button"
+            className="text-brand hover:underline"
+            onClick={() => {
+              setChallenge(null);
+              setCode("");
+              setError(null);
+            }}
+          >
+            {t.auth.otp.back}
+          </button>
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
+    <div className={CARD}>
       <h1 className="text-2xl font-semibold tracking-tight">{t.auth.signIn}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t.auth.signInLead}</p>
 

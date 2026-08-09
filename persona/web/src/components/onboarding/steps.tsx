@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Plus, X } from "lucide-react";
-import { ApiError, createItem, register } from "@/lib/api";
+import { ApiError, createItem, register, verifySignup } from "@/lib/api";
+import { dialOptions } from "@/lib/dial-codes";
 import { useStrings } from "@/lib/locale";
+import { maskEmail } from "@/lib/otp";
 import type { Strings } from "@/lib/strings";
-import type { Catalog } from "@/lib/types";
+import type { Catalog, OtpChallenge } from "@/lib/types";
+import { OtpFields, ResendCode } from "@/components/auth/otp-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,12 +38,18 @@ function errorText(t: Strings, err: unknown): string {
   return t.common.somethingWrong;
 }
 
+// Collects the essentials and asks for a code. Nothing is created yet — the
+// account is born in VerifyStep, once the address has proved it is real.
 export function EssentialsStep({
   total,
   done,
   onDone,
   onName,
-}: StepProps & { onName: (fullName: string) => void }) {
+  onChallenge,
+}: StepProps & {
+  onName: (fullName: string) => void;
+  onChallenge: (challenge: OtpChallenge) => void;
+}) {
   const t = useStrings();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -54,9 +63,10 @@ export function EssentialsStep({
     setBusy(true);
     setError(null);
     try {
-      await register(firstName, lastName, email, password);
+      const challenge = await register(firstName, lastName, email, password);
       onName(`${firstName} ${lastName}`.trim());
-      onDone(2); // the vault starts with name + email
+      onChallenge(challenge);
+      onDone(0); // nothing in the vault yet — that happens once the code lands
     } catch (err) {
       setError(errorText(t, err));
       setBusy(false);
@@ -99,6 +109,60 @@ export function EssentialsStep({
           onChange={(e) => setPassword(e.target.value)}
         />
       </Field>
+    </StepShell>
+  );
+}
+
+// Where the account actually appears. Until the code comes back there is no
+// user row, no vault, and nothing to clean up if the person walks away.
+export function VerifyStep({
+  total,
+  done,
+  onDone,
+  onBack,
+  challenge,
+}: StepProps & { challenge: OtpChallenge }) {
+  const t = useStrings();
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const verify = async (value: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await verifySignup(challenge.challengeId, value);
+      onDone(2); // the vault starts with name + email
+    } catch (err) {
+      setError(errorText(t, err));
+      setCode("");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <StepShell
+      total={total}
+      done={done}
+      title={t.auth.otp.title}
+      lead={t.auth.otp.lead(maskEmail(challenge.email))}
+      onBack={onBack}
+      busy={busy || code.length < 6}
+      error={error}
+      submitLabel={t.auth.otp.verify}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void verify(code);
+      }}
+      footer={<ResendCode challenge={challenge} />}
+    >
+      <OtpFields
+        value={code}
+        onChange={setCode}
+        onComplete={(value) => void verify(value)}
+        disabled={busy}
+      />
+      <p className="text-center text-sm text-muted-foreground">{t.auth.otp.expires}</p>
     </StepShell>
   );
 }
@@ -166,10 +230,17 @@ export function ContactStep({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(catalog?.countries ?? []).map((c) => (
-                <SelectItem key={c.code} value={c.dial}>
+              {dialOptions(catalog?.countries ?? []).map((option) => (
+                <SelectItem key={option.dial} value={option.dial}>
                   <span className="flex items-center gap-2">
-                    <Flag code={c.code} /> {c.dial}
+                    {option.code ? (
+                      <Flag code={option.code} />
+                    ) : (
+                      // Keeps the dials in one column when a shared code has no
+                      // flag to show.
+                      <span className="h-3.5 w-5 shrink-0" />
+                    )}
+                    {option.dial}
                   </span>
                 </SelectItem>
               ))}

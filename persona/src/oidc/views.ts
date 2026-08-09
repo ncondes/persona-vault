@@ -1,15 +1,11 @@
 import { SCOPE_CATALOG } from '../constants/scopes';
+import { escapeHtml } from '../infrastructure/html/escape';
 
 // Derived from the catalog so this fallback can never drift from the scopes the
 // provider actually supports.
 const SCOPE_LABELS = new Map(SCOPE_CATALOG.map((meta) => [meta.scope, meta.label]));
 
-export function escapeHtml(value: string): string {
-  return value.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
-  );
-}
+export { escapeHtml };
 
 export function page(title: string, body: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -56,6 +52,29 @@ export function renderLogin(uid: string, error?: string): string {
       <button class="primary" type="submit">Sign in</button>
       ${error ? `<p class="err">${escapeHtml(error)}</p>` : ''}
     </form>`);
+}
+
+// The second step of the fallback sign-in. `challengeId` and `email` ride along
+// as hidden fields because this page has no client-side state to hold them.
+export function renderOtp(
+  uid: string,
+  challengeId: string,
+  email: string,
+  error?: string,
+): string {
+  return page('Check your email', `
+    <h1>Check your email</h1>
+    <p>We sent a 6-digit code to <strong>${escapeHtml(email)}</strong>.</p>
+    <form method="post" action="/interaction/${encodeURIComponent(uid)}/verify">
+      <input type="hidden" name="challengeId" value="${escapeHtml(challengeId)}">
+      <input type="hidden" name="email" value="${escapeHtml(email)}">
+      <label for="code">Verification code</label>
+      <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code"
+             pattern="[0-9]{6}" maxlength="6" required>
+      <button class="primary" type="submit">Verify</button>
+      ${error ? `<p class="err">${escapeHtml(error)}</p>` : ''}
+    </form>
+    <p><a href="/interaction/${encodeURIComponent(uid)}">Start again</a></p>`);
 }
 
 export function renderConsent(uid: string, clientId: string, scope: string): string {

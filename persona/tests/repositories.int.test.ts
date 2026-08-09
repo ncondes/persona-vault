@@ -1,10 +1,10 @@
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
 import { prisma } from '../src/infrastructure/db/prisma';
 
 // Integration tests: these talk to the real (Docker) database. Run with
 // `npm run db:up` first, then `npm run test:int`.
 describe('repositories (integration)', () => {
-  const container = buildContainer();
+  const container = testContainer();
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { startsWith: 'repo-int-' } } });

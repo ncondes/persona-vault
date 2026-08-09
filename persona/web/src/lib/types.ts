@@ -160,6 +160,14 @@ export interface User {
   createdAt: string;
 }
 
+// A sign-up or sign-in waiting on its emailed code. The code is deliberately
+// not in here: the only way to get it is to open the inbox.
+export interface OtpChallenge {
+  challengeId: string;
+  email: string;
+  expiresAt: string;
+}
+
 export interface SharedScope {
   scope: string;
   sensitive: boolean;

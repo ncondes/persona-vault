@@ -1,37 +1,90 @@
 "use client";
 
 import { useState } from "react";
-import { ApiError, interactionLogin } from "@/lib/api";
+import { ApiError, interactionLogin, interactionVerify } from "@/lib/api";
 import { useStrings } from "@/lib/locale";
-import type { LoginPrompt } from "@/lib/types";
+import { maskEmail } from "@/lib/otp";
+import type { LoginPrompt, OtpChallenge } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
+import { OtpFields, ResendCode } from "@/components/auth/otp-fields";
 import { ConsentHeader } from "./consent-header";
 
+const CARD = "w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm";
+
+// Signing in on the way to an app's consent screen. It gets the same code step
+// as the front door — otherwise this would be the way around it.
 export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
   const t = useStrings();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const message = (err: unknown) => {
+    const code = err instanceof ApiError ? err.code : "";
+    return t.auth.errors[code] ?? t.common.somethingWrong;
+  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const { redirectTo } = await interactionLogin(prompt.uid, email, password);
+      setChallenge(await interactionLogin(prompt.uid, email, password));
+    } catch (err) {
+      setError(message(err));
+    }
+    setBusy(false);
+  };
+
+  const verify = async (value: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { redirectTo } = await interactionVerify(prompt.uid, challenge!.challengeId, value);
       window.location.assign(redirectTo);
     } catch (err) {
-      const code = err instanceof ApiError ? err.code : "";
-      setError(t.auth.errors[code] ?? t.common.somethingWrong);
+      setError(message(err));
+      setCode("");
       setBusy(false);
     }
   };
 
+  if (challenge) {
+    return (
+      <div className={CARD}>
+        <ConsentHeader client={prompt.client} subtitle={t.auth.otp.lead(maskEmail(challenge.email))} />
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void verify(code);
+          }}
+          className="mt-6 space-y-4"
+        >
+          <OtpFields
+            value={code}
+            onChange={setCode}
+            onComplete={(value) => void verify(value)}
+            disabled={busy}
+          />
+          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
+          <Button size="xl" type="submit" className="w-full" disabled={busy || code.length < 6}>
+            {t.auth.otp.verify}
+          </Button>
+        </form>
+        <div className="mt-5">
+          <ResendCode challenge={challenge} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm">
+    <div className={CARD}>
       <ConsentHeader client={prompt.client} subtitle={t.auth.signInLead} />
       <form onSubmit={submit} className="mt-6 space-y-4">
         <Field label={t.auth.email} htmlFor="email">

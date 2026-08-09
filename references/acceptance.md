@@ -6,7 +6,7 @@ Each row is a claim the project makes, and the test that proves it. Produced by
 running `persona/tests/acceptance.int.test.ts` against a real PostgreSQL database
 and a real OpenID Connect authorization-code flow — not a simulation.
 
-**21 of 21 passing.**
+**29 of 29 passing.**
 
 ## the right data for the context
 
@@ -47,6 +47,19 @@ and a real OpenID Connect authorization-code flow — not a simulation.
 | hides one developer’s app from another | ✅ pass |
 | refuses to start an authorization for a paused app | ✅ pass |
 | leaves an app with no working tokens once it is deleted | ✅ pass |
+
+## proving a real person is behind the account
+
+| Requirement | Result |
+|---|---|
+| creates no account until the code emailed to the address comes back | ✅ pass |
+| creates the account and starts the vault once the code is entered | ✅ pass |
+| leaves nothing behind when the code is wrong | ✅ pass |
+| never stores the code in a form anyone could read back | ✅ pass |
+| gives up on a code after five wrong guesses | ✅ pass |
+| refuses a code that has expired | ✅ pass |
+| asks for a code at sign-in as well, not just at sign-up | ✅ pass |
+| asks for a code on the consent screen too, so it is no way around | ✅ pass |
 
 ## deleting an account
 

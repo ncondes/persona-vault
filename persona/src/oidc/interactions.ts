@@ -5,13 +5,27 @@ import { AppError } from '../domain/errors';
 import { AUTH_COOKIE, authCookieSetOptions } from '../infrastructure/auth/cookie';
 import { signAuthToken, verifyAuthToken } from '../infrastructure/auth/token';
 import { revokeGrant } from './grants';
-import { renderConsent, renderExpired, renderLogin } from './views';
+import { renderConsent, renderExpired, renderLogin, renderOtp } from './views';
 
 // The interaction endpoints serve two callers: the frontend consent app
 // (JSON, chosen via the Accept header) and plain HTML forms as a fallback.
 function wantsJson(req: Request): boolean {
   return Boolean(req.headers.accept?.includes('application/json'));
 }
+
+// Signing in can now fail for more reasons than a wrong password — the code can
+// be wrong, spent, or never sent — so the real code and status are kept instead
+// of flattening everything to INVALID_CREDENTIALS.
+function failure(err: unknown): { status: number; code: string; message: string } {
+  if (err instanceof AppError) {
+    return { status: err.statusCode, code: err.code, message: err.message };
+  }
+  return { status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' };
+}
+
+// Failures that leave nothing to retry against: the code form would be a dead
+// end, so the fallback goes back to the password step instead.
+const SPENT = ['CHALLENGE_NOT_FOUND', 'OTP_EXPIRED', 'OTP_TOO_MANY_ATTEMPTS'];
 
 // Wraps an interaction handler so a stale/expired interaction (oidc-provider
 // throws SessionNotFound) gets a friendly response instead of crashing.
@@ -124,21 +138,64 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
     }),
   );
 
-  // Authenticate the user and complete the login interaction.
+  // Check the password and email a code. No session is issued here — the
+  // consent screen is a sign-in like any other, so it gets the same second step
+  // rather than a way around it.
   router.post(
     '/:uid/login',
     body,
     interactionHandler(async (req, res) => {
-      let user;
+      const uid = String(req.params.uid);
+      // Checked before the password, so a request that has already expired costs
+      // nobody an email. It throws SessionNotFound, which the wrapper turns into
+      // the friendly 410.
+      await provider.interactionDetails(req, res);
+
+      let challenge;
       try {
-        user = await container.authService.login(req.body.email, req.body.password);
-      } catch {
+        challenge = await container.authService.startLogin(req.body.email, req.body.password);
+      } catch (err) {
+        const failed = failure(err);
         if (wantsJson(req)) {
           return res
-            .status(401)
-            .json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
+            .status(failed.status)
+            .json({ error: { code: failed.code, message: failed.message } });
         }
-        return res.status(401).send(renderLogin(String(req.params.uid), 'Invalid email or password'));
+        return res.status(failed.status).send(renderLogin(uid, failed.message));
+      }
+
+      if (wantsJson(req)) {
+        return res.json(challenge);
+      }
+      return res.send(renderOtp(uid, challenge.challengeId, challenge.email));
+    }),
+  );
+
+  // The emailed code, and the step that actually completes the login.
+  router.post(
+    '/:uid/verify',
+    body,
+    interactionHandler(async (req, res) => {
+      const uid = String(req.params.uid);
+      const challengeId = String(req.body.challengeId ?? '');
+      let user;
+      try {
+        user = await container.authService.completeLogin(challengeId, String(req.body.code ?? ''));
+      } catch (err) {
+        const failed = failure(err);
+        if (wantsJson(req)) {
+          return res
+            .status(failed.status)
+            .json({ error: { code: failed.code, message: failed.message } });
+        }
+        const email = String(req.body.email ?? '');
+        return res
+          .status(failed.status)
+          .send(
+            SPENT.includes(failed.code)
+              ? renderLogin(uid, failed.message)
+              : renderOtp(uid, challengeId, email, failed.message),
+          );
       }
       res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);
       return finish(req, res, { login: { accountId: user.id } }, false);

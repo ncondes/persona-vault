@@ -1,11 +1,12 @@
 import request from 'supertest';
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
+import { registerVerified } from './support/otp';
 import { buildApp } from '../src/server';
 import { prisma } from '../src/infrastructure/db/prisma';
 
 // The developer console API surface: ownership, secret handling and validation.
 describe('apps API (integration)', () => {
-  const container = buildContainer();
+  const container = testContainer();
   const app = buildApp(container);
   const stamp = Date.now();
   const email = `apps-int-${stamp}@example.com`;
@@ -25,12 +26,18 @@ describe('apps API (integration)', () => {
 
   beforeAll(async () => {
     await prisma.user.deleteMany({ where: { email: { in: [email, otherEmail] } } });
-    await agent
-      .post('/api/auth/register')
-      .send({ firstName: 'Dev', lastName: 'One', email, password: 'password123' });
-    await other
-      .post('/api/auth/register')
-      .send({ firstName: 'Dev', lastName: 'Two', email: otherEmail, password: 'password123' });
+    await registerVerified(agent, {
+      firstName: 'Dev',
+      lastName: 'One',
+      email,
+      password: 'password123',
+    });
+    await registerVerified(other, {
+      firstName: 'Dev',
+      lastName: 'Two',
+      email: otherEmail,
+      password: 'password123',
+    });
   });
 
   afterAll(async () => {

@@ -51,6 +51,14 @@ enum ClientStatus {
   @@map("client_status")
 }
 
+// Which flow an emailed code is standing in front of.
+enum OtpPurpose {
+  signup
+  login
+
+  @@map("otp_purpose")
+}
+
 // A person who owns a vault in Persona.
 model User {
   id               String       @id @default(uuid())
@@ -64,8 +72,37 @@ model User {
   consents         Consent[]
   auditEntries     AuditEntry[]
   apps             Client[]
+  otpChallenges    OtpChallenge[]
 
   @@map("user")
+}
+
+// A sign-up or sign-in waiting on the code that was emailed to `email`.
+//
+// A sign-up lives here in full — name, address and password hash — until the
+// code comes back, so an address nobody reached never reaches the `user` table.
+// A sign-in only points at the account it will open. The two column groups are
+// mutually exclusive; `CreateChallengeInput` in the repository interface is a
+// discriminated union so the wrong combination cannot be written.
+model OtpChallenge {
+  id           String     @id @default(uuid())
+  purpose      OtpPurpose
+  email        String
+  userId       String?    @map("user_id")
+  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName    String?    @map("first_name")
+  lastName     String?    @map("last_name")
+  passwordHash String?    @map("password_hash")
+  codeHash     String     @map("code_hash")
+  expiresAt    DateTime   @map("expires_at")
+  attempts     Int        @default(0)
+  sends        Int        @default(1)
+  lastSentAt   DateTime   @map("last_sent_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("otp_challenge")
 }
 
 // One piece of data in the user's vault. A kind can hold several values, each

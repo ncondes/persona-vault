@@ -2,8 +2,11 @@ import { AccountController } from './controllers/account.controller';
 import { AppController } from './controllers/app.controller';
 import { AuthController } from './controllers/auth.controller';
 import { HealthController } from './controllers/health.controller';
+import { config } from './config/config';
+import { Mailer } from './domain/interfaces/mailer';
 import { Repositories, UnitOfWork } from './domain/interfaces/unit-of-work';
 import { prisma } from './infrastructure/db/prisma';
+import { ResendMailer } from './infrastructure/mail/resend.mailer';
 import { createRepositories } from './repositories';
 import { PrismaUnitOfWork } from './repositories/unit-of-work';
 import { AccountService, AccountServiceImpl } from './services/account.service';
@@ -11,14 +14,24 @@ import { AuthService, AuthServiceImpl } from './services/auth.service';
 import { ClientService, ClientServiceImpl } from './services/client.service';
 import { ContextService, ContextServiceImpl } from './services/context.service';
 import { InteractionService } from './services/interaction.service';
+import { OtpService, OtpServiceImpl } from './services/otp.service';
 import { VaultService, VaultServiceImpl } from './services/vault.service';
 import { VaultController } from './controllers/vault.controller';
+
+// The one dependency worth swapping from outside. Integration tests boot the
+// real container against the real database, and without this they would send
+// mail — or fail trying — on every sign-up.
+export interface ContainerOverrides {
+  mailer?: Mailer;
+}
 
 // Wires the application's dependencies together at startup.
 // Order: infrastructure -> repositories -> services -> controllers.
 export class Container {
   readonly repositories: Repositories;
   readonly unitOfWork: UnitOfWork;
+  readonly mailer: Mailer;
+  readonly otpService: OtpService;
   readonly authService: AuthService;
   readonly vaultService: VaultService;
   readonly contextService: ContextService;
@@ -31,13 +44,21 @@ export class Container {
   readonly accountController: AccountController;
   readonly appController: AppController;
 
-  constructor() {
+  constructor(overrides: ContainerOverrides = {}) {
+    // infrastructure
+    this.mailer = overrides.mailer ?? new ResendMailer(config.resendApiKey, config.emailFrom);
+
     // repositories (bound to the shared client for non-transactional work)
     this.repositories = createRepositories(prisma);
     this.unitOfWork = new PrismaUnitOfWork(prisma);
 
     // services
-    this.authService = new AuthServiceImpl(this.repositories.users, this.unitOfWork);
+    this.otpService = new OtpServiceImpl(this.repositories.otpChallenges, this.mailer);
+    this.authService = new AuthServiceImpl(
+      this.repositories.users,
+      this.unitOfWork,
+      this.otpService,
+    );
     this.vaultService = new VaultServiceImpl(this.repositories, this.unitOfWork);
     this.contextService = new ContextServiceImpl(
       this.repositories.vault,
@@ -50,13 +71,17 @@ export class Container {
 
     // controllers
     this.healthController = new HealthController();
-    this.authController = new AuthController(this.authService, this.repositories.users);
+    this.authController = new AuthController(
+      this.authService,
+      this.otpService,
+      this.repositories.users,
+    );
     this.vaultController = new VaultController(this.vaultService);
     this.accountController = new AccountController(this.accountService);
     this.appController = new AppController(this.clientService);
   }
 }
 
-export function buildContainer(): Container {
-  return new Container();
+export function buildContainer(overrides: ContainerOverrides = {}): Container {
+  return new Container(overrides);
 }

@@ -1,6 +1,8 @@
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
-import { buildContainer, Container } from '../src/container';
+import { Container } from '../src/container';
+import { testContainer } from './support/app';
+import { TEST_CODE, forceCode, interactionLogin, loginVerified } from './support/otp';
 import { DEMO_CLIENTS } from '../src/constants/clients';
 import { hashPassword } from '../src/infrastructure/auth/password';
 import { prisma } from '../src/infrastructure/db/prisma';
@@ -21,7 +23,7 @@ describe('OIDC interactions — the unhappy paths', () => {
   const uidFrom = (location: string) => location.split('/interaction/')[1];
 
   beforeAll(async () => {
-    container = buildContainer();
+    container = testContainer();
     app = buildApp(container, await createOidcProvider(container));
   });
 
@@ -74,10 +76,50 @@ describe('OIDC interactions — the unhappy paths', () => {
       expect(bad.body.error.code).toBe('INVALID_CREDENTIALS');
 
       // The same uid still works, so the person can simply try again.
-      const good = await agent
+      const good = await interactionLogin(agent, uid, email, password);
+      expect(good.status).toBe(200);
+      expect(good.body.redirectTo).toBeTruthy();
+    });
+
+    // The consent screen is a sign-in like any other, so it gets the same code
+    // step. Without this it would be a way around the whole thing.
+    it('asks for a code rather than signing in on the password alone', async () => {
+      const agent = request.agent(app);
+      const email = await makeUser();
+      const uid = await startAuth(agent);
+
+      const res = await agent
         .post(`/interaction/${uid}/login`)
         .set(asJson)
         .send({ email, password });
+
+      expect(res.status).toBe(200);
+      expect(res.body.challengeId).toBeTruthy();
+      expect(res.body.email).toBe(email);
+      // Not signed in yet: no session cookie, and no way past the login prompt.
+      expect(res.body.redirectTo).toBeUndefined();
+      expect(res.headers['set-cookie']).toBeUndefined();
+    });
+
+    it('rejects a wrong code and leaves the interaction alone', async () => {
+      const agent = request.agent(app);
+      const email = await makeUser();
+      const uid = await startAuth(agent);
+
+      const started = await agent
+        .post(`/interaction/${uid}/login`)
+        .set(asJson)
+        .send({ email, password });
+      const bad = await agent
+        .post(`/interaction/${uid}/verify`)
+        .set(asJson)
+        .send({ challengeId: started.body.challengeId, code: '999999' });
+
+      expect(bad.status).toBe(401);
+      expect(bad.body.error.code).toBe('OTP_INVALID');
+
+      // The right code still finishes it.
+      const good = await interactionLogin(agent, uid, email, password);
       expect(good.status).toBe(200);
       expect(good.body.redirectTo).toBeTruthy();
     });
@@ -111,6 +153,33 @@ describe('OIDC interactions — the unhappy paths', () => {
       expect(res.text).toContain('Invalid email or password');
       expect(res.text).toContain(`/interaction/${uid}/login`);
     });
+
+    // A wrong code keeps the form up so the person can try again; a spent one
+    // has nothing left to try against, so it goes back to the password step.
+    it('re-renders the code form for a form post, and gives up once it is spent', async () => {
+      const agent = request.agent(app);
+      const email = await makeUser();
+      const uid = await startAuth(agent);
+
+      await agent.post(`/interaction/${uid}/login`).type('form').send({ email, password });
+      const challenge = await prisma.otpChallenge.findFirst({ where: { email } });
+
+      const wrong = await agent
+        .post(`/interaction/${uid}/verify`)
+        .type('form')
+        .send({ challengeId: challenge!.id, code: '999999', email });
+      expect(wrong.status).toBe(401);
+      expect(wrong.text).toContain('Check your email');
+      expect(wrong.text).toContain('That code is not right');
+
+      const gone = await agent
+        .post(`/interaction/${uid}/verify`)
+        .type('form')
+        .send({ challengeId: 'no-such-challenge', code: '999999', email });
+      expect(gone.status).toBe(401);
+      expect(gone.text).toContain('Sign in');
+      expect(gone.text).toContain(`/interaction/${uid}/login`);
+    });
   });
 
   describe('declining', () => {
@@ -119,10 +188,7 @@ describe('OIDC interactions — the unhappy paths', () => {
       const email = await makeUser();
       const uid = await startAuth(agent);
 
-      const login = await agent
-        .post(`/interaction/${uid}/login`)
-        .set(asJson)
-        .send({ email, password });
+      const login = await interactionLogin(agent, uid, email, password);
       const consent = await agent.get(new URL(login.body.redirectTo).pathname);
       const consentUid = uidFrom(consent.headers.location);
 
@@ -170,8 +236,8 @@ describe('OIDC interactions — the unhappy paths', () => {
       },
     );
 
-    // /login checks the password before it touches the interaction, so a dead
-    // uid only surfaces once the credentials are good.
+    // /login checks the interaction before the password, so a dead uid is caught
+    // before anyone is sent a code they could never use.
     it('answers a POST to /login on a dead interaction with 410', async () => {
       const email = await makeUser();
 
@@ -182,6 +248,7 @@ describe('OIDC interactions — the unhappy paths', () => {
 
       expect(res.status).toBe(410);
       expect(res.body.error.code).toBe('INTERACTION_EXPIRED');
+      expect(await prisma.otpChallenge.count({ where: { email } })).toBe(0);
     });
 
     // A decision posted while the interaction is still at the login step has no
@@ -205,10 +272,24 @@ describe('OIDC interactions — the unhappy paths', () => {
       const email = await makeUser();
       const uid = await startAuth(agent);
 
-      const login = await agent.post(`/interaction/${uid}/login`).type('form').send({ email, password });
-      expect(login.status).toBe(303);
+      // The password step now renders the code form instead of finishing.
+      const login = await agent
+        .post(`/interaction/${uid}/login`)
+        .type('form')
+        .send({ email, password });
+      expect(login.status).toBe(200);
+      expect(login.text).toContain('Check your email');
+      expect(login.text).toContain(`/interaction/${uid}/verify`);
 
-      const resume = await agent.get(new URL(login.headers.location).pathname);
+      const challenge = await prisma.otpChallenge.findFirst({ where: { email } });
+      await forceCode(challenge!.id);
+      const verified = await agent
+        .post(`/interaction/${uid}/verify`)
+        .type('form')
+        .send({ challengeId: challenge!.id, code: TEST_CODE, email });
+      expect(verified.status).toBe(303);
+
+      const resume = await agent.get(new URL(verified.headers.location).pathname);
       const consentUid = uidFrom(resume.headers.location);
 
       const consent = await agent.get(`/interaction/${consentUid}`);
@@ -242,10 +323,7 @@ describe('OIDC interactions — the unhappy paths', () => {
       const email = await makeUser();
       const uid = await startAuth(agent);
 
-      const login = await agent
-        .post(`/interaction/${uid}/login`)
-        .set(asJson)
-        .send({ email, password });
+      const login = await interactionLogin(agent, uid, email, password);
       const resume = await agent.get(new URL(login.body.redirectTo).pathname);
       const consentUid = uidFrom(resume.headers.location);
 
@@ -272,7 +350,7 @@ describe('OIDC interactions — the unhappy paths', () => {
     it('skips the login screen when the browser already has a session', async () => {
       const agent = request.agent(app);
       const email = await makeUser();
-      expect((await agent.post('/api/auth/login').send({ email, password })).status).toBe(200);
+      expect((await loginVerified(agent, email, password)).status).toBe(200);
 
       const uid = await startAuth(agent);
       const res = await agent.get(`/interaction/${uid}`).set(asJson);
@@ -285,7 +363,7 @@ describe('OIDC interactions — the unhappy paths', () => {
     it('shows the login screen anyway when the app asks with prompt=login', async () => {
       const agent = request.agent(app);
       const email = await makeUser();
-      await agent.post('/api/auth/login').send({ email, password });
+      await loginVerified(agent, email, password);
 
       const uid = await startAuth(agent, { prompt: 'login' });
       const res = await agent.get(`/interaction/${uid}`).set(asJson);

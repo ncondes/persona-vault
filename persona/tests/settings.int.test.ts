@@ -1,5 +1,6 @@
 import request from 'supertest';
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
+import { registerVerified } from './support/otp';
 import { buildApp } from '../src/server';
 import { createOidcProvider } from '../src/oidc/provider';
 import { prisma } from '../src/infrastructure/db/prisma';
@@ -11,15 +12,18 @@ describe('settings, export & delete account (integration)', () => {
   let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
-    const container = buildContainer();
+    const container = testContainer();
     const provider = await createOidcProvider(container);
     app = buildApp(container, provider);
     agent = request.agent(app);
 
     await prisma.user.deleteMany({ where: { email } });
-    await agent
-      .post('/api/auth/register')
-      .send({ firstName: 'Settings', lastName: 'Tester', email, password: 'password123' });
+    await registerVerified(agent, {
+      firstName: 'Settings',
+      lastName: 'Tester',
+      email,
+      password: 'password123',
+    });
   });
 
   afterAll(async () => {

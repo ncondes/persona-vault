@@ -20,6 +20,11 @@ import {
   OidcPayloadRepository,
   UpsertOidcPayloadInput,
 } from '../../src/domain/interfaces/oidc-payload.repository';
+import {
+  CreateChallengeInput,
+  OtpChallengeRepository,
+  ReissueChallengeInput,
+} from '../../src/domain/interfaces/otp-challenge.repository';
 import { Repositories, UnitOfWork } from '../../src/domain/interfaces/unit-of-work';
 import {
   CreateUserInput,
@@ -37,6 +42,8 @@ import {
   AuditType,
   Client,
   Consent,
+  OtpChallenge,
+  OtpPurpose,
   User,
   VaultItem,
   VaultKind,
@@ -305,12 +312,77 @@ export class FakePayloads implements OidcPayloadRepository {
   }
 }
 
+export class FakeOtpChallenges implements OtpChallengeRepository {
+  rows: OtpChallenge[] = [];
+  private next = 1;
+
+  async create(input: CreateChallengeInput): Promise<OtpChallenge> {
+    const row: OtpChallenge = {
+      id: String(this.next++),
+      email: input.email,
+      userId: null,
+      firstName: null,
+      lastName: null,
+      passwordHash: null,
+      attempts: 0,
+      sends: 1,
+      lastSentAt: new Date(),
+      createdAt: new Date(),
+      ...input,
+    };
+    this.rows.push(row);
+    return row;
+  }
+
+  async findById(id: string): Promise<OtpChallenge | null> {
+    return this.rows.find((row) => row.id === id) ?? null;
+  }
+
+  async findLive(email: string, purpose: OtpPurpose): Promise<OtpChallenge | null> {
+    const now = Date.now();
+    return (
+      this.rows.find(
+        (row) =>
+          row.email === email && row.purpose === purpose && row.expiresAt.getTime() > now,
+      ) ?? null
+    );
+  }
+
+  async reissue(id: string, input: ReissueChallengeInput): Promise<OtpChallenge> {
+    const row = this.rows.find((entry) => entry.id === id)!;
+    Object.assign(row, input, {
+      attempts: 0,
+      sends: row.sends + 1,
+      lastSentAt: new Date(),
+    });
+    return row;
+  }
+
+  async recordAttempt(id: string): Promise<OtpChallenge> {
+    const row = this.rows.find((entry) => entry.id === id)!;
+    row.attempts += 1;
+    return row;
+  }
+
+  async deleteById(id: string): Promise<void> {
+    this.rows = this.rows.filter((row) => row.id !== id);
+  }
+
+  async deleteExpired(): Promise<number> {
+    const now = Date.now();
+    const before = this.rows.length;
+    this.rows = this.rows.filter((row) => row.expiresAt.getTime() >= now);
+    return before - this.rows.length;
+  }
+}
+
 export interface FakeRepositories {
   users: FakeUsers;
   vault: FakeVault;
   clients: FakeClients;
   consents: FakeConsents;
   audit: FakeAudit;
+  otpChallenges: FakeOtpChallenges;
   repositories: Repositories;
   unitOfWork: UnitOfWork;
 }
@@ -323,13 +395,22 @@ export function fakeRepositories(items: VaultItem[] = []): FakeRepositories {
   const clients = new FakeClients();
   const consents = new FakeConsents();
   const audit = new FakeAudit();
-  const repositories = { users, vault, clients, consents, audit } as unknown as Repositories;
+  const otpChallenges = new FakeOtpChallenges();
+  const repositories = {
+    users,
+    vault,
+    clients,
+    consents,
+    audit,
+    otpChallenges,
+  } as unknown as Repositories;
   return {
     users,
     vault,
     clients,
     consents,
     audit,
+    otpChallenges,
     repositories,
     unitOfWork: { run: (work) => work(repositories) },
   };

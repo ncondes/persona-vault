@@ -17,6 +17,8 @@ export type AuditType = 'grant' | 'release' | 'revoke';
 
 export type ClientStatus = 'active' | 'disabled';
 
+export type OtpPurpose = 'signup' | 'login';
+
 export interface User {
   id: string;
   email: string;
@@ -121,4 +123,24 @@ export interface AuditEntry {
   context: string;
   scopesReleased: string[];
   fieldsReleased: string[];
+}
+
+// A sign-up or sign-in waiting on its emailed code. A `signup` challenge carries
+// the account that does not exist yet; a `login` one points at the account it
+// will open. `codeHash` is a digest — the code itself only ever exists in the
+// email and in the request that answers it.
+export interface OtpChallenge {
+  id: string;
+  purpose: OtpPurpose;
+  email: string;
+  userId: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  passwordHash: string | null;
+  codeHash: string;
+  expiresAt: Date;
+  attempts: number;
+  sends: number;
+  lastSentAt: Date;
+  createdAt: Date;
 }

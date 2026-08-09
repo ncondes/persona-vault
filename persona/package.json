@@ -1,7 +1,7 @@
 {
   "name": "persona",
   "version": "0.1.0",
-  "description": "Persona \u2014 a context-aware identity and profile management API",
+  "description": "Persona — a context-aware identity and profile management API",
   "author": "Nicolas Conde Salazar <ncondesalazar@gmail.com>",
   "license": "MIT",
   "private": true,
@@ -15,6 +15,7 @@
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.all.config.js --coverage",
     "typecheck:tests": "tsc -p tsconfig.test.json",
     "acceptance": "tsx scripts/acceptance-table.ts",
+    "preview:email": "tsx scripts/preview-otp-email.ts",
     "db:up": "docker compose -f ../docker-compose.yml up -d postgres --wait",
     "db:down": "docker compose -f ../docker-compose.yml down",
     "prisma:generate": "prisma generate",
@@ -33,6 +34,7 @@
     "pg": "^8.22.0",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
+    "resend": "^6.18.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

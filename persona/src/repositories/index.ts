@@ -4,6 +4,7 @@ import { PrismaAuditRepository } from './audit.repository';
 import { PrismaClientRepository } from './client.repository';
 import { PrismaConsentRepository } from './consent.repository';
 import { PrismaOidcPayloadRepository } from './oidc-payload.repository';
+import { PrismaOtpChallengeRepository } from './otp-challenge.repository';
 import { PrismaUserRepository } from './user.repository';
 import { PrismaVaultRepository } from './vault.repository';
 
@@ -17,5 +18,6 @@ export function createRepositories(db: DbClient): Repositories {
     consents: new PrismaConsentRepository(db),
     audit: new PrismaAuditRepository(db),
     oidcPayloads: new PrismaOidcPayloadRepository(db),
+    otpChallenges: new PrismaOtpChallengeRepository(db),
   };
 }

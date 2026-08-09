@@ -11,12 +11,16 @@ async function main(): Promise<void> {
   const provider = await createOidcProvider(container);
   const app = buildApp(container, provider);
 
-  // Expired sessions, codes and tokens are only filtered out on read; this
-  // clears them out of the table. Unref'd so it never holds the process open.
+  // Expired sessions, codes, tokens and unfinished sign-ups are only filtered
+  // out on read; this clears them out of the tables. Unref'd so it never holds
+  // the process open.
   setInterval(() => {
     container.repositories.oidcPayloads
       .deleteExpired()
       .catch((err) => logger.warn({ err }, 'oidc sweep failed'));
+    container.repositories.otpChallenges
+      .deleteExpired()
+      .catch((err) => logger.warn({ err }, 'otp sweep failed'));
   }, SWEEP_INTERVAL_MS).unref();
 
   app.listen(config.port, () => {

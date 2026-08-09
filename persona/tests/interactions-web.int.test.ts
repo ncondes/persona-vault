@@ -1,5 +1,7 @@
 import request from 'supertest';
 import type { Express } from 'express';
+// Pure and config-free, so importing it at the top does not defeat the point.
+import { hashOtp } from '../src/infrastructure/auth/otp';
 
 // `tests/int.setup.js` blanks WEB_URL so the rest of the suite exercises the
 // built-in HTML pages. That leaves the branches Docker actually runs — where
@@ -9,6 +11,7 @@ import type { Express } from 'express';
 // module graph with WEB_URL set. Everything is required inside `isolateModules`
 // for that reason; a top-level import would capture the blank config first.
 const WEB_URL = 'http://localhost:4420';
+const CODE = '123456';
 
 describe('OIDC interactions — with a web frontend configured', () => {
   let app: Express;
@@ -34,7 +37,8 @@ describe('OIDC interactions — with a web frontend configured', () => {
 
       redirectUri = DEMO_CLIENTS.find((c: { id: string }) => c.id === 'forum').redirectUris[0];
 
-      const container = buildContainer();
+      // Nothing here should reach Resend; a bare object satisfies Mailer.
+      const container = buildContainer({ mailer: { send: async () => {} } });
       app = buildApp(container, await createOidcProvider(container));
 
       email = `interaction-web-${Date.now()}@example.com`;
@@ -88,10 +92,22 @@ describe('OIDC interactions — with a web frontend configured', () => {
     const agent = request.agent(app);
     const uid = await startAuth(agent);
 
-    const login = await agent
+    // Spelled out rather than using tests/support/otp.ts, whose prisma comes
+    // from the outer module registry rather than the isolated one built above.
+    const asJson = { Accept: 'application/json' };
+    const started = await agent
       .post(`/interaction/${uid}/login`)
-      .set({ Accept: 'application/json' })
+      .set(asJson)
       .send({ email, password });
+    await prisma.otpChallenge.update({
+      where: { id: started.body.challengeId },
+      data: { codeHash: hashOtp(CODE) },
+    });
+    const login = await agent
+      .post(`/interaction/${uid}/verify`)
+      .set(asJson)
+      .send({ challengeId: started.body.challengeId, code: CODE });
+
     const resume = await agent.get(new URL(login.body.redirectTo).pathname);
     const consentUid = uidFrom(resume.headers.location);
 

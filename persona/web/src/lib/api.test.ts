@@ -178,7 +178,10 @@ describe("the endpoint map", () => {
 
   it.each([
     ["register", () => api.register("A", "B", "a@x.co", "password123"), "POST", "/api/auth/register"],
+    ["verifySignup", () => api.verifySignup("c1", "123456"), "POST", "/api/auth/register/verify"],
     ["login", () => api.login("a@x.co", "p"), "POST", "/api/auth/login"],
+    ["verifyLogin", () => api.verifyLogin("c1", "123456"), "POST", "/api/auth/login/verify"],
+    ["resendCode", () => api.resendCode("c1"), "POST", "/api/auth/otp/resend"],
     ["logout", () => api.logout(), "POST", "/api/auth/logout"],
     ["getMe", () => api.getMe(), "GET", "/api/auth/me"],
 
@@ -205,6 +208,7 @@ describe("the endpoint map", () => {
 
     ["getInteraction", () => api.getInteraction("uid"), "GET", "/interaction/uid"],
     ["interactionLogin", () => api.interactionLogin("uid", "a@x.co", "p"), "POST", "/interaction/uid/login"],
+    ["interactionVerify", () => api.interactionVerify("uid", "c1", "123456"), "POST", "/interaction/uid/verify"],
     ["interactionDecision", () => api.interactionDecision("uid", {}), "POST", "/interaction/uid/decision"],
     ["interactionAbort", () => api.interactionAbort("uid"), "POST", "/interaction/uid/abort"],
   ])("%s does %s %s", async (_name, call, method, path) => {
@@ -222,6 +226,6 @@ describe("the endpoint map", () => {
       .map(([name]) => name);
 
     // Keep this in step with the table above; a new endpoint should be pinned too.
-    expect(exported).toHaveLength(26);
+    expect(exported).toHaveLength(30);
   });
 });

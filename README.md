@@ -84,6 +84,14 @@ with a key derived from it, so running the API under one secret and then
 another makes every app unreadable — the provider logs a clear error and treats
 them as unknown. Changing it means re-running `npm run db:seed`.
 
+**`RESEND_API_KEY` is required.** Signing up and signing in both send a 6-digit
+code by email, and there is no fallback transport to fall back to, so the API
+refuses to start without one — get a key at [resend.com](https://resend.com).
+`EMAIL_FROM` must be a domain verified in Resend; the default
+(`onboarding@resend.dev`) only delivers to the address that owns the Resend
+account, which is enough to try the flow out. Tests never need a working key:
+they hand the container a stub mailer.
+
 ## Tests
 
 The API needs a running database; nothing else does.
@@ -92,13 +100,13 @@ The API needs a running database; nothing else does.
 cd persona
 npm run db:up            # Postgres, if it is not already running
 
-npm test                 # unit — 213 tests, no database
-npm run test:int         # integration — 125 tests against real Postgres and a real OAuth flow
+npm test                 # unit — 250 tests, no database
+npm run test:int         # integration — 151 tests against real Postgres and a real OAuth flow
 npm run test:cov         # both, with merged coverage; fails if coverage drops
 npm run typecheck:tests  # the test files themselves (the build does not cover them)
 npm run acceptance       # regenerates references/acceptance.md
 
-cd web && npm test       # 206 tests over the app's pure logic
+cd web && npm test       # 229 tests over the app's pure logic
 cd ../../demos/clinic && npm test   # 94 tests over the relying-party plumbing
 ```
 
@@ -108,8 +116,8 @@ migrated and seeded first — which `docker compose up` does on boot.
 
 | Suite | Tests | Statements | Branches |
 |---|---|---|---|
-| `persona` (unit + integration) | 338 | 96.6% | 92.4% |
-| `persona/web` | 206 | 90.4% | 95.1% |
+| `persona` (unit + integration) | 401 | 96.8% | 91.6% |
+| `persona/web` | 229 | 91.8% | 95.5% |
 | `demos/clinic` | 94 | 100% | 100% |
 
 Only the clinic demo is tested. The three demos duplicate their OAuth plumbing on

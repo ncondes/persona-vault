@@ -11,6 +11,12 @@ const envSchema = z.object({
   // When set, browser-facing OIDC interaction pages redirect to the web app.
   // Left unset in tests so the built-in HTML fallback is exercised.
   WEB_URL: z.string().optional(),
+  // Sign-up and sign-in both wait on an emailed code, so the app cannot serve
+  // either without a way to send mail. Required rather than optional on purpose:
+  // there is no fallback transport to silently drop into. Tests pass a stub
+  // mailer to the container instead, so they never need a working key.
+  RESEND_API_KEY: z.string().min(1),
+  EMAIL_FROM: z.string().min(1).default('Persona <onboarding@resend.dev>'),
 });
 
 const env = envSchema.parse(process.env);
@@ -22,6 +28,8 @@ export const config = {
   authSecret: env.AUTH_SECRET,
   oidcIssuer: env.OIDC_ISSUER,
   webUrl: env.WEB_URL,
+  resendApiKey: env.RESEND_API_KEY,
+  emailFrom: env.EMAIL_FROM,
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
 };

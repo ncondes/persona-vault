@@ -7,6 +7,7 @@ import {
   LABELED_KINDS,
   NAME_CONTEXTS,
 } from "@/lib/item-payload";
+import { dialOptions } from "@/lib/dial-codes";
 import { useStrings } from "@/lib/locale";
 import { type Catalog, type NameContext, type VaultItem, type VaultKind } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -142,10 +143,15 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(catalog?.countries ?? []).map((c) => (
-                  <SelectItem key={c.code} value={c.dial}>
+                {dialOptions(catalog?.countries ?? []).map((option) => (
+                  <SelectItem key={option.dial} value={option.dial}>
                     <span className="flex items-center gap-2">
-                      <Flag code={c.code} /> {c.dial}
+                      {option.code ? (
+                        <Flag code={option.code} />
+                      ) : (
+                        <span className="h-3.5 w-5 shrink-0" />
+                      )}
+                      {option.dial}
                     </span>
                   </SelectItem>
                 ))}

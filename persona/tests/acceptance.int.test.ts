@@ -1,6 +1,14 @@
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
-import { buildContainer, Container } from '../src/container';
+import { Container } from '../src/container';
+import { testContainer } from './support/app';
+import {
+  TEST_CODE,
+  forceCode,
+  interactionLogin,
+  loginVerified,
+  registerVerified,
+} from './support/otp';
 import { prisma } from '../src/infrastructure/db/prisma';
 import { createOidcProvider } from '../src/oidc/provider';
 import { buildApp } from '../src/server';
@@ -53,15 +61,18 @@ describe('Persona acceptance', () => {
   const registered: Record<string, { id: string; secret: string; uri: string }> = {};
 
   beforeAll(async () => {
-    container = buildContainer();
+    container = testContainer();
     app = buildApp(container, await createOidcProvider(container));
 
     await prisma.user.deleteMany({ where: { email } });
     agent = request.agent(app);
 
-    await agent
-      .post('/api/auth/register')
-      .send({ firstName: 'Camila', lastName: 'Rodríguez', email, password });
+    await registerVerified(agent, {
+      firstName: 'Camila',
+      lastName: 'Rodríguez',
+      email,
+      password,
+    });
 
     // One vault, filled once. Registration already seeded a name and an email.
     const add = (body: Record<string, unknown>) => agent.post('/api/vault/items').send(body);
@@ -117,10 +128,7 @@ describe('Persona acceptance', () => {
       const details = await agent.get(`/interaction/${uid}`).set(asJson);
       if (details.body.prompt === 'consent') return uid;
       if (details.body.prompt === 'login') {
-        const login = await agent
-          .post(`/interaction/${uid}/login`)
-          .set(asJson)
-          .send({ email, password });
+        const login = await interactionLogin(agent, uid, email, password);
         uid = uidFrom((await agent.get(toPath(login.body.redirectTo))).headers.location);
         continue;
       }
@@ -315,7 +323,7 @@ describe('Persona acceptance', () => {
 
       // A second provider over the same database stands in for a restart: with
       // the old in-memory adapter its store would have been empty.
-      const fresh = buildApp(buildContainer(), await createOidcProvider(buildContainer()));
+      const fresh = buildApp(testContainer(), await createOidcProvider(testContainer()));
 
       const res = await request(fresh).get('/oidc/me').auth(accessToken, { type: 'bearer' });
       expect(res.status).toBe(200);
@@ -363,9 +371,12 @@ describe('Persona acceptance', () => {
     it('hides one developer’s app from another', async () => {
       const other = request.agent(app);
       const otherEmail = `acceptance-other-${stamp}@example.com`;
-      await other
-        .post('/api/auth/register')
-        .send({ firstName: 'Other', lastName: 'Dev', email: otherEmail, password });
+      await registerVerified(other, {
+        firstName: 'Other',
+        lastName: 'Dev',
+        email: otherEmail,
+        password,
+      });
 
       expect((await other.get(`/api/apps/${registered.clinic.id}`)).status).toBe(404);
       expect((await other.delete(`/api/apps/${registered.clinic.id}`)).status).toBe(404);
@@ -408,6 +419,160 @@ describe('Persona acceptance', () => {
       expect((await agent.delete(`/api/apps/${registered.doomed.id}`)).status).toBe(204);
 
       expect((await agent.get('/oidc/me').auth(accessToken, { type: 'bearer' })).status).toBe(401);
+    });
+  });
+
+  // Signing up costs nothing and nobody checks, so a vault full of invented
+  // addresses would undercut everything above: none of it means much if the
+  // person behind the data was never real.
+  describe('proving a real person is behind the account', () => {
+    let n = 0;
+    const freshEmail = () => `acceptance-otp-${stamp}-${n++}@example.com`;
+    const details = (target: string) => ({
+      firstName: 'Real',
+      lastName: 'Person',
+      email: target,
+      password,
+    });
+
+    it('creates no account until the code emailed to the address comes back', async () => {
+      const target = freshEmail();
+      const visitor = request.agent(app);
+
+      const started = await visitor.post('/api/auth/register').send(details(target));
+
+      expect(started.status).toBe(202);
+      expect(await prisma.user.count({ where: { email: target } })).toBe(0);
+      // Not signed in either — there is nothing yet to be signed in to.
+      expect((await visitor.get('/api/auth/me')).status).toBe(401);
+    });
+
+    it('creates the account and starts the vault once the code is entered', async () => {
+      const target = freshEmail();
+      const visitor = request.agent(app);
+
+      const done = await registerVerified(visitor, details(target));
+
+      expect(done.status).toBe(201);
+      expect(await prisma.user.count({ where: { email: target } })).toBe(1);
+      const vault = await visitor.get('/api/vault');
+      expect(vault.body.data.items.map((i: { kind: string }) => i.kind)).toEqual(
+        expect.arrayContaining(['name', 'email']),
+      );
+    });
+
+    it('leaves nothing behind when the code is wrong', async () => {
+      const target = freshEmail();
+      const visitor = request.agent(app);
+      const started = await visitor.post('/api/auth/register').send(details(target));
+      await forceCode(started.body.data.challengeId);
+
+      const wrong = await visitor
+        .post('/api/auth/register/verify')
+        .send({ challengeId: started.body.data.challengeId, code: '000000' });
+
+      expect(wrong.status).toBe(401);
+      expect(await prisma.user.count({ where: { email: target } })).toBe(0);
+    });
+
+    it('never stores the code in a form anyone could read back', async () => {
+      const target = freshEmail();
+      const started = await request(app).post('/api/auth/register').send(details(target));
+
+      const row = await prisma.otpChallenge.findUnique({
+        where: { id: started.body.data.challengeId },
+      });
+      expect(JSON.stringify(started.body)).not.toContain(row!.codeHash);
+      expect(row!.codeHash).toMatch(/^[0-9a-f]{64}$/);
+      // The password waits here too, and it waits hashed.
+      expect(row!.passwordHash).not.toBe(password);
+    });
+
+    it('gives up on a code after five wrong guesses', async () => {
+      const target = freshEmail();
+      const started = await request(app).post('/api/auth/register').send(details(target));
+      const challengeId = started.body.data.challengeId;
+      await forceCode(challengeId);
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await request(app).post('/api/auth/register/verify').send({ challengeId, code: '000000' });
+      }
+
+      const withTheRightCode = await request(app)
+        .post('/api/auth/register/verify')
+        .send({ challengeId, code: TEST_CODE });
+      expect(withTheRightCode.status).toBe(401);
+      expect(await prisma.user.count({ where: { email: target } })).toBe(0);
+    });
+
+    it('refuses a code that has expired', async () => {
+      const target = freshEmail();
+      const started = await request(app).post('/api/auth/register').send(details(target));
+      const challengeId = started.body.data.challengeId;
+      await forceCode(challengeId);
+      await prisma.otpChallenge.update({
+        where: { id: challengeId },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+
+      const res = await request(app)
+        .post('/api/auth/register/verify')
+        .send({ challengeId, code: TEST_CODE });
+
+      expect(res.body.error.code).toBe('OTP_EXPIRED');
+    });
+
+    it('asks for a code at sign-in as well, not just at sign-up', async () => {
+      const target = freshEmail();
+      const visitor = request.agent(app);
+      await registerVerified(visitor, details(target));
+      await visitor.post('/api/auth/logout');
+
+      const withPasswordOnly = await visitor.post('/api/auth/login').send({
+        email: target,
+        password,
+      });
+      expect(withPasswordOnly.status).toBe(202);
+      expect((await visitor.get('/api/auth/me')).status).toBe(401);
+
+      expect((await loginVerified(visitor, target, password)).status).toBe(200);
+      expect((await visitor.get('/api/auth/me')).status).toBe(200);
+    });
+
+    // The consent screen has its own sign-in form. If it skipped the code, an
+    // app link would be the way around the whole control.
+    it('asks for a code on the consent screen too, so it is no way around', async () => {
+      const target = freshEmail();
+      const visitor = request.agent(app);
+      await registerVerified(visitor, details(target));
+      await visitor.post('/api/auth/logout');
+
+      const start = await visitor.get('/oidc/auth').query({
+        client_id: registered.forum.id,
+        response_type: 'code',
+        scope: 'openid username',
+        redirect_uri: APPS.forum.redirectUris[0],
+        state: 'xyz',
+      });
+      const uid = uidFrom(start.headers.location);
+
+      const withPasswordOnly = await visitor
+        .post(`/interaction/${uid}/login`)
+        .set(asJson)
+        .send({ email: target, password });
+
+      expect(withPasswordOnly.body.challengeId).toBeTruthy();
+      expect(withPasswordOnly.body.redirectTo).toBeUndefined();
+      expect((await visitor.get('/api/auth/me')).status).toBe(401);
+    });
+
+    afterAll(async () => {
+      await prisma.otpChallenge.deleteMany({
+        where: { email: { startsWith: `acceptance-otp-${stamp}` } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: { startsWith: `acceptance-otp-${stamp}` } },
+      });
     });
   });
 

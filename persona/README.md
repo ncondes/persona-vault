@@ -42,6 +42,7 @@ routes -> controllers -> services -> repositories -> database
 - `src/services` — business logic (vault rules, context engine, consent decisions)
 - `src/repositories` — data access (wrap Prisma); depend on interfaces in `src/domain/interfaces`
 - `src/oidc` — provider config, interaction endpoints, grant revocation
+- `src/infrastructure/mail` — the Resend transport and the code email's template
 - `src/constants` — vault kind metadata, code catalogs, scopes, demo clients
 - `src/container.ts` — wires dependencies together (constructor injection)
 - `src/middlewares` — auth, request logging, centralized error handling, validation
@@ -52,7 +53,7 @@ routes -> controllers -> services -> repositories -> database
 
 | Area | Endpoints |
 |------|-----------|
-| Auth | `POST /api/auth/register` (firstName, lastName, email, password), `login`, `logout`, `GET /api/auth/me` |
+| Auth | `POST /api/auth/register` (firstName, lastName, email, password) → `202` + a challenge, `POST /api/auth/register/verify` (challengeId, code) → `201` + the session cookie; `login` and `login/verify` the same way; `POST /api/auth/otp/resend`, `logout`, `GET /api/auth/me` |
 | Vault | `GET /api/vault`, `POST /api/vault/items`, `PUT/DELETE /api/vault/items/:id` |
 | Catalog | `GET /api/catalog` — document types, blood types, EPS codes, purposes, the scope catalog, kind metadata |
 | Apps (developer console) | `GET/POST /api/apps`, `GET/PUT/DELETE /api/apps/:id`, `POST /api/apps/:id/secret` (rotate), `POST /api/apps/preview`, `GET /api/apps/:id/activity` |
@@ -83,6 +84,11 @@ cd web && npm install && npm run dev   # http://localhost:4420
 deliberately unset in tests (`tests/int.setup.js`) so the built-in HTML
 fallback stays covered — don't "clean that up".
 
+`RESEND_API_KEY` is required and has no default: both halves of authentication
+send a code by email, and there is no fallback transport, so the app refuses to
+start without it. Tests pass a stub mailer to `buildContainer({ mailer })`
+rather than a fake key, so nothing test-aware lives in `src/`.
+
 Seeded logins, both `password123`:
 
 - `camila@example.com` — a filled vault, for the sharing flows.
@@ -96,14 +102,15 @@ grant, authorization code and access token — so connections survive a restart.
 Run the tests:
 
 ```bash
-npm test                 # unit — 213 tests, no database
-npm run test:int         # integration — 125 tests (needs the Docker database)
+npm test                 # unit — 250 tests, no database
+npm run test:int         # integration — 151 tests (needs the Docker database)
 npm run test:cov         # both together, with coverage; fails if coverage drops
 npm run typecheck:tests  # tsconfig.json excludes tests, so `npm run build` skips them
 npm run acceptance       # regenerates ../references/acceptance.md
+npm run preview:email    # writes the code emails to .preview/ to look at
 ```
 
-338 tests, 96.6% of statements and 92.4% of branches. Split by filename:
+401 tests, 96.8% of statements and 91.6% of branches. Split by filename:
 `*.int.test.ts` needs Postgres, everything else does not. The integration tests
 create and delete their own rows and never truncate, but they expect the database
 to be migrated and seeded first.

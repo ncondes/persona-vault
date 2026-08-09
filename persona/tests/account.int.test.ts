@@ -1,12 +1,13 @@
 import request from 'supertest';
-import { buildContainer } from '../src/container';
+import { testContainer } from './support/app';
+import { registerVerified } from './support/otp';
 import { buildApp } from '../src/server';
 import { prisma } from '../src/infrastructure/db/prisma';
 
 // Audit history + connected-apps endpoints. (Revoking the live OIDC grant needs
 // the provider; here we verify the consent record is removed.)
 describe('account API (integration)', () => {
-  const container = buildContainer();
+  const container = testContainer();
   const app = buildApp(container);
   const email = `account-int-${Date.now()}@example.com`;
   const agent = request.agent(app);
@@ -14,9 +15,12 @@ describe('account API (integration)', () => {
 
   beforeAll(async () => {
     await prisma.user.deleteMany({ where: { email } });
-    const reg = await agent
-      .post('/api/auth/register')
-      .send({ firstName: 'Account', lastName: 'Tester', email, password: 'password123' });
+    const reg = await registerVerified(agent, {
+      firstName: 'Account',
+      lastName: 'Tester',
+      email,
+      password: 'password123',
+    });
     userId = reg.body.data.id;
 
     await container.repositories.audit.record({
