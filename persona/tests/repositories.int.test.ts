@@ -138,4 +138,47 @@ describe('repositories (integration)', () => {
     const user = await prisma.user.findUnique({ where: { email } });
     expect(user).toBeNull();
   });
+
+  // Both writes filter on userId as well as id, so "not mine" and "not there"
+  // are the same answer. That is what stops one person editing another's vault
+  // by guessing an id.
+  describe('ownership is part of the lookup', () => {
+    let mineId: string;
+    let ownerId: string;
+    const strangerId = '00000000-0000-0000-0000-000000000000';
+
+    beforeAll(async () => {
+      const user = await prisma.user.findFirst({ where: { email: { startsWith: 'repo-int-' } } });
+      ownerId = user!.id;
+      const item = await container.repositories.vault.create({
+        userId: ownerId,
+        kind: 'email',
+        value: 'owned@example.com',
+      });
+      mineId = item.id;
+    });
+
+    it.each([
+      ['an id that does not exist', () => 'no-such-id', () => ownerId],
+      ['someone else’s item', () => mineId, () => strangerId],
+    ])('refuses to update %s', async (_label, id, userId) => {
+      await expect(
+        container.repositories.vault.update(userId(), id(), { value: 'hijacked' }),
+      ).rejects.toMatchObject({ code: 'VAULT_ITEM_NOT_FOUND' });
+    });
+
+    it.each([
+      ['an id that does not exist', () => 'no-such-id', () => ownerId],
+      ['someone else’s item', () => mineId, () => strangerId],
+    ])('refuses to delete %s', async (_label, id, userId) => {
+      await expect(
+        container.repositories.vault.delete(userId(), id()),
+      ).rejects.toMatchObject({ code: 'VAULT_ITEM_NOT_FOUND' });
+    });
+
+    it('leaves the item untouched after all those attempts', async () => {
+      const [item] = await container.repositories.vault.findByIds(ownerId, [mineId]);
+      expect(item.value).toBe('owned@example.com');
+    });
+  });
 });

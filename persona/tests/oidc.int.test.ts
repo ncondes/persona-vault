@@ -30,7 +30,7 @@ describe('OIDC provider (integration)', () => {
     const res = await request(app).get('/oidc/auth').query({
       client_id: 'clinic',
       response_type: 'code',
-      redirect_uri: 'http://localhost:4410/callback/clinic',
+      redirect_uri: 'http://localhost:4411/callback',
       scope: 'openid name email',
       state: 'xyz',
     });

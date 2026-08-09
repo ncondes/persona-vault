@@ -2,9 +2,16 @@ import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
 import { buildContainer, Container } from '../src/container';
 import { buildApp } from '../src/server';
+import { DEMO_CLIENTS } from '../src/constants/clients';
 import { createOidcProvider } from '../src/oidc/provider';
 import { hashPassword } from '../src/infrastructure/auth/password';
 import { prisma } from '../src/infrastructure/db/prisma';
+
+// Taken from the seed list so a change to a demo app's redirect URI cannot
+// silently break these flows.
+const REDIRECT_URI: Record<string, string> = Object.fromEntries(
+  DEMO_CLIENTS.map((client) => [client.id, client.redirectUris[0]]),
+);
 
 // Full "Connect with Persona" flow, driven through the JSON interaction API:
 // authorize -> login -> consent details -> decision -> token -> userinfo.
@@ -98,7 +105,7 @@ describe('Connect with Persona — end to end', () => {
   // Drives authorize -> login -> consent details, returning the consent uid so
   // the test can shape its own decision.
   async function startConsent(agent: TestAgent, clientId: string, scope: string, email: string) {
-    const redirectUri = `http://localhost:4410/callback/${clientId}`;
+    const redirectUri = REDIRECT_URI[clientId];
 
     let res = await agent
       .get('/oidc/auth')
@@ -289,7 +296,7 @@ describe('Connect with Persona — end to end', () => {
 
   it('prompt=login forces the sign-in screen so a different account can be used', async () => {
     const user = await makeUser(false);
-    const redirectUri = 'http://localhost:4410/callback/forum';
+    const redirectUri = REDIRECT_URI.forum;
     const agent = request.agent(app);
 
     // sign in and consent once — this sets Persona's session on the agent
@@ -347,5 +354,115 @@ describe('Connect with Persona — end to end', () => {
 
     const after = await agent.get('/oidc/me').set('Authorization', `Bearer ${accessToken}`);
     expect(after.status).toBe(401);
+  });
+
+  // Everything the provider issues now lives in Postgres. These assert on the
+  // table directly: a "build a second provider" test would pass even with the
+  // in-memory adapter, whose storage is module-level.
+  describe('persistence', () => {
+    it('writes sessions, grants, codes and tokens to oidc_payload', async () => {
+      const user = await makeUser(false);
+      const agent = request.agent(app);
+      const { consentUid, redirectUri } = await startConsent(
+        agent,
+        'forum',
+        'openid name',
+        user.email,
+      );
+      await completeConsent(agent, 'forum', 'forum-dev-secret', consentUid, redirectUri);
+
+      const models = await prisma.oidcPayload.groupBy({ by: ['model'], _count: { _all: true } });
+      const byModel = new Map(models.map((row) => [row.model, row._count._all]));
+
+      expect(byModel.get('Session') ?? 0).toBeGreaterThan(0);
+      // Clients are owned by the console and read from `client` instead.
+      expect(byModel.get('Client')).toBeUndefined();
+
+      // Scoped to this flow's grant. The table is never truncated between runs, so
+      // an unqualified findFirst picks up whatever an earlier test left behind.
+      const consent = await prisma.consent.findFirst({
+        where: { clientId: 'forum', user: { email: user.email } },
+      });
+      const grantId = consent?.grantId as string;
+      expect(grantId).toBeTruthy();
+
+      const mine = await prisma.oidcPayload.groupBy({
+        by: ['model'],
+        where: { grantId },
+        _count: { _all: true },
+      });
+      const byModelForGrant = new Map(mine.map((row) => [row.model, row._count._all]));
+      for (const model of ['AuthorizationCode', 'AccessToken']) {
+        expect(byModelForGrant.get(model) ?? 0).toBeGreaterThan(0);
+      }
+      // A Grant row is keyed by its own id, not by `grantId`.
+      expect(await prisma.oidcPayload.count({ where: { model: 'Grant', id: grantId } })).toBe(1);
+
+      const code = await prisma.oidcPayload.findFirst({
+        where: { model: 'AuthorizationCode', grantId },
+      });
+      expect(typeof (code?.payload as { consumed?: unknown }).consumed).toBe('number');
+    });
+
+    it('drops the token rows when a connection is revoked', async () => {
+      const user = await makeUser(false);
+      const agent = request.agent(app);
+      const { consentUid, redirectUri } = await startConsent(
+        agent,
+        'forum',
+        'openid name',
+        user.email,
+      );
+      await completeConsent(agent, 'forum', 'forum-dev-secret', consentUid, redirectUri);
+
+      const consent = await prisma.consent.findFirst({
+        where: { clientId: 'forum', user: { email: user.email } },
+      });
+      const grantId = consent?.grantId as string;
+      expect(grantId).toBeTruthy();
+      expect(await prisma.oidcPayload.count({ where: { grantId } })).toBeGreaterThan(0);
+
+      expect((await agent.delete('/api/connections/forum')).status).toBe(204);
+
+      expect(await prisma.oidcPayload.count({ where: { grantId } })).toBe(0);
+      expect(await prisma.oidcPayload.count({ where: { model: 'Grant', id: grantId } })).toBe(0);
+    });
+
+    // Re-consenting replaces the grant. Before grants were persisted the
+    // superseded one evaporated on restart; now it has to be revoked.
+    it('invalidates the previous token when the user consents again', async () => {
+      const user = await makeUser(false);
+      const agent = request.agent(app);
+
+      const first = await startConsent(agent, 'forum', 'openid name', user.email);
+      const { accessToken: firstToken } = await completeConsent(
+        agent,
+        'forum',
+        'forum-dev-secret',
+        first.consentUid,
+        first.redirectUri,
+      );
+      expect((await agent.get('/oidc/me').auth(firstToken, { type: 'bearer' })).status).toBe(200);
+
+      // The session already exists, so this goes straight to consent.
+      const reauth = await agent.get('/oidc/auth').query({
+        client_id: 'forum',
+        response_type: 'code',
+        scope: 'openid name',
+        redirect_uri: first.redirectUri,
+        state: 'xyz',
+        prompt: 'consent',
+      });
+      const { accessToken: secondToken } = await completeConsent(
+        agent,
+        'forum',
+        'forum-dev-secret',
+        uidFrom(reauth.headers.location),
+        first.redirectUri,
+      );
+
+      expect((await agent.get('/oidc/me').auth(firstToken, { type: 'bearer' })).status).toBe(401);
+      expect((await agent.get('/oidc/me').auth(secondToken, { type: 'bearer' })).status).toBe(200);
+    });
   });
 });

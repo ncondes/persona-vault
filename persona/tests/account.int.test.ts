@@ -82,4 +82,15 @@ describe('account API (integration)', () => {
     res = await agent.get('/api/audit');
     expect(res.body.data.some((a: { type: string }) => a.type === 'revoke')).toBe(true);
   });
+
+  // Revoking twice, or revoking an app that was never connected, is not an
+  // error — the person's intent ("this app should not have my data") is already
+  // satisfied, and a 404 here would just be noise in the UI.
+  it.each([
+    ['a connection that was already revoked', 'clinic'],
+    ['an app that was never connected', 'store'],
+    ['an app that does not exist at all', 'no-such-app'],
+  ])('answers 204 when revoking %s', async (_label, clientId) => {
+    expect((await agent.delete(`/api/connections/${clientId}`)).status).toBe(204);
+  });
 });
