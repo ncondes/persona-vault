@@ -1,13 +1,14 @@
 import { AccountController } from './controllers/account.controller';
+import { AppController } from './controllers/app.controller';
 import { AuthController } from './controllers/auth.controller';
 import { HealthController } from './controllers/health.controller';
-import { WebController } from './controllers/web.controller';
 import { Repositories, UnitOfWork } from './domain/interfaces/unit-of-work';
 import { prisma } from './infrastructure/db/prisma';
 import { createRepositories } from './repositories';
 import { PrismaUnitOfWork } from './repositories/unit-of-work';
 import { AccountService, AccountServiceImpl } from './services/account.service';
 import { AuthService, AuthServiceImpl } from './services/auth.service';
+import { ClientService, ClientServiceImpl } from './services/client.service';
 import { ContextService, ContextServiceImpl } from './services/context.service';
 import { InteractionService } from './services/interaction.service';
 import { VaultService, VaultServiceImpl } from './services/vault.service';
@@ -21,13 +22,14 @@ export class Container {
   readonly authService: AuthService;
   readonly vaultService: VaultService;
   readonly contextService: ContextService;
+  readonly clientService: ClientService;
   readonly interactionService: InteractionService;
   readonly accountService: AccountService;
   readonly healthController: HealthController;
   readonly authController: AuthController;
   readonly vaultController: VaultController;
   readonly accountController: AccountController;
-  readonly webController: WebController;
+  readonly appController: AppController;
 
   constructor() {
     // repositories (bound to the shared client for non-transactional work)
@@ -42,6 +44,7 @@ export class Container {
       this.repositories.clients,
       this.repositories.consents,
     );
+    this.clientService = new ClientServiceImpl(this.repositories);
     this.interactionService = new InteractionService(this.repositories);
     this.accountService = new AccountServiceImpl(this.repositories);
 
@@ -50,11 +53,7 @@ export class Container {
     this.authController = new AuthController(this.authService, this.repositories.users);
     this.vaultController = new VaultController(this.vaultService);
     this.accountController = new AccountController(this.accountService);
-    this.webController = new WebController(
-      this.authService,
-      this.accountService,
-      this.repositories,
-    );
+    this.appController = new AppController(this.clientService);
   }
 }
 

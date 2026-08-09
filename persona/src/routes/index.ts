@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Container } from '../container';
 import { requireAuth } from '../middlewares/auth.middleware';
 import { buildAccountRoutes } from './account.routes';
+import { buildAppRoutes } from './apps.routes';
 import { buildAuditRoutes } from './audit.routes';
 import { buildAuthRoutes } from './auth.routes';
 import { buildCatalogRoutes } from './catalog.routes';
@@ -23,6 +24,7 @@ export function buildRoutes(container: Container, provider?: any): Router {
   router.use('/connections', buildConnectionRoutes(container, provider));
   router.use('/settings', buildSettingsRoutes(container));
   router.use('/account', buildAccountRoutes(container, provider));
+  router.use('/apps', buildAppRoutes(container, provider));
 
   // GET /api/export downloads everything Persona holds about the user.
   router.get('/export', requireAuth, container.accountController.exportData);

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Container } from '../container';
+import { AUTH_COOKIE, authCookieOptions } from '../infrastructure/auth/cookie';
 import { requireAuth } from '../middlewares/auth.middleware';
 import { revokeGrant } from '../oidc/grants';
 
@@ -18,7 +19,7 @@ export function buildAccountRoutes(container: Container, provider?: any): Router
           await revokeGrant(provider, grantId);
         }
       }
-      res.clearCookie('token', { path: '/' });
+      res.clearCookie(AUTH_COOKIE, authCookieOptions);
       res.status(204).send();
     } catch (err) {
       next(err);

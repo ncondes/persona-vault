@@ -1,10 +1,10 @@
 import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
+import { config } from './config/config';
 import { requestLogger } from './middlewares/requestLogger.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 import { buildInteractionRoutes } from './oidc/interactions';
 import { buildRoutes } from './routes';
-import { buildWebRoutes } from './routes/web.routes';
 import type { Container } from './container';
 
 // Builds the Express app from a wired container. No network side effects, so it
@@ -28,7 +28,16 @@ export function buildApp(container: Container, provider?: any): Express {
     app.use('/interaction', buildInteractionRoutes(provider, container));
   }
 
-  app.use(buildWebRoutes(container, provider));
+  // The user interface lives in the Next app; this origin only serves the API,
+  // the OIDC endpoints and the interaction pages.
+  app.get('/', (_req, res) => {
+    if (config.webUrl) {
+      res.redirect(config.webUrl);
+      return;
+    }
+    res.json({ data: { name: 'persona', status: 'ok' } });
+  });
+
   app.use('/api', buildRoutes(container, provider));
 
   app.use(errorHandler);
