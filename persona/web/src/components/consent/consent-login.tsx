@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ApiError, interactionLogin, interactionVerify } from "@/lib/api";
+import { interactionLogin, interactionVerify } from "@/lib/api";
+import { errorMessage } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { maskEmail } from "@/lib/otp";
 import type { LoginPrompt, OtpChallenge } from "@/lib/types";
@@ -24,11 +25,6 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const message = (err: unknown) => {
-    const code = err instanceof ApiError ? err.code : "";
-    return t.auth.errors[code] ?? t.common.somethingWrong;
-  };
-
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -36,7 +32,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
     try {
       setChallenge(await interactionLogin(prompt.uid, email, password));
     } catch (err) {
-      setError(message(err));
+      setError(errorMessage(t, err));
     }
     setBusy(false);
   };
@@ -48,7 +44,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
       const { redirectTo } = await interactionVerify(prompt.uid, challenge!.challengeId, value);
       window.location.assign(redirectTo);
     } catch (err) {
-      setError(message(err));
+      setError(errorMessage(t, err));
       setCode("");
       setBusy(false);
     }

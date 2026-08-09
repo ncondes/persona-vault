@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { login, verifyLogin, ApiError } from "@/lib/api";
+import { login, verifyLogin } from "@/lib/api";
+import { errorMessage } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { maskEmail } from "@/lib/otp";
 import type { OtpChallenge } from "@/lib/types";
@@ -22,11 +23,6 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const message = (err: unknown) => {
-    const code = err instanceof ApiError ? err.code : "";
-    return t.auth.errors[code] ?? t.common.somethingWrong;
-  };
-
   // The password is right, but nobody is signed in yet: the session cookie
   // arrives with the code, not with this.
   const submit = async (event: React.FormEvent) => {
@@ -36,7 +32,7 @@ export function LoginForm() {
     try {
       setChallenge(await login(email, password));
     } catch (err) {
-      setError(message(err));
+      setError(errorMessage(t, err));
     }
     setBusy(false);
   };
@@ -48,7 +44,7 @@ export function LoginForm() {
       await verifyLogin(challenge!.challengeId, value);
       window.location.assign("/vault");
     } catch (err) {
-      setError(message(err));
+      setError(errorMessage(t, err));
       setCode("");
       setBusy(false);
     }

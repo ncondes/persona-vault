@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { ApiError, getCatalog, interactionAbort, interactionDecision } from "@/lib/api";
+import { errorMessage } from "@/lib/error-message";
 import {
   buildDecision,
   isTrivial,
@@ -52,7 +53,7 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
       if (err instanceof ApiError && err.code === "MISSING_FIELDS") {
         onDataAdded(); // refresh the details; the missing cards will show
       } else {
-        setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
+        setError(errorMessage(t, err));
       }
       setBusy(false);
     }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ApiError, createItem, updateItem } from "@/lib/api";
+import { createItem, updateItem } from "@/lib/api";
+import { errorMessage } from "@/lib/error-message";
 import {
   itemPayload,
   LABELED_KINDS,
@@ -67,11 +68,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       }
       onSaved();
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? (t.vault.errors[err.code] ?? Object.values(err.fields ?? {})[0] ?? err.message)
-          : t.common.somethingWrong;
-      setError(message);
+      setError(errorMessage(t, err));
       setBusy(false);
     }
   };

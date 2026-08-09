@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Plus, X } from "lucide-react";
-import { ApiError, createItem, register, verifySignup } from "@/lib/api";
+import { createItem, register, verifySignup } from "@/lib/api";
+import { errorMessage } from "@/lib/error-message";
 import { dialOptions } from "@/lib/dial-codes";
 import { useStrings } from "@/lib/locale";
 import { maskEmail } from "@/lib/otp";
-import type { Strings } from "@/lib/strings";
 import type { Catalog, OtpChallenge } from "@/lib/types";
 import { OtpFields, ResendCode } from "@/components/auth/otp-fields";
 import { Button } from "@/components/ui/button";
@@ -29,13 +29,6 @@ interface StepProps {
   done: number;
   onDone: (itemsAdded: number) => void;
   onBack?: () => void;
-}
-
-function errorText(t: Strings, err: unknown): string {
-  if (err instanceof ApiError) {
-    return t.auth.errors[err.code] ?? Object.values(err.fields ?? {})[0] ?? err.message;
-  }
-  return t.common.somethingWrong;
 }
 
 // Collects the essentials and asks for a code. Nothing is created yet — the
@@ -68,7 +61,7 @@ export function EssentialsStep({
       onChallenge(challenge);
       onDone(0); // nothing in the vault yet — that happens once the code lands
     } catch (err) {
-      setError(errorText(t, err));
+      setError(errorMessage(t, err));
       setBusy(false);
     }
   };
@@ -134,7 +127,7 @@ export function VerifyStep({
       await verifySignup(challenge.challengeId, value);
       onDone(2); // the vault starts with name + email
     } catch (err) {
-      setError(errorText(t, err));
+      setError(errorMessage(t, err));
       setCode("");
       setBusy(false);
     }
@@ -205,7 +198,7 @@ export function ContactStep({
       }
       onDone(added);
     } catch (err) {
-      setError(errorText(t, err));
+      setError(errorMessage(t, err));
       setBusy(false);
     }
   };
@@ -303,7 +296,7 @@ export function DocumentStep({
       });
       onDone(1);
     } catch (err) {
-      setError(errorText(t, err));
+      setError(errorMessage(t, err));
       setBusy(false);
     }
   };
@@ -411,7 +404,7 @@ export function HealthStep({
       }
       onDone(added);
     } catch (err) {
-      setError(errorText(t, err));
+      setError(errorMessage(t, err));
       setBusy(false);
     }
   };
