@@ -1,4 +1,8 @@
-import { ClientRepository } from '../domain/interfaces/client.repository';
+import {
+  ClientRepository,
+  SaveClientInput,
+  UpdateClientInput,
+} from '../domain/interfaces/client.repository';
 import { Client } from '../domain/models';
 import { DbClient } from '../infrastructure/db/db-client';
 
@@ -11,5 +15,22 @@ export class PrismaClientRepository implements ClientRepository {
 
   list(): Promise<Client[]> {
     return this.db.client.findMany({ orderBy: { id: 'asc' } });
+  }
+
+  listByOwner(ownerId: string): Promise<Client[]> {
+    return this.db.client.findMany({ where: { ownerId }, orderBy: { createdAt: 'asc' } });
+  }
+
+  upsert(input: SaveClientInput): Promise<Client> {
+    const { id, ...rest } = input;
+    return this.db.client.upsert({ where: { id }, create: { id, ...rest }, update: rest });
+  }
+
+  update(id: string, patch: UpdateClientInput): Promise<Client> {
+    return this.db.client.update({ where: { id }, data: patch });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.client.deleteMany({ where: { id } });
   }
 }

@@ -2,23 +2,34 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { DEMO_CLIENTS } from '../src/constants/clients';
+import { createRepositories } from '../src/repositories';
+import { ClientServiceImpl } from '../src/services/client.service';
 import { hashPassword } from '../src/infrastructure/auth/password';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
+const DEVELOPER_EMAIL = 'dev@example.com';
+
+// The seed runs on every container start, so it must never destroy anything: a
+// deleted-and-recreated user would take their vault item ids with them, and
+// every standing consent points at those ids.
 async function main() {
   const email = 'camila@example.com';
 
-  // Reset the demo user (cascades to vault items, consents, audit entries).
-  await prisma.user.deleteMany({ where: { email } });
+  const user = await prisma.user.upsert({
+    where: { email },
+    create: { email, passwordHash: await hashPassword('password123') },
+    update: {},
+  });
 
-  await prisma.user.create({
-    data: {
-      email,
-      passwordHash: await hashPassword('password123'),
-      vaultItems: {
-        create: [
+  // Only fill the vault the first time. After that it belongs to whoever is
+  // using the demo.
+  const alreadyFilled = await prisma.vaultItem.count({ where: { userId: user.id } });
+  if (alreadyFilled === 0) {
+    await prisma.vaultItem.createMany({
+      data: (
+        [
           {
             kind: 'name',
             label: 'Legal',
@@ -82,26 +93,37 @@ async function main() {
           { kind: 'eps', value: 'SANITAS', isDefault: true },
           { kind: 'allergy', value: 'Penicillin' },
           { kind: 'allergy', value: 'Peanuts' },
-        ],
-      },
-    },
+        ] as const
+      ).map((item) => ({ ...item, userId: user.id })),
+    });
+  }
+
+  // The demo apps belong to a developer account of their own, so they are never
+  // caught up in anything that happens to the demo user.
+  const developer = await prisma.user.upsert({
+    where: { email: DEVELOPER_EMAIL },
+    create: { email: DEVELOPER_EMAIL, passwordHash: await hashPassword('password123') },
+    update: {},
   });
 
-  // Relying-party demo clients, registered from the shared list.
+  // Registered through the same service the console uses, with fixed ids and
+  // secrets so the demo apps keep working across a rebuild.
+  const clients = new ClientServiceImpl(createRepositories(prisma));
   for (const client of DEMO_CLIENTS) {
-    const data = {
-      id: client.id,
+    await clients.register(developer.id, client.id, client.devSecret, {
       name: client.name,
+      description: client.description,
       purpose: client.purpose,
+      accent: client.accent,
       allowedScopes: client.allowedScopes,
       requiredScopes: client.requiredScopes,
       redirectUris: client.redirectUris,
-      secretHash: await hashPassword(client.devSecret),
-    };
-    await prisma.client.upsert({ where: { id: client.id }, create: data, update: data });
+    });
   }
 
-  console.log('Seed complete: demo user camila@example.com + clinic, forum & store clients.');
+  console.log(
+    `Seed complete: ${email} (vault) + ${DEVELOPER_EMAIL} (owns clinic, forum & store).`,
+  );
 }
 
 main()

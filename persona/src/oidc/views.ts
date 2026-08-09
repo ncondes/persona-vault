@@ -1,15 +1,8 @@
-const SCOPE_LABELS: Record<string, string> = {
-  name: 'Your name',
-  username: 'Your username',
-  email: 'Your email address',
-  phone: 'Your phone number',
-  address: 'Your postal address',
-  birth_date: 'Your date of birth',
-  document: 'Your identity document',
-  blood_type: 'Your blood type',
-  eps: 'Your health insurer (EPS)',
-  allergies: 'Your allergies',
-};
+import { SCOPE_CATALOG } from '../constants/scopes';
+
+// Derived from the catalog so this fallback can never drift from the scopes the
+// provider actually supports.
+const SCOPE_LABELS = new Map(SCOPE_CATALOG.map((meta) => [meta.scope, meta.label]));
 
 export function escapeHtml(value: string): string {
   return value.replace(
@@ -69,7 +62,7 @@ export function renderConsent(uid: string, clientId: string, scope: string): str
   const items = scope
     .split(' ')
     .filter((s) => s && s !== 'openid')
-    .map((s) => `<li>${escapeHtml(SCOPE_LABELS[s] ?? s)}</li>`)
+    .map((s) => `<li>${escapeHtml(SCOPE_LABELS.get(s) ?? s)}</li>`)
     .join('');
 
   return page('Share with an app', `

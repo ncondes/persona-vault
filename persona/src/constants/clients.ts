@@ -1,10 +1,13 @@
-// The demo relying parties. Single source of truth: the database seed and the
-// OIDC provider both register clients from this list.
+// Seed data for the demo relying parties. The OIDC provider reads clients from
+// the database; this list only exists so a clean clone comes up with the three
+// demo apps already registered, through the same service the console uses.
 
 export interface DemoClient {
   id: string;
   name: string;
+  description: string;
   purpose: string;
+  accent: string;
   allowedScopes: string[];
   requiredScopes: string[];
   redirectUris: string[];
@@ -15,7 +18,9 @@ export const DEMO_CLIENTS: DemoClient[] = [
   {
     id: 'clinic',
     name: 'City Health Clinic',
+    description: 'New patient intake — skip the paperwork.',
     purpose: 'healthcare',
+    accent: 'blue',
     allowedScopes: [
       'name',
       'given_name',
@@ -30,25 +35,29 @@ export const DEMO_CLIENTS: DemoClient[] = [
       'allergies',
     ],
     requiredScopes: ['name', 'email', 'document', 'eps'],
-    redirectUris: ['http://localhost:4410/callback/clinic'],
+    redirectUris: ['http://localhost:4411/callback'],
     devSecret: 'clinic-dev-secret',
   },
   {
     id: 'forum',
     name: 'Hobbyist Forum',
+    description: 'Join the conversation under your public name.',
     purpose: 'social',
+    accent: 'violet',
     allowedScopes: ['name', 'username'],
     requiredScopes: ['name'],
-    redirectUris: ['http://localhost:4410/callback/forum'],
+    redirectUris: ['http://localhost:4412/callback'],
     devSecret: 'forum-dev-secret',
   },
   {
     id: 'store',
     name: 'Tiger Store',
+    description: 'One-click checkout with your shipping details.',
     purpose: 'retail',
-    allowedScopes: ['username'],
-    requiredScopes: ['username'],
-    redirectUris: ['http://localhost:4410/callback/store'],
+    accent: 'rust',
+    allowedScopes: ['username', 'name', 'email', 'phone', 'address'],
+    requiredScopes: ['username', 'address'],
+    redirectUris: ['http://localhost:4413/callback'],
     devSecret: 'store-dev-secret',
   },
 ];

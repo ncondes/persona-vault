@@ -29,6 +29,18 @@ export class PrismaConsentRepository implements ConsentRepository {
     return rows.map(toConsent);
   }
 
+  async listForClient(clientId: string): Promise<Consent[]> {
+    const rows = await this.db.consent.findMany({
+      where: { clientId },
+      orderBy: { grantedAt: 'desc' },
+    });
+    return rows.map(toConsent);
+  }
+
+  countForClient(clientId: string): Promise<number> {
+    return this.db.consent.count({ where: { clientId } });
+  }
+
   async findByUserAndClient(userId: string, clientId: string): Promise<Consent | null> {
     const row = await this.db.consent.findUnique({
       where: { userId_clientId: { userId, clientId } },
