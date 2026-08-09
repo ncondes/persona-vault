@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { LocaleProvider } from "@/lib/locale";
 import type { Locale } from "@/lib/strings";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +35,11 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <LocaleProvider initial={locale}>{children}</LocaleProvider>
+        {/* Inside the provider: the toaster's own aria labels are translated. */}
+        <LocaleProvider initial={locale}>
+          {children}
+          <Toaster />
+        </LocaleProvider>
       </body>
     </html>
   );

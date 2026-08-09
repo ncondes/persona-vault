@@ -22,6 +22,8 @@ const en = {
     addAnother: "Add another",
     loading: "Loading…",
     somethingWrong: "Something went wrong. Please try again.",
+    notifications: "Notifications",
+    dismiss: "Dismiss",
   },
 
   nav: {
@@ -463,6 +465,8 @@ const es: Strings = {
     addAnother: "Añadir otra",
     loading: "Cargando…",
     somethingWrong: "Algo salió mal. Inténtalo de nuevo.",
+    notifications: "Notificaciones",
+    dismiss: "Descartar",
   },
 
   nav: {
