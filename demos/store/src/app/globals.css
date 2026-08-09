@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Tiger Store — the visual language is the parcel: kraft-warm paper, a shipping
+   label with a dashed tear line, and the brand's own orange-on-black stripe. */
+@theme {
+  --color-paper: #fffcf6;
+  --color-kraft: #f6ecdc;
+  --color-ink: #17120d;
+  --color-ink-soft: #6b5f52;
+  --color-tiger: #ef5a09;
+  --color-tiger-deep: #bf3f00;
+  --color-tiger-soft: #fdeee3;
+  --color-ship: #0d7a56;
+  --color-line: #e3d8c6;
+
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-body: var(--font-figtree), system-ui, sans-serif;
+  --font-data: var(--font-roboto-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+  }
+  button:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-tiger);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* The tiger's stripe, used once, as a rule under the wordmark. */
+  .stripe {
+    background-image: repeating-linear-gradient(
+      -60deg,
+      var(--color-ink) 0 6px,
+      transparent 6px 13px
+    );
+  }
+
+  /* A drawn barcode. Decorative, so it is hidden from assistive tech. */
+  .barcode {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--color-ink) 0 2px,
+      transparent 2px 4px,
+      var(--color-ink) 4px 5px,
+      transparent 5px 9px,
+      var(--color-ink) 9px 12px,
+      transparent 12px 14px
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

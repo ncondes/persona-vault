@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* City Health Clinic — the visual language is printed clinical paperwork:
+   institutional green, paper stock, and a red channel reserved strictly for
+   medical alerts, the way a real chart uses it. */
+@theme {
+  --color-paper: #f3f5f2;
+  --color-card: #ffffff;
+  --color-ink: #0f211c;
+  --color-ink-soft: #56635e;
+  --color-care: #0b6b4f;
+  --color-care-deep: #084d39;
+  --color-care-soft: #e2efe9;
+  --color-alert: #b3261e;
+  --color-alert-soft: #fbeceb;
+  --color-rule: #d4ddd7;
+
+  --font-display: var(--font-archivo), system-ui, sans-serif;
+  --font-body: var(--font-public-sans), system-ui, sans-serif;
+  --font-data: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+  }
+  button:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-care);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* The torn-off top edge of a form pad. */
+  .perforated {
+    -webkit-mask-image: radial-gradient(
+      circle 5px at 8px -1px,
+      transparent 5px,
+      #000 5.5px
+    );
+    mask-image: radial-gradient(circle 5px at 8px -1px, transparent 5px, #000 5.5px);
+    -webkit-mask-size: 16px 100%;
+    mask-size: 16px 100%;
+    -webkit-mask-repeat: repeat-x;
+    mask-repeat: repeat-x;
+  }
+
+  /* Dotted leaders between a field label and its value, as on a printed form. */
+  .leader {
+    background-image: radial-gradient(circle 1px, var(--color-rule) 1px, transparent 1px);
+    background-position: bottom 4px left 0;
+    background-size: 6px 6px;
+    background-repeat: repeat-x;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

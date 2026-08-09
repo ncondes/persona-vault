@@ -1,0 +1,16 @@
+# Development image for the Hobbyist Forum demo (hot reload via next dev).
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Install dependencies first so a source edit does not re-run npm install.
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Config and source. At runtime ./src is bind-mounted over this for hot reload;
+# node_modules and .next stay the container's.
+COPY . .
+
+EXPOSE 4412
+
+CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0"]
