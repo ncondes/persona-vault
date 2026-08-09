@@ -103,6 +103,7 @@ const en = {
       itemsSaved: (n: number) => `${n} item${n === 1 ? "" : "s"} saved`,
       cta: "Go to my data",
     },
+    accountCreated: "Your account is ready",
   },
 
   vault: {
@@ -149,6 +150,7 @@ const en = {
     emptyGroup: (kind: string) => `No ${kind.toLowerCase()} added yet`,
     usedIn: "used in:",
     deleteConfirm: "Delete this value? Apps it was shared with will stop receiving it.",
+    saved: "Saved to your vault",
     deleted: "Value deleted",
     defaultSet: "Now your default",
     errors: {
@@ -294,6 +296,7 @@ const en = {
     empty: "No apps yet",
     emptyBody: "Register one to get a client ID and choose what it may ask each person for.",
     emptyHint: "Browse the scope catalogue before you start.",
+    appCreated: "App created",
     appDeleted: "App deleted",
     statusOn: "App is active",
     statusOff: "App is paused",
@@ -555,6 +558,7 @@ const es: Strings = {
       itemsSaved: (n: number) => `${n} dato${n === 1 ? "" : "s"} guardado${n === 1 ? "" : "s"}`,
       cta: "Ir a mis datos",
     },
+    accountCreated: "Tu cuenta está lista",
   },
 
   vault: {
@@ -601,6 +605,7 @@ const es: Strings = {
     emptyGroup: (kind: string) => `Aún no has añadido ${kind.toLowerCase()}`,
     usedIn: "se usa en:",
     deleteConfirm: "¿Eliminar este valor? Las apps con las que se compartió dejarán de recibirlo.",
+    saved: "Guardado en tu vault",
     deleted: "Valor eliminado",
     defaultSet: "Ahora es tu predeterminado",
     errors: {
@@ -749,6 +754,7 @@ const es: Strings = {
     emptyBody:
       "Registra una para obtener un client ID y elegir qu\u00e9 puede pedirle a cada persona.",
     emptyHint: "Revisa el cat\u00e1logo de scopes antes de empezar.",
+    appCreated: "App creada",
     appDeleted: "App eliminada",
     statusOn: "La app está activa",
     statusOff: "La app está en pausa",

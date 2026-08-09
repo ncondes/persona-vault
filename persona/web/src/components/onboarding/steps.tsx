@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Plus, X } from "lucide-react";
 import { createItem, register, verifySignup } from "@/lib/api";
 import { errorMessage } from "@/lib/error-message";
+import { useToast } from "@/components/common/toast";
 import { dialOptions } from "@/lib/dial-codes";
 import { useStrings } from "@/lib/locale";
 import { maskEmail } from "@/lib/otp";
@@ -116,6 +117,7 @@ export function VerifyStep({
   challenge,
 }: StepProps & { challenge: OtpChallenge }) {
   const t = useStrings();
+  const notify = useToast();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -125,6 +127,7 @@ export function VerifyStep({
     setError(null);
     try {
       await verifySignup(challenge.challengeId, value);
+      notify.success(t.onboarding.accountCreated);
       onDone(2); // the vault starts with name + email
     } catch (err) {
       setError(errorMessage(t, err));
@@ -168,6 +171,7 @@ export function ContactStep({
   catalog,
 }: StepProps & { catalog: Catalog | null }) {
   const t = useStrings();
+  const notify = useToast();
   const [dial, setDial] = useState("+57");
   const [number, setNumber] = useState("");
   const [line1, setLine1] = useState("");
@@ -196,6 +200,7 @@ export function ContactStep({
         });
         added += 1;
       }
+      if (added > 0) notify.success(t.vault.saved);
       onDone(added);
     } catch (err) {
       setError(errorMessage(t, err));
@@ -276,6 +281,7 @@ export function DocumentStep({
   catalog,
 }: StepProps & { catalog: Catalog | null }) {
   const t = useStrings();
+  const notify = useToast();
   const [type, setType] = useState("CC");
   const [number, setNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
@@ -294,6 +300,7 @@ export function DocumentStep({
         value: number.trim(),
         detail: { type, issueDate, issuePlace },
       });
+      notify.success(t.vault.saved);
       onDone(1);
     } catch (err) {
       setError(errorMessage(t, err));
@@ -373,6 +380,7 @@ export function HealthStep({
   catalog,
 }: StepProps & { catalog: Catalog | null }) {
   const t = useStrings();
+  const notify = useToast();
   const [bloodType, setBloodType] = useState("");
   const [eps, setEps] = useState("");
   const [allergies, setAllergies] = useState<string[]>([""]);
@@ -402,6 +410,7 @@ export function HealthStep({
         await createItem({ kind: "allergy", value: allergy });
         added += 1;
       }
+      if (added > 0) notify.success(t.vault.saved);
       onDone(added);
     } catch (err) {
       setError(errorMessage(t, err));

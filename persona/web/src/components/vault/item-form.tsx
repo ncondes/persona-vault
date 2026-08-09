@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Field } from "@/components/common/field";
 import { Flag } from "@/components/common/flag";
+import { useToast } from "@/components/common/toast";
 
 interface ItemFormProps {
   kind: VaultKind;
@@ -36,6 +37,7 @@ interface ItemFormProps {
 // phone and address the parts are sent and the server composes the value.
 export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }: ItemFormProps) {
   const t = useStrings();
+  const notify = useToast();
   const [value, setValue] = useState(item?.value ?? "");
   const [label, setLabel] = useState(item?.label ?? "");
   const [nameContext, setNameContext] = useState<NameContext>(item?.nameContext ?? "preferred");
@@ -66,6 +68,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       } else {
         await createItem({ kind, ...payload });
       }
+      notify.success(t.vault.saved);
       onSaved();
     } catch (err) {
       setError(errorMessage(t, err));

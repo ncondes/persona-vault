@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
 import { Spinner } from "@/components/common/spinner";
+import { useToast } from "@/components/common/toast";
 import {
   AppIdentityFields,
   RedirectUriFields,
@@ -23,6 +24,7 @@ import { ScopeSummary } from "@/components/console/scope-summary";
 
 export default function NewAppPage() {
   const t = useStrings();
+  const notify = useToast();
   const router = useRouter();
   const catalog = useLoad(useCallback(() => getCatalog(), []));
 
@@ -169,10 +171,14 @@ export default function NewAppPage() {
         </div>
       </form>
 
+      {/* Said on the way out rather than on success: while the dialog is open
+          it is already the news, and router.push is soft, so the toast rides
+          across to the detail page. */}
       <SecretDialog
         secret={secret}
         onClose={() => {
           setSecret(null);
+          notify.success(t.console.appCreated);
           if (createdId) router.push(`/console/${createdId}`);
         }}
       />

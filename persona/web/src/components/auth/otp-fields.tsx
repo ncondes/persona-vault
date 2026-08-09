@@ -2,12 +2,14 @@
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useEffect, useRef, useState } from "react";
-import { ApiError, resendCode } from "@/lib/api";
+import { resendCode } from "@/lib/api";
+import { errorMessage } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { secondsUntilResend, sentAtFrom } from "@/lib/otp";
 import type { OtpChallenge } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useToast } from "@/components/common/toast";
 
 const LENGTH = 6;
 
@@ -59,12 +61,12 @@ export function OtpFields({ value, onChange, onComplete, disabled }: OtpFieldsPr
 // the server enforces, so the button never promises something it cannot do.
 export function ResendCode({ challenge }: { challenge: OtpChallenge }) {
   const t = useStrings();
+  const notify = useToast();
   const [last, setLast] = useState(() => sentAtFrom(challenge.expiresAt));
   // Starts equal to `last` — a full cooldown — so the first paint matches on the
   // server and on the client. The ticker below takes over a second later.
   const [now, setNow] = useState(last);
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,14 +78,12 @@ export function ResendCode({ challenge }: { challenge: OtpChallenge }) {
 
   const send = async () => {
     setBusy(true);
-    setNote(null);
     setError(null);
     try {
       setLast(sentAtFrom((await resendCode(challenge.challengeId)).expiresAt));
-      setNote(t.auth.otp.resent);
+      notify.success(t.auth.otp.resent);
     } catch (err) {
-      const code = err instanceof ApiError ? err.code : "";
-      setError(t.auth.errors[code] ?? t.common.somethingWrong);
+      setError(errorMessage(t, err));
     }
     setBusy(false);
   };
@@ -99,7 +99,6 @@ export function ResendCode({ challenge }: { challenge: OtpChallenge }) {
       >
         {left > 0 ? t.auth.otp.resendIn(left) : t.auth.otp.resend}
       </Button>
-      {note ? <p className="mt-1 text-sm text-muted-foreground">{note}</p> : null}
       {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
     </div>
   );
