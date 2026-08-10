@@ -5,7 +5,9 @@ export const registerSchema = z.object({
   firstName: z.string().min(1).max(60),
   lastName: z.string().min(1).max(60),
   email: z.string().email(),
-  password: z.string().min(8),
+  // Named, because "this is a bit short" is not what a person needs to hear
+  // about a password — they need the number.
+  password: z.string().min(8, { error: 'PASSWORD_TOO_SHORT' }),
 });
 
 export const loginSchema = z.object({
@@ -17,7 +19,7 @@ export const loginSchema = z.object({
 // and never costs the caller one of its five attempts.
 export const verifySchema = z.object({
   challengeId: z.string().min(1),
-  code: z.string().regex(new RegExp(`^\\d{${OTP_LENGTH}}$`)),
+  code: z.string().regex(new RegExp(`^\\d{${OTP_LENGTH}}$`), { error: 'INVALID_CODE' }),
 });
 
 export const resendSchema = z.object({

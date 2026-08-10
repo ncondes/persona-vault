@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { FIELD_ERRORS } from '../constants/field-errors';
 import { ALL_SCOPES, PURPOSES, SCOPE_KIND } from '../constants/scopes';
 import { ConflictError, NotFoundError, ValidationError } from '../domain/errors';
 import { Repositories } from '../domain/interfaces/unit-of-work';
@@ -106,25 +107,25 @@ function validate(app: {
   const fields: Record<string, string> = {};
 
   if (!(PURPOSES as readonly string[]).includes(app.purpose)) {
-    fields.purpose = `must be one of: ${PURPOSES.join(', ')}`;
+    fields.purpose = FIELD_ERRORS.NOT_ALLOWED;
   }
 
   // A scope the provider does not know would make the client unusable: the
   // OIDC layer rejects unknown scopes when it loads the client metadata.
   const unknown = app.allowedScopes.filter((scope) => !(scope in SCOPE_KIND));
   if (unknown.length > 0) {
-    fields.allowedScopes = `unknown scopes: ${unknown.join(', ')}`;
+    fields.allowedScopes = FIELD_ERRORS.UNKNOWN_SCOPE;
   } else if (app.allowedScopes.length === 0) {
-    fields.allowedScopes = 'pick at least one scope';
+    fields.allowedScopes = FIELD_ERRORS.EMPTY_LIST;
   }
 
   const outside = app.requiredScopes.filter((scope) => !app.allowedScopes.includes(scope));
   if (outside.length > 0) {
-    fields.requiredScopes = `must also be allowed: ${outside.join(', ')}`;
+    fields.requiredScopes = FIELD_ERRORS.REQUIRED_NOT_ALLOWED;
   }
 
   if (app.redirectUris.length === 0) {
-    fields.redirectUris = 'add at least one redirect URI';
+    fields.redirectUris = FIELD_ERRORS.EMPTY_LIST;
   }
 
   return fields;

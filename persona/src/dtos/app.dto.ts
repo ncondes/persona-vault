@@ -9,7 +9,7 @@ const purposeSchema = z.enum(PURPOSES);
 const redirectUriSchema = z
   .string()
   .url()
-  .refine((value) => !value.includes('#'), { message: 'must not contain a fragment' });
+  .refine((value) => !value.includes('#'), { error: 'URL_HAS_FRAGMENT' });
 
 const appFields = {
   name: z.string().min(1).max(60),

@@ -1,3 +1,4 @@
+import { FIELD_ERRORS } from '../src/constants/field-errors';
 import { AppError } from '../src/domain/errors';
 import { VaultItem } from '../src/domain/models';
 import { decryptSecret } from '../src/infrastructure/crypto/secret-box';
@@ -77,7 +78,7 @@ describe('client service', () => {
         service.create('owner-1', { ...validApp, allowedScopes: ['name', 'shoe_size'] }),
       );
       expect(err.statusCode).toBe(400);
-      expect(err.fields?.allowedScopes).toContain('shoe_size');
+      expect(err.fields?.allowedScopes).toBe(FIELD_ERRORS.UNKNOWN_SCOPE);
     });
 
     it('rejects an unknown purpose', async () => {
@@ -272,12 +273,12 @@ describe('client service', () => {
   describe('registration rules the console form should never send', () => {
     it('rejects an app that asks for nothing', async () => {
       const err = await errorFrom(build().service.create('owner-1', { ...validApp, allowedScopes: [] }));
-      expect(err.fields?.allowedScopes).toMatch(/at least one scope/i);
+      expect(err.fields?.allowedScopes).toBe(FIELD_ERRORS.EMPTY_LIST);
     });
 
     it('rejects an app with nowhere to redirect', async () => {
       const err = await errorFrom(build().service.create('owner-1', { ...validApp, redirectUris: [] }));
-      expect(err.fields?.redirectUris).toMatch(/at least one redirect/i);
+      expect(err.fields?.redirectUris).toBe(FIELD_ERRORS.EMPTY_LIST);
     });
 
     // The id carries six random hex characters, so this needs the collision

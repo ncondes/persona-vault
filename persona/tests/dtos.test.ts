@@ -1,3 +1,4 @@
+import { FIELD_ERRORS } from '../src/constants/field-errors';
 import { createAppSchema, previewAppSchema, updateAppSchema } from '../src/dtos/app.dto';
 import { registerSchema } from '../src/dtos/auth.dto';
 import { updateSettingsSchema } from '../src/dtos/settings.dto';
@@ -61,7 +62,7 @@ describe('createAppSchema', () => {
 
     expect(result.success).toBe(false);
     expect(fieldsOf(result)).toContain('redirectUris.0');
-    expect(result.error?.issues[0].message).toBe('must not contain a fragment');
+    expect(result.error?.issues[0].message).toBe(FIELD_ERRORS.URL_HAS_FRAGMENT);
   });
 });
 

@@ -130,6 +130,63 @@ describe('validateBody', () => {
 
     expect(Object.keys(thrown?.fields ?? {})).toEqual(['_']);
   });
+
+  // Zod's own wording is not a contract — it has changed between releases and
+  // reads like a stack trace. Each case runs a real safeParse, so a change in
+  // what zod reports fails here instead of reaching someone's screen.
+  it.each([
+    ['a missing field', z.object({ a: z.string() }), {}, 'REQUIRED'],
+    ['an empty string', z.object({ a: z.string().min(1) }), { a: '' }, 'REQUIRED'],
+    ['a short string', z.object({ a: z.string().min(8) }), { a: 'abc' }, 'TOO_SHORT'],
+    ['a long string', z.object({ a: z.string().max(3) }), { a: 'abcd' }, 'TOO_LONG'],
+    ['an empty list', z.object({ a: z.array(z.string()).min(1) }), { a: [] }, 'EMPTY_LIST'],
+    ['a full list', z.object({ a: z.array(z.string()).max(1) }), { a: ['x', 'y'] }, 'TOO_MANY'],
+    ['a bad email', z.object({ a: z.email() }), { a: 'nope' }, 'INVALID_EMAIL'],
+    ['a bad url', z.object({ a: z.url() }), { a: 'nope' }, 'INVALID_URL'],
+    ['a bad pattern', z.object({ a: z.string().regex(/^\d+$/) }), { a: 'x' }, 'INVALID_FORMAT'],
+    ['a value outside an enum', z.object({ a: z.enum(['x']) }), { a: 'y' }, 'NOT_ALLOWED'],
+    ['a value of the wrong type', z.object({ a: z.boolean() }), { a: 'yes' }, 'INVALID_TYPE'],
+    ['a custom rule', z.object({ a: z.string().refine(() => false, { error: 'URL_HAS_FRAGMENT' }) }), { a: 'x' }, 'URL_HAS_FRAGMENT'],
+  ])('reports %s as %s', (_label, schema, body, code) => {
+    let thrown: ValidationError | undefined;
+    try {
+      run(validateBody(schema), { body } as Partial<Request>);
+    } catch (err) {
+      thrown = err as ValidationError;
+    }
+
+    expect(thrown?.fields?.a).toBe(code);
+  });
+
+  // A schema can name its own code, and zod keeps its own issue code while
+  // swapping the text — so the override has to win over the generic mapping.
+  it('lets a schema name its own code', () => {
+    let thrown: ValidationError | undefined;
+    try {
+      run(
+        validateBody(z.object({ password: z.string().min(8, { error: 'PASSWORD_TOO_SHORT' }) })),
+        { body: { password: 'abc' } } as Partial<Request>,
+      );
+    } catch (err) {
+      thrown = err as ValidationError;
+    }
+
+    expect(thrown?.fields?.password).toBe('PASSWORD_TOO_SHORT');
+  });
+
+  it('reports a key the schema never declared', () => {
+    let thrown: ValidationError | undefined;
+    try {
+      run(
+        validateBody(z.object({ a: z.string() }).strict()),
+        { body: { a: 'x', b: 1 } } as Partial<Request>,
+      );
+    } catch (err) {
+      thrown = err as ValidationError;
+    }
+
+    expect(thrown?.fields?._).toBe('UNEXPECTED_FIELD');
+  });
 });
 
 describe('requireAuth', () => {

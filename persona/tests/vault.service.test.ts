@@ -1,3 +1,4 @@
+import { FIELD_ERRORS } from '../src/constants/field-errors';
 import {
   CreateVaultItemInput,
   UpdateVaultItemInput,
@@ -116,13 +117,13 @@ describe('VaultService', () => {
     const service = makeService();
     await expect(
       service.addItem(USER, { kind: 'blood_type', value: 'purple' }),
-    ).rejects.toMatchObject({ fields: { value: expect.stringMatching(/must be one of/i) } });
+    ).rejects.toMatchObject({ fields: { value: FIELD_ERRORS.NOT_ALLOWED } });
   });
 
   it('requires a detail block on documents and rejects it elsewhere', async () => {
     const service = makeService();
     await expect(service.addItem(USER, { kind: 'document', value: '123' })).rejects.toMatchObject({
-      fields: { detail: expect.stringMatching(/needs its detail/i) },
+      fields: { detail: FIELD_ERRORS.REQUIRED },
     });
     await expect(
       service.addItem(USER, {
@@ -130,14 +131,14 @@ describe('VaultService', () => {
         value: 'a@example.com',
         detail: { type: 'CC', issueDate: '2020-01-01', issuePlace: 'Bogotá' },
       }),
-    ).rejects.toMatchObject({ fields: { detail: expect.stringMatching(/does not carry/i) } });
+    ).rejects.toMatchObject({ fields: { detail: FIELD_ERRORS.NOT_APPLICABLE } });
   });
 
   it('rejects a name context on a non-name kind', async () => {
     const service = makeService();
     await expect(
       service.addItem(USER, { kind: 'email', value: 'a@example.com', nameContext: 'legal' }),
-    ).rejects.toMatchObject({ fields: { nameContext: expect.stringMatching(/only name items/i) } });
+    ).rejects.toMatchObject({ fields: { nameContext: FIELD_ERRORS.NOT_APPLICABLE } });
   });
 
   it('composes a name from its parts and requires both', async () => {

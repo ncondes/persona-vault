@@ -1,4 +1,5 @@
 import { BLOOD_TYPES, COUNTRIES, DOCUMENT_TYPES, EPS_PROVIDERS } from '../constants/catalog';
+import { FIELD_ERRORS } from '../constants/field-errors';
 import { KIND_META } from '../constants/vault';
 import { ConflictError, ValidationError } from '../domain/errors';
 import {
@@ -88,63 +89,63 @@ function validateForKind(
 
   if (payload.value !== undefined) {
     if (kind === 'blood_type' && !(BLOOD_TYPES as readonly string[]).includes(payload.value)) {
-      fields.value = `must be one of: ${BLOOD_TYPES.join(', ')}`;
+      fields.value = FIELD_ERRORS.NOT_ALLOWED;
     }
     if (kind === 'eps' && !(EPS_PROVIDERS as readonly string[]).includes(payload.value)) {
-      fields.value = `must be one of: ${EPS_PROVIDERS.join(', ')}`;
+      fields.value = FIELD_ERRORS.NOT_ALLOWED;
     }
     if (kind === 'birth_date' && !isCalendarDate(payload.value)) {
-      fields.value = 'must be a date in YYYY-MM-DD format';
+      fields.value = FIELD_ERRORS.INVALID_DATE;
     }
     if (kind === 'email' && !payload.value.includes('@')) {
-      fields.value = 'must be an email address';
+      fields.value = FIELD_ERRORS.INVALID_EMAIL;
     }
   }
 
   if (kind === 'name' && detail) {
-    if (!detail.firstName) fields['detail.firstName'] = 'is required';
-    if (!detail.lastName) fields['detail.lastName'] = 'is required';
+    if (!detail.firstName) fields['detail.firstName'] = FIELD_ERRORS.REQUIRED;
+    if (!detail.lastName) fields['detail.lastName'] = FIELD_ERRORS.REQUIRED;
   }
 
   if (kind === 'phone' && detail) {
     if (!detail.countryCode || !DIAL_CODES.has(detail.countryCode)) {
-      fields['detail.countryCode'] = `must be one of: ${[...DIAL_CODES].join(', ')}`;
+      fields['detail.countryCode'] = FIELD_ERRORS.NOT_ALLOWED;
     }
-    if (!detail.number) fields['detail.number'] = 'is required';
+    if (!detail.number) fields['detail.number'] = FIELD_ERRORS.REQUIRED;
   }
 
   if (kind === 'address' && detail) {
-    if (!detail.line1) fields['detail.line1'] = 'is required';
-    if (!detail.city) fields['detail.city'] = 'is required';
+    if (!detail.line1) fields['detail.line1'] = FIELD_ERRORS.REQUIRED;
+    if (!detail.city) fields['detail.city'] = FIELD_ERRORS.REQUIRED;
     if (!detail.country || !COUNTRY_CODES.has(detail.country)) {
-      fields['detail.country'] = `must be one of: ${[...COUNTRY_CODES].join(', ')}`;
+      fields['detail.country'] = FIELD_ERRORS.NOT_ALLOWED;
     }
   }
 
   if (kind === 'document') {
     if (payload.value !== undefined && detail === undefined) {
-      fields.detail = 'a document needs its detail (type, issueDate, issuePlace)';
+      fields.detail = FIELD_ERRORS.REQUIRED;
     }
     if (detail) {
       if (!detail.type || !(DOCUMENT_TYPES as readonly string[]).includes(detail.type)) {
-        fields['detail.type'] = `must be one of: ${DOCUMENT_TYPES.join(', ')}`;
+        fields['detail.type'] = FIELD_ERRORS.NOT_ALLOWED;
       }
       if (!detail.issueDate || !isCalendarDate(detail.issueDate)) {
-        fields['detail.issueDate'] = 'must be a date in YYYY-MM-DD format';
+        fields['detail.issueDate'] = FIELD_ERRORS.INVALID_DATE;
       }
       if (!detail.issuePlace) {
-        fields['detail.issuePlace'] = 'is required';
+        fields['detail.issuePlace'] = FIELD_ERRORS.REQUIRED;
       }
     }
   }
 
   const structured: VaultKind[] = [...COMPOSED_KINDS, 'document'];
   if (!structured.includes(kind) && detail) {
-    fields.detail = 'this kind does not carry a detail';
+    fields.detail = FIELD_ERRORS.NOT_APPLICABLE;
   }
 
   if (payload.nameContext != null && kind !== 'name') {
-    fields.nameContext = 'only name items carry a name context';
+    fields.nameContext = FIELD_ERRORS.NOT_APPLICABLE;
   }
 
   return fields;
@@ -169,10 +170,10 @@ export class VaultServiceImpl implements VaultService {
   async addItem(userId: string, input: NewVaultItem): Promise<VaultItemView> {
     const fields = validateForKind(input.kind, input);
     if (COMPOSED_KINDS.includes(input.kind) && !input.detail) {
-      fields.detail = 'is required';
+      fields.detail = FIELD_ERRORS.REQUIRED;
     }
     if (!COMPOSED_KINDS.includes(input.kind) && !input.value) {
-      fields.value = 'is required';
+      fields.value = FIELD_ERRORS.REQUIRED;
     }
     assertValid(fields);
 

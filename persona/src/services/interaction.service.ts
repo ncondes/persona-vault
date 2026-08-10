@@ -173,6 +173,10 @@ export class InteractionService {
     }
 
     if (missing.length > 0) {
+      // The odd one out: every other `fields` entry is an error code the client
+      // translates, but this one is the list of scopes still to fill in — data
+      // the consent screen acts on. The client only translates values it
+      // recognises, so a scope list passes through untouched.
       throw new AppError(400, 'MISSING_FIELDS', 'Add the missing data to continue', {
         scopes: missing.join(' '),
       });
