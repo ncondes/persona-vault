@@ -27,7 +27,10 @@ export function CopyField({
   };
 
   return (
-    <div className="flex gap-2">
+    // min-w-0 on the row itself, not just on the value: inside a dialog this is
+    // a grid item, which defaults to min-width:auto and would size itself to the
+    // whole untruncated secret, pushing the copy button past the dialog edge.
+    <div className="flex min-w-0 gap-2">
       <div className="flex h-11 min-w-0 flex-1 items-center rounded-xl bg-zinc-50 px-3.5 ring-1 ring-zinc-200">
         <span className="truncate font-mono text-[13px]">{display ?? value}</span>
       </div>
