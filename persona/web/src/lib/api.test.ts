@@ -117,7 +117,7 @@ describe("errors", () => {
         error: {
           code: "VALIDATION_ERROR",
           message: "Validation failed",
-          fields: { value: "must be an email address" },
+          fields: { value: "INVALID_EMAIL" },
         },
       },
     });
@@ -127,7 +127,7 @@ describe("errors", () => {
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(400);
     expect(err.code).toBe("VALIDATION_ERROR");
-    expect(err.fields).toEqual({ value: "must be an email address" });
+    expect(err.fields).toEqual({ value: "INVALID_EMAIL" });
   });
 
   // A gateway or proxy can fail with no JSON at all; the UI still needs

@@ -26,6 +26,64 @@ const en = {
     dismiss: "Dismiss",
   },
 
+  // Everything the API can refuse with, in words a person can act on. `codes`
+  // are the error codes it returns; `fields` are the per-field codes inside a
+  // validation error. The API only ever sends codes, so no sentence written by
+  // the server reaches a screen — see error-message.ts.
+  errors: {
+    codes: {
+      VALIDATION_ERROR: "Some details need fixing.",
+      NOT_FOUND: "We could not find that.",
+      CONFLICT: "That already exists.",
+      UNAUTHORIZED: "Please sign in again.",
+      TOO_MANY_REQUESTS: "Too many tries. Wait a moment.",
+      INTERNAL_SERVER_ERROR: "Something went wrong on our side.",
+
+      EMAIL_TAKEN: "An account with that email already exists.",
+      INVALID_CREDENTIALS: "Invalid email or password.",
+      OTP_INVALID: "That code is not right. Check it and try again.",
+      OTP_EXPIRED: "That code has expired. Start again to get a new one.",
+      OTP_TOO_MANY_ATTEMPTS: "Too many wrong codes. Start again to get a new one.",
+      CHALLENGE_NOT_FOUND: "That code is no longer valid. Please start again.",
+      OTP_RESEND_TOO_SOON: "Give the first code a moment to arrive.",
+      OTP_SEND_LIMIT: "Too many codes sent to that address. Try again later.",
+      EMAIL_SEND_FAILED: "We could not send the code. Please try again.",
+      USER_NOT_FOUND: "We could not find that account.",
+
+      SINGLE_VALUE_KIND: "Only one value is allowed here — edit the existing one.",
+      VAULT_ITEM_NOT_FOUND: "That value is no longer in your vault.",
+
+      APP_NOT_FOUND: "That app no longer exists.",
+      APP_ID_TAKEN: "That app id is already taken.",
+      UNKNOWN_CLIENT: "We do not recognise that app.",
+      INTERACTION_EXPIRED: "This took too long. Start again from the app.",
+      INVALID_DECISION: "We could not apply that choice. Try again.",
+      MISSING_FIELDS: "Add the missing data to continue.",
+    } as Record<string, string>,
+
+    fields: {
+      REQUIRED: "Please fill this in.",
+      PASSWORD_TOO_SHORT: "Use at least 8 characters.",
+      INVALID_EMAIL: "That does not look like an email address.",
+      INVALID_URL: "Enter a full web address, starting with https://",
+      URL_HAS_FRAGMENT: "Remove the # and anything after it.",
+      INVALID_CODE: "The code is 6 digits.",
+      INVALID_DATE: "Use a real date, like 2024-03-15.",
+      EMPTY_LIST: "Add at least one.",
+      TOO_MANY: "You have added the maximum.",
+      NOT_ALLOWED: "Pick one of the options.",
+      TOO_SHORT: "This is a bit short.",
+      TOO_LONG: "This is too long.",
+      NOT_APPLICABLE: "This does not apply here.",
+      UNKNOWN_SCOPE: "Some of those scopes no longer exist.",
+      REQUIRED_NOT_ALLOWED: "Data you require must also be allowed.",
+      INVALID_FORMAT: "That is not written in the right format.",
+      INVALID_TYPE: "That value is not valid here.",
+      UNEXPECTED_FIELD: "We did not expect that field.",
+      INVALID_VALUE: "That value is not valid.",
+    } as Record<string, string>,
+  },
+
   nav: {
     vault: "My data",
     connections: "Connections",
@@ -42,6 +100,7 @@ const en = {
     lastName: "Last name",
     email: "Email",
     password: "Password",
+    passwordHint: "At least 8 characters.",
     noAccount: "New here? Create your Persona",
     haveAccount: "Already have an account? Sign in",
     otp: {
@@ -55,17 +114,6 @@ const en = {
       resent: "A new code is on its way.",
       back: "Use a different email",
     },
-    errors: {
-      EMAIL_TAKEN: "An account with that email already exists.",
-      INVALID_CREDENTIALS: "Invalid email or password.",
-      OTP_INVALID: "That code is not right. Check it and try again.",
-      OTP_EXPIRED: "That code has expired. Start again to get a new one.",
-      OTP_TOO_MANY_ATTEMPTS: "Too many wrong codes. Start again to get a new one.",
-      CHALLENGE_NOT_FOUND: "That code is no longer valid. Please start again.",
-      OTP_RESEND_TOO_SOON: "Give the first code a moment to arrive.",
-      OTP_SEND_LIMIT: "Too many codes sent to that address. Try again later.",
-      EMAIL_SEND_FAILED: "We could not send the code. Please try again.",
-    } as Record<string, string>,
   },
 
   landing: {
@@ -153,9 +201,6 @@ const en = {
     saved: "Saved to your vault",
     deleted: "Value deleted",
     defaultSet: "Now your default",
-    errors: {
-      SINGLE_VALUE_KIND: "Only one value is allowed here — edit the existing one.",
-    } as Record<string, string>,
   },
 
   contexts: {
@@ -332,6 +377,7 @@ const en = {
       accentHint: "Used for the monogram, here and on the consent screen.",
       redirect: "Redirect",
       redirectUris: "Redirect URIs",
+      redirectUrisHint: "Where we send people back after they approve.",
       addUri: "Add URI",
       removeUri: "Remove",
       create: "Create app",
@@ -481,6 +527,60 @@ const es: Strings = {
     dismiss: "Descartar",
   },
 
+  errors: {
+    codes: {
+      VALIDATION_ERROR: "Hay datos que corregir.",
+      NOT_FOUND: "No encontramos eso.",
+      CONFLICT: "Eso ya existe.",
+      UNAUTHORIZED: "Inicia sesión otra vez.",
+      TOO_MANY_REQUESTS: "Demasiados intentos. Espera un momento.",
+      INTERNAL_SERVER_ERROR: "Algo salió mal de nuestro lado.",
+
+      EMAIL_TAKEN: "Ya existe una cuenta con ese correo.",
+      INVALID_CREDENTIALS: "Correo o contraseña inválidos.",
+      OTP_INVALID: "Ese código no es correcto. Revísalo e inténtalo otra vez.",
+      OTP_EXPIRED: "Ese código venció. Empieza de nuevo para recibir otro.",
+      OTP_TOO_MANY_ATTEMPTS: "Demasiados códigos erróneos. Empieza de nuevo para recibir otro.",
+      CHALLENGE_NOT_FOUND: "Ese código ya no sirve. Empieza de nuevo, por favor.",
+      OTP_RESEND_TOO_SOON: "Dale un momento al primer código para que llegue.",
+      OTP_SEND_LIMIT: "Se enviaron demasiados códigos a ese correo. Inténtalo más tarde.",
+      EMAIL_SEND_FAILED: "No pudimos enviar el código. Inténtalo otra vez.",
+      USER_NOT_FOUND: "No encontramos esa cuenta.",
+
+      SINGLE_VALUE_KIND: "Solo se permite un valor aquí — edita el existente.",
+      VAULT_ITEM_NOT_FOUND: "Ese valor ya no está en tu vault.",
+
+      APP_NOT_FOUND: "Esa app ya no existe.",
+      APP_ID_TAKEN: "Ese id de app ya está en uso.",
+      UNKNOWN_CLIENT: "No reconocemos esa app.",
+      INTERACTION_EXPIRED: "Esto tardó demasiado. Empieza otra vez desde la app.",
+      INVALID_DECISION: "No pudimos aplicar esa elección. Inténtalo otra vez.",
+      MISSING_FIELDS: "Añade los datos que faltan para continuar.",
+    },
+
+    fields: {
+      REQUIRED: "Completa este campo.",
+      PASSWORD_TOO_SHORT: "Usa al menos 8 caracteres.",
+      INVALID_EMAIL: "Eso no parece un correo electrónico.",
+      INVALID_URL: "Escribe una dirección web completa, que empiece por https://",
+      URL_HAS_FRAGMENT: "Quita el # y todo lo que va después.",
+      INVALID_CODE: "El código es de 6 dígitos.",
+      INVALID_DATE: "Usa una fecha real, como 2024-03-15.",
+      EMPTY_LIST: "Añade al menos uno.",
+      TOO_MANY: "Ya añadiste el máximo.",
+      NOT_ALLOWED: "Elige una de las opciones.",
+      TOO_SHORT: "Esto es muy corto.",
+      TOO_LONG: "Esto es demasiado largo.",
+      NOT_APPLICABLE: "Esto no aplica aquí.",
+      UNKNOWN_SCOPE: "Algunos de esos scopes ya no existen.",
+      REQUIRED_NOT_ALLOWED: "Los datos que exiges también deben estar permitidos.",
+      INVALID_FORMAT: "Eso no está escrito en el formato correcto.",
+      INVALID_TYPE: "Ese valor no sirve aquí.",
+      UNEXPECTED_FIELD: "No esperábamos ese campo.",
+      INVALID_VALUE: "Ese valor no es válido.",
+    },
+  },
+
   nav: {
     vault: "Mis datos",
     connections: "Conexiones",
@@ -497,6 +597,7 @@ const es: Strings = {
     lastName: "Apellido",
     email: "Correo electrónico",
     password: "Contraseña",
+    passwordHint: "Al menos 8 caracteres.",
     noAccount: "¿Nuevo aquí? Crea tu Persona",
     haveAccount: "¿Ya tienes cuenta? Inicia sesión",
     otp: {
@@ -509,17 +610,6 @@ const es: Strings = {
       resendIn: (seconds: number) => `Enviar un código nuevo en ${seconds}s`,
       resent: "Ya va en camino un código nuevo.",
       back: "Usar otro correo",
-    },
-    errors: {
-      EMAIL_TAKEN: "Ya existe una cuenta con ese correo.",
-      INVALID_CREDENTIALS: "Correo o contraseña inválidos.",
-      OTP_INVALID: "Ese código no es correcto. Revísalo e inténtalo otra vez.",
-      OTP_EXPIRED: "Ese código venció. Empieza de nuevo para recibir otro.",
-      OTP_TOO_MANY_ATTEMPTS: "Demasiados códigos erróneos. Empieza de nuevo para recibir otro.",
-      CHALLENGE_NOT_FOUND: "Ese código ya no sirve. Empieza de nuevo, por favor.",
-      OTP_RESEND_TOO_SOON: "Dale un momento al primer código para que llegue.",
-      OTP_SEND_LIMIT: "Se enviaron demasiados códigos a ese correo. Inténtalo más tarde.",
-      EMAIL_SEND_FAILED: "No pudimos enviar el código. Inténtalo otra vez.",
     },
   },
 
@@ -608,9 +698,6 @@ const es: Strings = {
     saved: "Guardado en tu vault",
     deleted: "Valor eliminado",
     defaultSet: "Ahora es tu predeterminado",
-    errors: {
-      SINGLE_VALUE_KIND: "Solo se permite un valor aquí — edita el existente.",
-    },
   },
 
   contexts: {
@@ -790,6 +877,7 @@ const es: Strings = {
       accentHint: "Se usa en el monograma, aqu\u00ed y en la pantalla de consentimiento.",
       redirect: "Redirecci\u00f3n",
       redirectUris: "URIs de redirecci\u00f3n",
+      redirectUrisHint: "A d\u00f3nde devolvemos a la gente cuando aprueba.",
       addUri: "A\u00f1adir URI",
       removeUri: "Quitar",
       create: "Crear app",
