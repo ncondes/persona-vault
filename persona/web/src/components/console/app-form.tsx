@@ -116,7 +116,7 @@ export function RedirectUriFields({
   const t = useStrings();
 
   return (
-    <Field label={t.console.form.redirectUris} error={error}>
+    <Field label={t.console.form.redirectUris} hint={t.console.form.redirectUrisHint} error={error}>
       <div className="flex flex-col gap-2">
         {uris.map((uri, index) => (
           <div key={index} className="flex gap-2">

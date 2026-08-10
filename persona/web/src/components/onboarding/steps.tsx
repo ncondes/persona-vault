@@ -93,7 +93,7 @@ export function EssentialsStep({
       <Field label={t.auth.email} htmlFor="email" hint={t.onboarding.essentials.emailHint}>
         <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
-      <Field label={t.auth.password} htmlFor="password">
+      <Field label={t.auth.password} htmlFor="password" hint={t.auth.passwordHint}>
         <Input
           id="password"
           type="password"
