@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ApiError, createApp, getCatalog } from "@/lib/api";
+import { errorMessage, fieldMessages } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { useLoad } from "@/lib/useLoad";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,10 @@ import { ScopePicker } from "@/components/console/scope-picker";
 import { selectionToScopes, type ScopeSelection } from "@/lib/scope-selection";
 import { SecretDialog } from "@/components/console/secret-dialog";
 import { ScopeSummary } from "@/components/console/scope-summary";
+
+// The fields the form draws a control for, and so the ones that can show their
+// own error. Keep in step with the JSX below.
+const INLINE_FIELDS = ["name", "description", "purpose", "redirectUris"];
 
 export default function NewAppPage() {
   const t = useStrings();
@@ -68,17 +73,22 @@ export default function NewAppPage() {
       setCreatedId(app.id);
       setSecret(app.secret);
     } catch (err) {
+      // Per field where the server named one, and on the name field otherwise,
+      // so a failure always has somewhere visible to land.
+      const fields = err instanceof ApiError ? fieldMessages(t, err.fields) : {};
       setErrors(
-        err instanceof ApiError && err.fields
-          ? err.fields
-          : { name: t.common.somethingWrong },
+        Object.keys(fields).length > 0 ? fields : { name: errorMessage(t, err) },
       );
     } finally {
       setBusy(false);
     }
   };
 
-  const firstError = Object.values(errors)[0];
+  // Fields with a home on screen say it themselves. What is left — a scope
+  // problem, say, which the picker has no room for — goes above the buttons.
+  const firstError = Object.entries(errors).find(
+    ([field]) => !INLINE_FIELDS.includes(field.split(".")[0]),
+  )?.[1];
 
   return (
     <div className="max-w-2xl">
