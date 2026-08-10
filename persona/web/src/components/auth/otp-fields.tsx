@@ -2,14 +2,15 @@
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useEffect, useRef, useState } from "react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { resendCode } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { secondsUntilResend, sentAtFrom } from "@/lib/otp";
 import type { OtpChallenge } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/components/common/toast";
+import { FormError } from "@/components/common/form-error";
 
 const LENGTH = 6;
 
@@ -67,7 +68,7 @@ export function ResendCode({ challenge }: { challenge: OtpChallenge }) {
   // server and on the client. The ticker below takes over a second later.
   const [now, setNow] = useState(last);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -83,7 +84,7 @@ export function ResendCode({ challenge }: { challenge: OtpChallenge }) {
       setLast(sentAtFrom((await resendCode(challenge.challengeId)).expiresAt));
       notify.success(t.auth.otp.resent);
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
     }
     setBusy(false);
   };
@@ -99,7 +100,7 @@ export function ResendCode({ challenge }: { challenge: OtpChallenge }) {
       >
         {left > 0 ? t.auth.otp.resendIn(left) : t.auth.otp.resend}
       </Button>
-      {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
+      {error ? <FormError className="mt-1 justify-center">{error}</FormError> : null}
     </div>
   );
 }

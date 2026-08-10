@@ -22,6 +22,7 @@ import { ScopePicker } from "@/components/console/scope-picker";
 import { selectionToScopes, type ScopeSelection } from "@/lib/scope-selection";
 import { SecretDialog } from "@/components/console/secret-dialog";
 import { ScopeSummary } from "@/components/console/scope-summary";
+import { FormError } from "@/components/common/form-error";
 
 // The fields the form draws a control for, and so the ones that can show their
 // own error. Keep in step with the JSX below.
@@ -41,7 +42,9 @@ export default function NewAppPage() {
     redirectUris: [""],
   });
   const [selection, setSelection] = useState<ScopeSelection>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // The failure, not the sentences about it: the sentences depend on the
+  // language, and it can change while they are on screen.
+  const [failure, setFailure] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -60,7 +63,7 @@ export default function NewAppPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
-    setErrors({});
+    setFailure(null);
     try {
       const app = await createApp({
         name: draft.name,
@@ -73,16 +76,21 @@ export default function NewAppPage() {
       setCreatedId(app.id);
       setSecret(app.secret);
     } catch (err) {
-      // Per field where the server named one, and on the name field otherwise,
-      // so a failure always has somewhere visible to land.
-      const fields = err instanceof ApiError ? fieldMessages(t, err.fields) : {};
-      setErrors(
-        Object.keys(fields).length > 0 ? fields : { name: errorMessage(t, err) },
-      );
+      setFailure(err);
     } finally {
       setBusy(false);
     }
   };
+
+  // Per field where the server named one, and on the name field otherwise, so a
+  // failure always has somewhere visible to land.
+  const named = failure instanceof ApiError ? fieldMessages(t, failure.fields) : {};
+  const errors =
+    Object.keys(named).length > 0
+      ? named
+      : failure
+        ? { name: errorMessage(t, failure) }
+        : {};
 
   // Fields with a home on screen say it themselves. What is left — a scope
   // problem, say, which the picker has no room for — goes above the buttons.
@@ -127,7 +135,7 @@ export default function NewAppPage() {
             <CardContent>
               <RedirectUriFields
                 uris={draft.redirectUris}
-                error={errors.redirectUris}
+                errors={errors}
                 onChange={(redirectUris) => setDraft({ ...draft, redirectUris })}
               />
             </CardContent>
@@ -168,7 +176,7 @@ export default function NewAppPage() {
           </Card>
         </section>
 
-        {firstError ? <p className="text-sm text-destructive">{firstError}</p> : null}
+        {firstError ? <FormError>{firstError}</FormError> : null}
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" size="xl" disabled={busy}>

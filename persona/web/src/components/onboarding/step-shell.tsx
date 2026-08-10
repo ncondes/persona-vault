@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SegmentedProgress } from "@/components/common/segmented-progress";
 import { useStrings } from "@/lib/locale";
+import { FormError } from "@/components/common/form-error";
 
 interface StepShellProps {
   total: number;
@@ -66,7 +67,7 @@ export function StepShell({
 
       <form onSubmit={onSubmit} className="mt-7 flex flex-1 flex-col">
         <div className="space-y-4">{children}</div>
-        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+        {error ? <FormError className="mt-3">{error}</FormError> : null}
         <div className="mt-8 flex flex-col gap-2">
           <Button size="xl" type="submit" disabled={busy}>
             {submitLabel ?? t.common.continue}

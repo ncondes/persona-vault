@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { BadgeCheck } from "lucide-react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { ApiError, getCatalog, interactionAbort, interactionDecision } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
 import {
   buildDecision,
   isTrivial,
@@ -21,6 +21,7 @@ import { useToast } from "@/components/common/toast";
 import { ItemForm } from "@/components/vault/item-form";
 import { ConsentFieldCard } from "./consent-field-card";
 import { ConsentHeader } from "./consent-header";
+import { FormError } from "@/components/common/form-error";
 
 interface ConsentScreenProps {
   prompt: ConsentPrompt;
@@ -36,7 +37,7 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
   );
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const { normal, sensitive } = useMemo(() => partitionFields(prompt.fields), [prompt.fields]);
@@ -55,7 +56,7 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
       if (err instanceof ApiError && err.code === "MISSING_FIELDS") {
         onDataAdded(); // refresh the details; the missing cards will show
       } else {
-        setError(errorMessage(t, err));
+        setError(err);
       }
       setBusy(false);
     }
@@ -168,7 +169,7 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
         {sensitive.map(renderField)}
       </div>
 
-      {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+      {error ? <FormError className="mt-3">{error}</FormError> : null}
 
       <div className="mt-6">
         <Button

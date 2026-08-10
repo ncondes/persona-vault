@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { login, verifyLogin } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { maskEmail } from "@/lib/otp";
 import type { OtpChallenge } from "@/lib/types";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
 import { OtpFields, ResendCode } from "./otp-fields";
+import { FormError } from "@/components/common/form-error";
 
 const CARD = "w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm";
 
@@ -20,7 +21,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   // The password is right, but nobody is signed in yet: the session cookie
@@ -32,7 +33,7 @@ export function LoginForm() {
     try {
       setChallenge(await login(email, password));
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
     }
     setBusy(false);
   };
@@ -44,7 +45,7 @@ export function LoginForm() {
       await verifyLogin(challenge!.challengeId, value);
       window.location.assign("/vault");
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setCode("");
       setBusy(false);
     }
@@ -71,7 +72,7 @@ export function LoginForm() {
             onComplete={(value) => void verify(value)}
             disabled={busy}
           />
-          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
+          {error ? <FormError className="justify-center">{error}</FormError> : null}
           <Button size="xl" type="submit" className="w-full" disabled={busy || code.length < 6}>
             {t.auth.otp.verify}
           </Button>
@@ -123,7 +124,7 @@ export function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Button size="xl" type="submit" className="w-full" disabled={busy}>
           {t.auth.signIn}
         </Button>

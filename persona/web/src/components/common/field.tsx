@@ -1,8 +1,8 @@
 "use client";
 
 import { cloneElement, isValidElement, useId } from "react";
-import { AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { FormError } from "@/components/common/form-error";
 
 interface FieldProps {
   label: string;
@@ -31,10 +31,7 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
       <Label htmlFor={htmlFor}>{label}</Label>
       {control}
       {error ? (
-        <p id={messageId} role="alert" className="flex gap-1.5 text-sm text-destructive">
-          <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          {error}
-        </p>
+        <FormError id={messageId}>{error}</FormError>
       ) : hint ? (
         <p className="text-sm text-muted-foreground">{hint}</p>
       ) : null}

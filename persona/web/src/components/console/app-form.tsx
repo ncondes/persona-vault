@@ -104,19 +104,26 @@ export function AppIdentityFields({
   );
 }
 
+// Takes the whole error map rather than one message: the server answers about
+// `redirectUris.0`, so the row that is actually wrong can be marked even though
+// the message belongs to the group.
 export function RedirectUriFields({
   uris,
-  error,
+  errors,
   onChange,
 }: {
   uris: string[];
-  error?: string;
+  errors: Record<string, string>;
   onChange: (next: string[]) => void;
 }) {
   const t = useStrings();
 
   return (
-    <Field label={t.console.form.redirectUris} hint={t.console.form.redirectUrisHint} error={error}>
+    <Field
+      label={t.console.form.redirectUris}
+      hint={t.console.form.redirectUrisHint}
+      error={errors.redirectUris}
+    >
       <div className="flex flex-col gap-2">
         {uris.map((uri, index) => (
           <div key={index} className="flex gap-2">
@@ -125,6 +132,7 @@ export function RedirectUriFields({
               inputMode="url"
               placeholder="https://example.com/callback"
               className="font-mono text-[13px]"
+              aria-invalid={errors[`redirectUris.${index}`] ? true : undefined}
               onChange={(e) => onChange(uris.map((v, i) => (i === index ? e.target.value : v)))}
             />
             {uris.length > 1 ? (

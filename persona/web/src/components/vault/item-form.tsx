@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { createItem, updateItem } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
 import {
   itemPayload,
   LABELED_KINDS,
@@ -23,6 +23,7 @@ import {
 import { Field } from "@/components/common/field";
 import { Flag } from "@/components/common/flag";
 import { useToast } from "@/components/common/toast";
+import { FormError } from "@/components/common/form-error";
 
 interface ItemFormProps {
   kind: VaultKind;
@@ -49,7 +50,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       ...(detail ?? {}),
     };
   });
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const part = (key: string) => parts[key] ?? "";
@@ -71,7 +72,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
       notify.success(t.vault.saved);
       onSaved();
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setBusy(false);
     }
   };
@@ -238,7 +239,7 @@ export function ItemForm({ kind, catalog, item, submitLabel, onSaved, onCancel }
         </Field>
       ) : null}
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <FormError>{error}</FormError> : null}
       <div className="flex gap-2">
         <Button type="submit" disabled={busy}>
           {submitLabel ?? t.common.save}

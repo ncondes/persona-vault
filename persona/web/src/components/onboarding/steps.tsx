@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Plus, X } from "lucide-react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { createItem, register, verifySignup } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
 import { useToast } from "@/components/common/toast";
 import { dialOptions } from "@/lib/dial-codes";
 import { useStrings } from "@/lib/locale";
@@ -49,7 +49,7 @@ export function EssentialsStep({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const submit = async (event: React.FormEvent) => {
@@ -62,7 +62,7 @@ export function EssentialsStep({
       onChallenge(challenge);
       onDone(0); // nothing in the vault yet — that happens once the code lands
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setBusy(false);
     }
   };
@@ -119,7 +119,7 @@ export function VerifyStep({
   const t = useStrings();
   const notify = useToast();
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const verify = async (value: string) => {
@@ -130,7 +130,7 @@ export function VerifyStep({
       notify.success(t.onboarding.accountCreated);
       onDone(2); // the vault starts with name + email
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setCode("");
       setBusy(false);
     }
@@ -177,7 +177,7 @@ export function ContactStep({
   const [line1, setLine1] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("CO");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const submit = async (event: React.FormEvent) => {
@@ -203,7 +203,7 @@ export function ContactStep({
       if (added > 0) notify.success(t.vault.saved);
       onDone(added);
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setBusy(false);
     }
   };
@@ -286,7 +286,7 @@ export function DocumentStep({
   const [number, setNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
   const [issuePlace, setIssuePlace] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const submit = async (event: React.FormEvent) => {
@@ -303,7 +303,7 @@ export function DocumentStep({
       notify.success(t.vault.saved);
       onDone(1);
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setBusy(false);
     }
   };
@@ -384,7 +384,7 @@ export function HealthStep({
   const [bloodType, setBloodType] = useState("");
   const [eps, setEps] = useState("");
   const [allergies, setAllergies] = useState<string[]>([""]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const setAllergy = (i: number, v: string) =>
@@ -413,7 +413,7 @@ export function HealthStep({
       if (added > 0) notify.success(t.vault.saved);
       onDone(added);
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setBusy(false);
     }
   };

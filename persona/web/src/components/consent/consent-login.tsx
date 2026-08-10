@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { interactionLogin, interactionVerify } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
 import { useStrings } from "@/lib/locale";
 import { maskEmail } from "@/lib/otp";
 import type { LoginPrompt, OtpChallenge } from "@/lib/types";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
 import { OtpFields, ResendCode } from "@/components/auth/otp-fields";
 import { ConsentHeader } from "./consent-header";
+import { FormError } from "@/components/common/form-error";
 
 const CARD = "w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm";
 
@@ -22,7 +23,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
   const [password, setPassword] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [busy, setBusy] = useState(false);
 
   const submit = async (event: React.FormEvent) => {
@@ -32,7 +33,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
     try {
       setChallenge(await interactionLogin(prompt.uid, email, password));
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
     }
     setBusy(false);
   };
@@ -44,7 +45,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
       const { redirectTo } = await interactionVerify(prompt.uid, challenge!.challengeId, value);
       window.location.assign(redirectTo);
     } catch (err) {
-      setError(errorMessage(t, err));
+      setError(err);
       setCode("");
       setBusy(false);
     }
@@ -67,7 +68,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
             onComplete={(value) => void verify(value)}
             disabled={busy}
           />
-          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
+          {error ? <FormError className="justify-center">{error}</FormError> : null}
           <Button size="xl" type="submit" className="w-full" disabled={busy || code.length < 6}>
             {t.auth.otp.verify}
           </Button>
@@ -103,7 +104,7 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Button size="xl" type="submit" className="w-full" disabled={busy}>
           {t.auth.signIn}
         </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useErrorMessage } from "@/components/common/use-error-message";
 import { previewPayload, updateApp } from "@/lib/api";
 import { useStrings } from "@/lib/locale";
 import type { AppView, Catalog, PreviewResult } from "@/lib/types";
@@ -11,6 +12,7 @@ import { useToast } from "@/components/common/toast";
 import { PayloadPreview } from "@/components/console/payload-preview";
 import { ScopeSummary } from "@/components/console/scope-summary";
 import { ScopePicker } from "@/components/console/scope-picker";
+import { FormError } from "@/components/common/form-error";
 import {
   diffScopes,
   selectionFrom,
@@ -35,7 +37,7 @@ export function AppScopes({
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorMessage();
   const [confirming, setConfirming] = useState(false);
 
   const chosen = Object.keys(selection);
@@ -76,8 +78,8 @@ export function AppScopes({
     try {
       onSaved(await updateApp(app.id, next));
       notify.success(t.console.scopes.saved);
-    } catch {
-      setError(t.common.somethingWrong);
+    } catch (err) {
+      setError(err);
     } finally {
       setBusy(false);
       setConfirming(false);
@@ -112,7 +114,7 @@ export function AppScopes({
           </CardContent>
         </Card>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <FormError>{error}</FormError> : null}
 
         {dirty ? (
           <div className="bg-background sticky bottom-0 flex flex-wrap items-center gap-3 py-3">
