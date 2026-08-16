@@ -182,6 +182,7 @@ describe("the endpoint map", () => {
     ["login", () => api.login("a@x.co", "p"), "POST", "/api/auth/login"],
     ["verifyLogin", () => api.verifyLogin("c1", "123456"), "POST", "/api/auth/login/verify"],
     ["resendCode", () => api.resendCode("c1"), "POST", "/api/auth/otp/resend"],
+    ["demoSignIn", () => api.demoSignIn("a@x.co"), "POST", "/api/auth/dev/login"],
     ["logout", () => api.logout(), "POST", "/api/auth/logout"],
     ["getMe", () => api.getMe(), "GET", "/api/auth/me"],
 
@@ -226,6 +227,6 @@ describe("the endpoint map", () => {
       .map(([name]) => name);
 
     // Keep this in step with the table above; a new endpoint should be pinned too.
-    expect(exported).toHaveLength(30);
+    expect(exported).toHaveLength(31);
   });
 });

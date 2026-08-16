@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
 import { OtpFields, ResendCode } from "@/components/auth/otp-fields";
+import { DemoSignIn } from "@/components/auth/demo-sign-in";
 import { ConsentHeader } from "./consent-header";
 import { FormError } from "@/components/common/form-error";
 
@@ -109,6 +110,14 @@ export function ConsentLogin({ prompt }: { prompt: LoginPrompt }) {
           {t.auth.signIn}
         </Button>
       </form>
+
+      <DemoSignIn
+        disabled={busy}
+        onCode={async (challengeId, value) => {
+          const { redirectTo } = await interactionVerify(prompt.uid, challengeId, value);
+          window.location.assign(redirectTo);
+        }}
+      />
     </div>
   );
 }

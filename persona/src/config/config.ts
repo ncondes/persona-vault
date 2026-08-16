@@ -23,11 +23,30 @@ const envSchema = z.object({
   MAIL_TRANSPORT: z.enum(['resend', 'console']).default('resend'),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).default('Persona <onboarding@resend.dev>'),
+  // The public demo. Sign-in is gated on a code sent by email, and the seeded
+  // account everything interesting hangs off lives at example.com, which no mail
+  // provider will deliver to — so a hosted copy that anyone can try needs a way
+  // in that does not involve an inbox. Off unless asked for, by name.
+  DEMO_LOGIN: z.stringbool().default(false),
+  // Only these addresses can use it. Accounts a visitor creates are not on the
+  // list, so the door does not open for them.
+  DEMO_LOGIN_EMAILS: z
+    .string()
+    .default('camila@example.com,dev@example.com')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    ),
 });
 
 const env = envSchema.parse(process.env);
 
-if (env.MAIL_TRANSPORT === 'console' && env.NODE_ENV === 'production') {
+// Codes would go to the log rather than to a person. That is exactly what the
+// demo wants — it reads them back out through the demo sign-in — and never what
+// a real deployment wants.
+if (env.MAIL_TRANSPORT === 'console' && env.NODE_ENV === 'production' && !env.DEMO_LOGIN) {
   throw new Error('MAIL_TRANSPORT=console cannot be used in production — codes would go to the log');
 }
 
@@ -50,6 +69,8 @@ export const config = {
   // transport is the one selected.
   resendApiKey: env.RESEND_API_KEY as string,
   emailFrom: env.EMAIL_FROM,
+  demoLogin: env.DEMO_LOGIN,
+  demoLoginEmails: env.DEMO_LOGIN_EMAILS,
   isProd: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
 };

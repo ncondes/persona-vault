@@ -48,6 +48,7 @@ const en = {
       OTP_RESEND_TOO_SOON: "Give the first code a moment to arrive.",
       OTP_SEND_LIMIT: "Too many codes sent to that address. Try again later.",
       EMAIL_SEND_FAILED: "We could not send the code. Please try again.",
+      NOT_A_DEMO_ACCOUNT: "Only the demo accounts can sign in this way.",
       USER_NOT_FOUND: "We could not find that account.",
 
       SINGLE_VALUE_KIND: "Only one value is allowed here — edit the existing one.",
@@ -113,6 +114,12 @@ const en = {
       resendIn: (seconds: number) => `Send a new code in ${seconds}s`,
       resent: "A new code is on its way.",
       back: "Use a different email",
+    },
+    demo: {
+      title: "Demo sign-in",
+      lead: "This copy is a demo, so codes are not emailed. Pick an account to go straight in.",
+      signInAs: (email: string) => `Sign in as ${email}`,
+      note: "Camila has a vault already filled in — that is the one the demo apps are worth trying with.",
     },
   },
 
@@ -547,6 +554,7 @@ const es: Strings = {
       OTP_RESEND_TOO_SOON: "Dale un momento al primer código para que llegue.",
       OTP_SEND_LIMIT: "Se enviaron demasiados códigos a ese correo. Inténtalo más tarde.",
       EMAIL_SEND_FAILED: "No pudimos enviar el código. Inténtalo otra vez.",
+      NOT_A_DEMO_ACCOUNT: "Solo las cuentas de demostración pueden entrar así.",
       USER_NOT_FOUND: "No encontramos esa cuenta.",
 
       SINGLE_VALUE_KIND: "Solo se permite un valor aquí — edita el existente.",
@@ -612,6 +620,12 @@ const es: Strings = {
       resendIn: (seconds: number) => `Enviar un código nuevo en ${seconds}s`,
       resent: "Ya va en camino un código nuevo.",
       back: "Usar otro correo",
+    },
+    demo: {
+      title: "Acceso de demostración",
+      lead: "Esta copia es una demostración, así que los códigos no se envían por correo. Elige una cuenta para entrar directamente.",
+      signInAs: (email: string) => `Entrar como ${email}`,
+      note: "Camila ya tiene la bóveda llena — es con esa cuenta que vale la pena probar las apps de ejemplo.",
     },
   },
 

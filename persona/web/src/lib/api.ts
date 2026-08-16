@@ -6,6 +6,7 @@ import type {
   Catalog,
   Connection,
   Decision,
+  DemoChallenge,
   Interaction,
   NewApp,
   NewVaultItem,
@@ -72,6 +73,11 @@ export const login = (email: string, password: string) =>
   request<OtpChallenge>("/api/auth/login", { method: "POST", body: { email, password } });
 export const verifyLogin = (challengeId: string, code: string) =>
   request<User>("/api/auth/login/verify", { method: "POST", body: { challengeId, code } });
+// The public demo's way in: hands back a working code instead of emailing it,
+// and only for the demo accounts. Mounted only when the server was asked to
+// offer it — see the catalog's `demoLogin`.
+export const demoSignIn = (email: string) =>
+  request<DemoChallenge>("/api/auth/dev/login", { method: "POST", body: { email } });
 export const resendCode = (challengeId: string) =>
   request<OtpChallenge>("/api/auth/otp/resend", { method: "POST", body: { challengeId } });
 export const logout = () => request<void>("/api/auth/logout", { method: "POST" });

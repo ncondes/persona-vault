@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
+import { config } from '../config/config';
 import { UserRepository } from '../domain/interfaces/user.repository';
-import { NotFoundError } from '../domain/errors';
+import { NotFoundError, UnauthorizedError } from '../domain/errors';
 import { User } from '../domain/models';
 import { AUTH_COOKIE, authCookieOptions, authCookieSetOptions } from '../infrastructure/auth/cookie';
 import { signAuthToken } from '../infrastructure/auth/token';
@@ -56,10 +57,15 @@ export class AuthController {
     this.accepted(res, await this.authService.startLogin(req.body.email, req.body.password));
   };
 
-  // Development only: returns a working login code for an address so the flow
-  // can be driven without a reachable inbox. Its route is not mounted in
-  // production; see buildAuthRoutes.
+  // Returns a working login code for an address, so the flow can be driven
+  // without a reachable inbox. Its route is mounted outside production, and in
+  // the public demo; see buildAuthRoutes. The demo narrows it to the seeded
+  // accounts, so it never becomes a way into an account a visitor made.
   devLogin = async (req: Request, res: Response): Promise<void> => {
+    const email = String(req.body.email).toLowerCase();
+    if (config.demoLogin && !config.demoLoginEmails.includes(email)) {
+      throw new UnauthorizedError('Not a demo account', 'NOT_A_DEMO_ACCOUNT');
+    }
     res.json({ data: await this.authService.startLoginForDev(req.body.email) });
   };
 

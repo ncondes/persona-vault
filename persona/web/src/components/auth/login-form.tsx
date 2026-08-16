@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/field";
 import { OtpFields, ResendCode } from "./otp-fields";
+import { DemoSignIn } from "./demo-sign-in";
 import { FormError } from "@/components/common/form-error";
 
 const CARD = "w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm";
@@ -135,6 +136,14 @@ export function LoginForm() {
           {t.auth.noAccount}
         </Link>
       </p>
+
+      <DemoSignIn
+        disabled={busy}
+        onCode={async (challengeId, value) => {
+          await verifyLogin(challengeId, value);
+          window.location.assign("/vault");
+        }}
+      />
     </div>
   );
 }

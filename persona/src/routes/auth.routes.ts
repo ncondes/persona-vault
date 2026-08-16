@@ -25,10 +25,12 @@ export function buildAuthRoutes(container: Container): Router {
   router.post('/logout', auth.logout);
   router.get('/me', requireAuth, auth.me);
 
-  // Development convenience: hand back a login code for an address so the flow
-  // works without a reachable inbox (the seeded demo users are @example.com,
-  // which the mail provider refuses in test mode). Never mounted in production.
-  if (!config.isProd) {
+  // Hands back a login code for an address, so the flow works without a
+  // reachable inbox — the seeded demo users are @example.com, which no mail
+  // provider will deliver to. This is a way past the password, so it is mounted
+  // only when asked for by name, and the controller serves only the addresses on
+  // the demo list. Local development leaves it on; anywhere else has to choose.
+  if (!config.isProd || config.demoLogin) {
     router.post('/dev/login', validateBody(devLoginSchema), auth.devLogin);
   }
 

@@ -21,6 +21,10 @@ export function buildCatalogRoutes(): Router {
         // Already public through the discovery document; the console builds
         // its integration snippets from it.
         issuer: config.oidcIssuer,
+        // The sign-in screen offers a way past the emailed code when this copy
+        // is a public demo, and says so on the page. Listing the accounts here
+        // gives away nothing: the whole point is that anyone may use them.
+        demoLogin: config.demoLogin ? { accounts: config.demoLoginEmails } : null,
         documentTypes: DOCUMENT_TYPES,
         bloodTypes: BLOOD_TYPES,
         epsProviders: EPS_PROVIDERS,

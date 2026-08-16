@@ -91,6 +91,9 @@ export interface ScopeMeta {
 
 export interface Catalog {
   issuer: string;
+  // Set only when this copy is a public demo, in which case sign-in codes are
+  // not emailed and these accounts can be used without one.
+  demoLogin: { accounts: string[] } | null;
   documentTypes: string[];
   bloodTypes: string[];
   epsProviders: string[];
@@ -165,6 +168,13 @@ export interface User {
 export interface OtpChallenge {
   challengeId: string;
   email: string;
+  expiresAt: string;
+}
+
+// What the demo hands back instead of sending an email: the code itself.
+export interface DemoChallenge {
+  challengeId: string;
+  code: string;
   expiresAt: string;
 }
 
