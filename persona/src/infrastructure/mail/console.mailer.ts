@@ -4,10 +4,12 @@ import { logger } from '../logger/logger';
 // Writes the message to the log instead of sending it, so the app can be run
 // and demonstrated without a mail provider that will accept the address.
 //
-// This is chosen, never fallen into: `MAIL_TRANSPORT=console` has to be set,
-// and config.ts refuses it in production. The original decision was that there
-// must be no transport to *silently* drop into when Resend fails — an explicit
-// switch that cannot be used in production keeps that intact.
+// This is chosen, never fallen into: `MAIL_TRANSPORT=console` has to be set by
+// name, and config.ts refuses it in production unless DEMO_LOGIN is on too —
+// the public demo, where the codes are read back through the demo sign-in and
+// nobody is waiting on an inbox. What that rule protects is the original
+// decision: there must be no transport to *silently* drop into when Resend
+// fails. Two explicit switches, both off by default, keep that intact.
 export class ConsoleMailer implements Mailer {
   async send(message: EmailMessage): Promise<void> {
     // The code is the only part anyone reading the log actually wants, so pull
