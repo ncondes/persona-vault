@@ -48,7 +48,7 @@ export default async function ConsolePage({
             </h1>
             <p className="text-ink-soft mt-1.5 text-[14px]">
               Connected as a registered client. Every check below just ran against{" "}
-              <span className="font-data text-ink-faint">{persona.internalUrl}</span>.
+              <span className="font-data text-ink-faint">{persona.publicUrl}</span>.
             </p>
           </div>
           <div className="font-data flex gap-2 text-[11px]">
