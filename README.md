@@ -11,6 +11,27 @@ person can override either, and withdraw both.
 CM3070 Final Project — Nicolas Conde Salazar, 220137157, Project Idea 7.1
 (Identity and profile management API).
 
+## Try it without installing anything
+
+| | Address |
+|---|---|
+| **Persona** | https://persona-id.up.railway.app |
+| City Health Clinic | https://city-health-clinic.up.railway.app |
+| Hobbyist Forum | https://hobbyist-forum.up.railway.app |
+| Tiger Store | https://tiger-store.up.railway.app |
+| Probe | https://persona-probe.up.railway.app |
+
+Sign in with the **Demo sign-in** button — one click, no password and no emailed
+code — as `camila@example.com`, whose vault is already filled in. Then connect
+the three products in turn and watch the same person disclose nine fields and a
+legal name to the clinic, two fields and a public name to the forum, and five
+fields and a preferred name to the store.
+
+The three products have addresses of their own on purpose: they are meant to
+read as unrelated companies, because that is the situation the project is about.
+They sleep when nobody is using them, so the first request to one takes a few
+seconds.
+
 ## Run everything
 
 ```bash
@@ -92,23 +113,6 @@ refuses to start without one — get a key at [resend.com](https://resend.com).
 (`onboarding@resend.dev`) only delivers to the address that owns the Resend
 account, which is enough to try the flow out. Tests never need a working key:
 they hand the container a stub mailer.
-
-## Try it without installing anything
-
-| | Address |
-|---|---|
-| **Persona** | https://web-production-5ce7e.up.railway.app |
-| City Health Clinic | https://clinic-production-5d38.up.railway.app |
-| Hobbyist Forum | https://forum-production-a339.up.railway.app |
-| Tiger Store | https://store-production-112e.up.railway.app |
-| Probe | https://probe-production-7b96.up.railway.app |
-
-Sign in with the **Demo sign-in** button — one click, no password and no emailed
-code — as `camila@example.com`, whose vault is already filled in. Then connect
-the three products in turn and watch the same person disclose nine fields and a
-legal name to the clinic, two fields and a public name to the forum, and five
-fields and a preferred name to the store. The demo apps sleep when nobody is
-using them, so the first request to one takes a few seconds.
 
 ## Deploying it
 
