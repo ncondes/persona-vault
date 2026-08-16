@@ -2,11 +2,14 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev -p 4420",
     "fresh": "rm -rf .next && next dev -p 4420",
     "build": "next build",
-    "start": "next start -p 4420",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-4420}",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

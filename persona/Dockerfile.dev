@@ -3,8 +3,11 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-# Install dependencies first for better layer caching.
-COPY package.json package-lock.json ./
+# Install dependencies first for better layer caching. The schema comes with
+# them because installing generates the Prisma client from it, and the generated
+# client is what the TypeScript build and the seed both import.
+COPY package.json package-lock.json prisma.config.ts ./
+COPY prisma ./prisma
 RUN npm install
 
 # Copy the source (overlaid by a bind mount at runtime for hot reload).

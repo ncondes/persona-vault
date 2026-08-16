@@ -1,6 +1,19 @@
 // Seed data for the demo relying parties. The OIDC provider reads clients from
-// the database; this list only exists so a clean clone comes up with the three
+// the database; this list only exists so a clean clone comes up with the four
 // demo apps already registered, through the same service the console uses.
+
+// Where each app answers, and the secret it authenticates with. Both are read
+// from the environment so a hosted copy can register its real addresses, and
+// both fall back to the local ones so a clean clone still works untouched —
+// which the integration tests rely on, since they build their redirect URIs
+// from this list.
+function demoOrigin(name: string, port: number): string {
+  return process.env[`${name.toUpperCase()}_URL`] ?? `http://localhost:${port}`;
+}
+
+function demoSecret(name: string): string {
+  return process.env[`${name.toUpperCase()}_CLIENT_SECRET`] ?? `${name}-dev-secret`;
+}
 
 export interface DemoClient {
   id: string;
@@ -35,8 +48,8 @@ export const DEMO_CLIENTS: DemoClient[] = [
       'allergies',
     ],
     requiredScopes: ['name', 'email', 'document', 'eps'],
-    redirectUris: ['http://localhost:4411/callback'],
-    devSecret: 'clinic-dev-secret',
+    redirectUris: [`${demoOrigin('clinic', 4411)}/callback`],
+    devSecret: demoSecret('clinic'),
   },
   {
     id: 'forum',
@@ -46,8 +59,8 @@ export const DEMO_CLIENTS: DemoClient[] = [
     accent: 'violet',
     allowedScopes: ['name', 'username'],
     requiredScopes: ['name'],
-    redirectUris: ['http://localhost:4412/callback'],
-    devSecret: 'forum-dev-secret',
+    redirectUris: [`${demoOrigin('forum', 4412)}/callback`],
+    devSecret: demoSecret('forum'),
   },
   {
     id: 'store',
@@ -57,8 +70,8 @@ export const DEMO_CLIENTS: DemoClient[] = [
     accent: 'rust',
     allowedScopes: ['username', 'name', 'email', 'phone', 'address'],
     requiredScopes: ['username', 'address'],
-    redirectUris: ['http://localhost:4413/callback'],
-    devSecret: 'store-dev-secret',
+    redirectUris: [`${demoOrigin('store', 4413)}/callback`],
+    devSecret: demoSecret('store'),
   },
   // The adversary. Registered exactly like the other three, and deliberately
   // modest about it: a social app asking for a name and a handle. What it then
@@ -73,7 +86,7 @@ export const DEMO_CLIENTS: DemoClient[] = [
     accent: 'rust',
     allowedScopes: ['name', 'username'],
     requiredScopes: ['username'],
-    redirectUris: ['http://localhost:4414/callback'],
-    devSecret: 'probe-dev-secret',
+    redirectUris: [`${demoOrigin('probe', 4414)}/callback`],
+    devSecret: demoSecret('probe'),
   },
 ];

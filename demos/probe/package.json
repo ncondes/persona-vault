@@ -2,10 +2,13 @@
   "name": "demo-probe",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev -p 4414",
     "build": "next build",
-    "start": "next start -p 4414",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-4414}",
     "lint": "eslint",
     "test": "vitest run",
     "test:cov": "vitest run --coverage"

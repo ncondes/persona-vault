@@ -2,10 +2,13 @@
   "name": "demo-clinic",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev -p 4411",
     "build": "next build",
-    "start": "next start -p 4411",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-4411}",
     "lint": "eslint",
     "test": "vitest run",
     "test:cov": "vitest run --coverage"
