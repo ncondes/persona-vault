@@ -240,6 +240,29 @@ describe('AuthService', () => {
       expect(harness.sent).toHaveLength(0);
     });
 
+    // The development helper: no password, no email, a code good to sign in with.
+    it('signs in for development with just the address', async () => {
+      const harness = makeService();
+      const registered = await registerVerified(harness);
+      const before = harness.sent.length;
+
+      const dev = await harness.service.startLoginForDev('a@example.com');
+      const user = await harness.service.completeLogin(dev.challengeId, dev.code);
+
+      expect(user.id).toBe(registered.id);
+      expect(harness.sent).toHaveLength(before);
+    });
+
+    it('will not hand a development code to an unknown email', async () => {
+      const harness = makeService();
+
+      const err = await errorFrom<{ code: string }>(
+        harness.service.startLoginForDev('nobody@example.com'),
+      );
+
+      expect(err.code).toBe('INVALID_CREDENTIALS');
+    });
+
     it('will not finish a sign-in with a sign-up code', async () => {
       const harness = makeService();
       const issued = await harness.service.startRegistration(

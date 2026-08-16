@@ -122,6 +122,7 @@ const en = {
     points: ["Save your data once", "Share it with one tap", "Never passwords or cards"],
     cta: "Get started",
     signIn: "Sign in",
+    docs: "Building an app? Read the developer docs",
   },
 
   onboarding: {
@@ -338,6 +339,7 @@ const en = {
     title: "Developer console",
     lead: "Apps that ask for data with \u201cConnect with Persona\u201d.",
     register: "Register an app",
+    getStarted: "Get started",
     empty: "No apps yet",
     emptyBody: "Register one to get a client ID and choose what it may ask each person for.",
     emptyHint: "Browse the scope catalogue before you start.",
@@ -619,6 +621,7 @@ const es: Strings = {
     points: ["Guarda tus datos una sola vez", "Compártelos con un toque", "Nunca contraseñas ni tarjetas"],
     cta: "Empezar",
     signIn: "Iniciar sesión",
+    docs: "¿Creando una app? Lee la documentación",
   },
 
   onboarding: {
@@ -837,6 +840,7 @@ const es: Strings = {
     title: "Consola de desarrollador",
     lead: "Aplicaciones que piden datos con \u00abConectar con Persona\u00bb.",
     register: "Registrar app",
+    getStarted: "Empezar",
     empty: "A\u00fan no tienes apps",
     emptyBody:
       "Registra una para obtener un client ID y elegir qu\u00e9 puede pedirle a cada persona.",

@@ -122,7 +122,7 @@ async function main() {
   }
 
   console.log(
-    `Seed complete: ${email} (vault) + ${DEVELOPER_EMAIL} (owns clinic, forum & store).`,
+    `Seed complete: ${email} (vault) + ${DEVELOPER_EMAIL} (owns ${DEMO_CLIENTS.map((c) => c.id).join(', ')}).`,
   );
 }
 

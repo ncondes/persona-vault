@@ -56,6 +56,13 @@ export class AuthController {
     this.accepted(res, await this.authService.startLogin(req.body.email, req.body.password));
   };
 
+  // Development only: returns a working login code for an address so the flow
+  // can be driven without a reachable inbox. Its route is not mounted in
+  // production; see buildAuthRoutes.
+  devLogin = async (req: Request, res: Response): Promise<void> => {
+    res.json({ data: await this.authService.startLoginForDev(req.body.email) });
+  };
+
   verifyLogin = async (req: Request, res: Response): Promise<void> => {
     const user = await this.authService.completeLogin(req.body.challengeId, req.body.code);
     res.cookie(AUTH_COOKIE, signAuthToken(user.id), authCookieSetOptions);

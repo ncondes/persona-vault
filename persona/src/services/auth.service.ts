@@ -3,7 +3,7 @@ import { UserRepository } from '../domain/interfaces/user.repository';
 import { ConflictError, UnauthorizedError } from '../domain/errors';
 import { OtpChallenge, User } from '../domain/models';
 import { hashPassword, verifyPassword } from '../infrastructure/auth/password';
-import { IssuedChallenge, OtpService } from './otp.service';
+import { DevChallenge, IssuedChallenge, OtpService } from './otp.service';
 
 export interface AuthService {
   startRegistration(
@@ -14,6 +14,7 @@ export interface AuthService {
   ): Promise<IssuedChallenge>;
   completeRegistration(challengeId: string, code: string): Promise<User>;
   startLogin(email: string, password: string): Promise<IssuedChallenge>;
+  startLoginForDev(email: string): Promise<DevChallenge>;
   completeLogin(challengeId: string, code: string): Promise<User>;
 }
 
@@ -77,6 +78,17 @@ export class AuthServiceImpl implements AuthService {
       throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
     }
     return this.otp.issue({ purpose: 'login', email: user.email, userId: user.id });
+  }
+
+  // Skips the password and the email: given an address, hands back a working
+  // login code. No account is revealed to a stranger because the route calling
+  // this only exists outside production.
+  async startLoginForDev(email: string): Promise<DevChallenge> {
+    const user = await this.users.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
+    }
+    return this.otp.issueForDev({ purpose: 'login', email: user.email, userId: user.id });
   }
 
   async completeLogin(challengeId: string, code: string): Promise<User> {

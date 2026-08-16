@@ -60,4 +60,20 @@ export const DEMO_CLIENTS: DemoClient[] = [
     redirectUris: ['http://localhost:4413/callback'],
     devSecret: 'store-dev-secret',
   },
+  // The adversary. Registered exactly like the other three, and deliberately
+  // modest about it: a social app asking for a name and a handle. What it then
+  // goes after is health data, other people's vaults, and tokens it should not
+  // be able to use. Everything it is refused is refused because of what it
+  // registered as, which is the point the evaluation chapter is making.
+  {
+    id: 'probe',
+    name: 'Probe',
+    description: 'An adversarial relying party, used to test what Persona refuses.',
+    purpose: 'social',
+    accent: 'rust',
+    allowedScopes: ['name', 'username'],
+    requiredScopes: ['username'],
+    redirectUris: ['http://localhost:4414/callback'],
+    devSecret: 'probe-dev-secret',
+  },
 ];

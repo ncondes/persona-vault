@@ -6,7 +6,7 @@ and apps connect through OAuth/OpenID Connect ("Connect with Persona") to
 receive only the values the user approves, with the right value suggested for
 each context. Every grant, release and revocation is audited.
 
-Built on the **Project Idea 7.1** template (CM3035). This folder is the working
+Built on the **Project Idea 7.1** template (CM3070). This folder is the working
 application; the academic write-ups live under `../tasks/`.
 
 ## Stack

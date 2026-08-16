@@ -113,6 +113,30 @@ describe('oidc payload repository (integration)', () => {
       expect(await repo.find('Grant', rowId)).toEqual({ ok: true });
     });
 
+    // The expiry cutoff has to be read at query time. Every other expiry test
+    // here creates a row that was already stale, which a cutoff frozen at import
+    // still rejects correctly — so none of them can catch a stale cutoff. This
+    // one expires a row *during* the test, which is the only way to tell the
+    // two apart.
+    it('stops finding a row the moment it expires, not just one that was already stale', async () => {
+      const rowId = id('expires-mid-test');
+      await repo.upsert({
+        model: 'AccessToken',
+        id: rowId,
+        payload: { scope: 'openid' },
+        grantId: null,
+        userCode: null,
+        uid: null,
+        expiresAt: new Date(Date.now() + 300),
+      });
+
+      expect(await repo.find('AccessToken', rowId)).toEqual({ scope: 'openid' });
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      expect(await repo.find('AccessToken', rowId)).toBeNull();
+    });
+
     // Called only from the 15-minute sweep in src/index.ts, so nothing else
     // exercises it.
     it('deleteExpired removes past rows and leaves live ones', async () => {

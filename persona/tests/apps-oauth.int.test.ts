@@ -210,6 +210,21 @@ describe('a console-registered app can run the real OAuth flow', () => {
     await agent.put(`/api/apps/${clientId}`).send({ status: 'active' });
   });
 
+  // Pausing is advertised as taking effect immediately, so it has to reach the
+  // tokens already out there and not just the next authorization.
+  it('stops honouring live tokens while the app is paused', async () => {
+    const { token } = await connect('openid name');
+    const accessToken = token.body.access_token as string;
+    expect((await agent.get('/oidc/me').auth(accessToken, { type: 'bearer' })).status).toBe(200);
+
+    await agent.put(`/api/apps/${clientId}`).send({ status: 'disabled' });
+    expect((await agent.get('/oidc/me').auth(accessToken, { type: 'bearer' })).status).toBe(401);
+
+    // And it comes back: pausing withholds the app, it does not destroy consent.
+    await agent.put(`/api/apps/${clientId}`).send({ status: 'active' });
+    expect((await agent.get('/oidc/me').auth(accessToken, { type: 'bearer' })).status).toBe(200);
+  });
+
   it('kills live tokens when the app is deleted', async () => {
     const uri = 'http://localhost:4497/callback';
     const created = await agent.post('/api/apps').send({

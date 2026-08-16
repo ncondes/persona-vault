@@ -55,6 +55,12 @@ services:
       DATABASE_URL: "postgresql://persona:persona@postgres:5432/persona?schema=public"
       OIDC_ISSUER: "http://localhost:4400/oidc"
       WEB_URL: "http://localhost:4420"
+      # Codes go to the log, not to an inbox. Set here rather than left to
+      # persona/.env because the seeded demo user is camila@example.com, and
+      # Resend refuses example.com outright — so without this, a fresh clone
+      # comes up with an account nobody can sign in to. config.ts refuses this
+      # value when NODE_ENV=production.
+      MAIL_TRANSPORT: "console"
     # Seeding is required, not convenience: clients live in the database now, so
     # an unseeded database has no relying parties at all.
     command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run dev"

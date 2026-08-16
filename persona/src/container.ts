@@ -6,6 +6,7 @@ import { config } from './config/config';
 import { Mailer } from './domain/interfaces/mailer';
 import { Repositories, UnitOfWork } from './domain/interfaces/unit-of-work';
 import { prisma } from './infrastructure/db/prisma';
+import { ConsoleMailer } from './infrastructure/mail/console.mailer';
 import { ResendMailer } from './infrastructure/mail/resend.mailer';
 import { createRepositories } from './repositories';
 import { PrismaUnitOfWork } from './repositories/unit-of-work';
@@ -27,6 +28,14 @@ export interface ContainerOverrides {
 
 // Wires the application's dependencies together at startup.
 // Order: infrastructure -> repositories -> services -> controllers.
+// Which way outbound mail goes. `console` is opt-in and refused in production
+// by config.ts, so this cannot quietly become the transport in a real deployment.
+function buildMailer(): Mailer {
+  return config.mailTransport === 'console'
+    ? new ConsoleMailer()
+    : new ResendMailer(config.resendApiKey, config.emailFrom);
+}
+
 export class Container {
   readonly repositories: Repositories;
   readonly unitOfWork: UnitOfWork;
@@ -46,7 +55,7 @@ export class Container {
 
   constructor(overrides: ContainerOverrides = {}) {
     // infrastructure
-    this.mailer = overrides.mailer ?? new ResendMailer(config.resendApiKey, config.emailFrom);
+    this.mailer = overrides.mailer ?? buildMailer();
 
     // repositories (bound to the shared client for non-transactional work)
     this.repositories = createRepositories(prisma);

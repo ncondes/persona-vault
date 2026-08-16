@@ -1,14 +1,20 @@
 # Demo relying parties
 
-Three unrelated products that connect to Persona. The same person, with the same
-vault, ends up sharing very different things with each — which is the whole
-argument the project is making.
+Three unrelated products that connect to Persona, and a fourth that attacks it.
+The same person, with the same vault, ends up sharing very different things with
+each — which is the whole argument the project is making.
 
 | App | Port | Purpose | Asks for | Gets the name variant |
 |-----|------|---------|----------|----------------------|
 | [`clinic`](./clinic) — City Health Clinic | 4411 | `healthcare` | name, email, phone, date of birth, document, blood type, EPS, allergies, address | **Legal** |
 | [`forum`](./forum) — Hobbyist Forum | 4412 | `social` | name, username | **Public** |
 | [`store`](./store) — Tiger Store | 4413 | `retail` | username, name, email, phone, address | **Preferred** (no rule for `retail`, so the default) |
+| [`probe`](./probe) — Probe | 4414 | `social` (declared) | name, username — then reaches for everything else | **Public**, and nothing more |
+
+The first three are products. [`probe`](./probe) is a tool: a registered client
+that misbehaves on purpose — over-requesting scopes, tampering with redirect
+URIs, replaying codes and tokens — and shows what comes back. Ten checks, none
+of which currently get through.
 
 The name variant is not chosen by the app. Persona picks it from the purpose the
 app declared when it was registered, and the person can override it on the
@@ -39,14 +45,16 @@ system up at once from the repo root with `docker compose up`.
 
 ## Registering your own
 
-These three are created by Persona's seed so a clean clone works immediately.
-To add a fourth, sign in to Persona as `dev@example.com` and register it in the
+All four are created by Persona's seed so a clean clone works immediately. To
+add another, sign in to Persona as `dev@example.com` and register it in the
 developer console — the console hands you a client ID and a secret that go
 straight into a `.env` like the ones here.
 
 ## What each app does with the token
 
-All three follow the same flow, and all three do it properly:
+All four follow the same flow, and all four do it properly — Probe included,
+which is the point of it: its refusals are about what it registered as, not
+about it getting OAuth wrong.
 
 1. `/connect` builds an authorization URL with a random `state` and a PKCE
    `code_challenge`, parking both in short-lived httpOnly cookies.

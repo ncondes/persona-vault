@@ -7,7 +7,12 @@ import { DbClient } from '../infrastructure/db/db-client';
 import { Prisma } from '../generated/prisma/client';
 
 // A row is live when it has no expiry or the expiry is still ahead.
-const unexpired = { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] };
+//
+// A function, not a constant: as a constant the `new Date()` was evaluated once
+// when this module was imported, so the cutoff was the process start time and
+// never moved. Every artifact that expired after boot went on being found, and
+// in a long-running process that means expiry quietly stops being enforced.
+const unexpired = () => ({ OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] });
 
 function toData(row: { payload: unknown } | null): OidcPayloadData | null {
   return row ? (row.payload as OidcPayloadData) : null;
@@ -28,17 +33,17 @@ export class PrismaOidcPayloadRepository implements OidcPayloadRepository {
 
   async find(model: string, id: string): Promise<OidcPayloadData | null> {
     const row = await this.db.oidcPayload.findFirst({
-      where: { model, id, ...unexpired },
+      where: { model, id, ...unexpired() },
     });
     return toData(row);
   }
 
   async findByUid(uid: string): Promise<OidcPayloadData | null> {
-    return toData(await this.db.oidcPayload.findFirst({ where: { uid, ...unexpired } }));
+    return toData(await this.db.oidcPayload.findFirst({ where: { uid, ...unexpired() } }));
   }
 
   async findByUserCode(userCode: string): Promise<OidcPayloadData | null> {
-    return toData(await this.db.oidcPayload.findFirst({ where: { userCode, ...unexpired } }));
+    return toData(await this.db.oidcPayload.findFirst({ where: { userCode, ...unexpired() } }));
   }
 
   async setPayload(model: string, id: string, payload: OidcPayloadData): Promise<void> {

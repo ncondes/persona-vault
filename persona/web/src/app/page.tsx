@@ -56,6 +56,13 @@ export default async function LandingPage() {
           <Link href="/login">{t.landing.signIn}</Link>
         </Button>
         <p className="mt-5 text-center text-sm text-white/55">{t.onboarding.welcomeNote}</p>
+        <Link
+          href="/docs"
+          className="mt-6 inline-flex items-center justify-center gap-1 text-center text-sm font-medium text-white/70 underline-offset-4 hover:text-white hover:underline"
+        >
+          {t.landing.docs}
+          <span aria-hidden>→</span>
+        </Link>
       </div>
     </div>
   );

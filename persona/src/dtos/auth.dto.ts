@@ -15,6 +15,12 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+// The development-only sign-in helper takes just the address; its route is not
+// mounted in production.
+export const devLoginSchema = z.object({
+  email: z.string().email(),
+});
+
 // The code is digits only, so anything else is rejected before a lookup happens
 // and never costs the caller one of its five attempts.
 export const verifySchema = z.object({
@@ -28,5 +34,6 @@ export const resendSchema = z.object({
 
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
+export type DevLoginDto = z.infer<typeof devLoginSchema>;
 export type VerifyDto = z.infer<typeof verifySchema>;
 export type ResendDto = z.infer<typeof resendSchema>;

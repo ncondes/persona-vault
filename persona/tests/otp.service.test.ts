@@ -132,6 +132,35 @@ describe('OtpService', () => {
     });
   });
 
+  // The development-only path: the code comes back in the clear, no email is
+  // sent, and it still passes verify().
+  describe('issuing for development', () => {
+    const login = { purpose: 'login', email: 'ada@example.com', userId: 'user-1' } as const;
+
+    it('hands back a code that verify() accepts, without sending mail', async () => {
+      const { service, mailer } = makeService();
+
+      const dev = await service.issueForDev(login);
+
+      expect(mailer.sent).toHaveLength(0);
+      expect(dev.code).toMatch(/^\d{6}$/);
+      const challenge = await service.verify(dev.challengeId, dev.code);
+      expect(challenge.id).toBe(dev.challengeId);
+      expect(challenge.userId).toBe('user-1');
+    });
+
+    it('replaces any live challenge so the returned code is the valid one', async () => {
+      const { service, challenges } = makeService();
+
+      const first = await service.issue(login);
+      const second = await service.issueForDev(login);
+
+      expect(second.challengeId).not.toBe(first.challengeId);
+      expect(challenges.rows).toHaveLength(1);
+      await expect(service.verify(second.challengeId, second.code)).resolves.toBeDefined();
+    });
+  });
+
   describe('verifying', () => {
     it('accepts the code that was sent', async () => {
       const { service, mailer } = makeService();

@@ -22,6 +22,7 @@ module.exports = {
       testMatch: ['**/*.int.test.ts'],
       testPathIgnorePatterns: ['/node_modules/'],
       setupFiles: ['<rootDir>/tests/int.setup.js'],
+      setupFilesAfterEnv: ['<rootDir>/tests/support/reuse-servers.js'],
     },
   ],
   collectCoverageFrom,

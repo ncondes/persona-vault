@@ -61,6 +61,25 @@ describe('auth flow (integration)', () => {
     expect(good.body.data.email).toBe(email);
   });
 
+  // The development helper, mounted only outside production: it returns a working
+  // code so a sign-in can be finished without a reachable inbox.
+  it('signs in through the dev endpoint without an email or a password', async () => {
+    const agent = request.agent(app);
+
+    const dev = await agent.post('/api/auth/dev/login').send({ email });
+    expect(dev.status).toBe(200);
+    expect(dev.body.data.code).toMatch(/^\d{6}$/);
+
+    const verified = await agent
+      .post('/api/auth/login/verify')
+      .send({ challengeId: dev.body.data.challengeId, code: dev.body.data.code });
+    expect(verified.status).toBe(200);
+    expect(verified.body.data.email).toBe(email);
+
+    const me = await agent.get('/api/auth/me');
+    expect(me.body.data.email).toBe(email);
+  });
+
   it('rejects registration with an invalid body', async () => {
     const res = await request(app)
       .post('/api/auth/register')

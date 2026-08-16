@@ -74,11 +74,16 @@ export default function ConsolePage() {
         <div>
           <PageHeader title={t.console.title} lead={t.console.lead} />
         </div>
-        {data.length > 0 ? (
-          <Button asChild size="lg" className="shrink-0">
-            <Link href="/console/new">{t.console.register}</Link>
+        <div className="flex shrink-0 gap-2">
+          <Button asChild variant="outline" size="lg">
+            <Link href="/docs">{t.console.getStarted}</Link>
           </Button>
-        ) : null}
+          {data.length > 0 ? (
+            <Button asChild size="lg">
+              <Link href="/console/new">{t.console.register}</Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-5">
@@ -88,9 +93,14 @@ export default function ConsolePage() {
             title={t.console.empty}
             body={t.console.emptyBody}
             action={
-              <Button asChild size="xl">
-                <Link href="/console/new">{t.console.register}</Link>
-              </Button>
+              <div className="flex flex-col items-center gap-3 sm:flex-row">
+                <Button asChild size="xl">
+                  <Link href="/console/new">{t.console.register}</Link>
+                </Button>
+                <Button asChild variant="ghost" size="lg">
+                  <Link href="/docs">{t.console.getStarted}</Link>
+                </Button>
+              </div>
             }
           />
         ) : (

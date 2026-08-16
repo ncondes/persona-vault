@@ -26,8 +26,18 @@ export interface IssuedChallenge {
   expiresAt: Date;
 }
 
+// The exception to that rule, for development only: the code comes back in the
+// clear so a flow gated on an inbox can be driven without one. The route that
+// exposes this is not mounted when the app runs in production.
+export interface DevChallenge {
+  challengeId: string;
+  code: string;
+  expiresAt: Date;
+}
+
 export interface OtpService {
   issue(input: IssueInput): Promise<IssuedChallenge>;
+  issueForDev(input: IssueInput): Promise<DevChallenge>;
   verify(challengeId: string, code: string): Promise<OtpChallenge>;
   resend(challengeId: string): Promise<IssuedChallenge>;
   consume(challengeId: string): Promise<void>;
@@ -74,6 +84,23 @@ export class OtpServiceImpl implements OtpService {
       code,
       input.purpose === 'signup' ? input.firstName : null,
     );
+  }
+
+  // Mints a fresh challenge and hands its code straight back instead of emailing
+  // it. Any live one is dropped first so the returned code is the valid one.
+  // Development only — the caller (a route mounted only outside production) is
+  // what keeps this off a real deployment.
+  async issueForDev(input: IssueInput): Promise<DevChallenge> {
+    const live = await this.challenges.findLive(input.email, input.purpose);
+    if (live) await this.challenges.deleteById(live.id);
+
+    const code = generateOtp();
+    const challenge = await this.challenges.create({
+      ...input,
+      codeHash: hashOtp(code),
+      expiresAt: new Date(Date.now() + OTP_TTL_MS),
+    });
+    return { challengeId: challenge.id, code, expiresAt: challenge.expiresAt };
   }
 
   // The one way to make a second email happen, and the only place the cooldown

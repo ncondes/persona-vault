@@ -10,4 +10,7 @@ module.exports = {
   maxWorkers: 1,
   forceExit: true,
   setupFiles: ['<rootDir>/tests/int.setup.js'],
+  // Runs after the framework is installed, so it can register an afterAll.
+  // Keeps one listening server per app; see the file for why.
+  setupFilesAfterEnv: ['<rootDir>/tests/support/reuse-servers.js'],
 };
