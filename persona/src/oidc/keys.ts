@@ -8,9 +8,16 @@ interface Jwks {
   keys: Record<string, unknown>[];
 }
 
-// Loads a development signing key, generating and caching one on first run so
-// issued tokens stay valid across restarts. Production must supply real keys.
-export function loadDevJwks(): Jwks {
+// Loads the signing key. In production it comes from the environment, because a
+// hosted container has no filesystem worth writing to: every deploy would mint a
+// fresh key under the same `kid` and silently invalidate every token already
+// issued. Locally it is generated once and cached in a file so restarts don't do
+// the same thing.
+export function loadJwks(): Jwks {
+  if (process.env.OIDC_JWKS) {
+    return JSON.parse(process.env.OIDC_JWKS) as Jwks;
+  }
+
   if (existsSync(KEYS_PATH)) {
     return JSON.parse(readFileSync(KEYS_PATH, 'utf8')) as Jwks;
   }

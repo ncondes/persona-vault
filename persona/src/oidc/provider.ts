@@ -3,7 +3,7 @@ import { config } from '../config/config';
 import { ALL_SCOPES } from '../constants/scopes';
 import type { Container } from '../container';
 import { createOidcAdapter } from './adapter';
-import { loadDevJwks } from './keys';
+import { loadJwks } from './keys';
 
 // Each data scope releases a claim of the same name.
 const CLAIMS = Object.fromEntries(ALL_SCOPES.map((scope) => [scope, [scope]]));
@@ -15,7 +15,7 @@ export async function createOidcProvider(container: Container): Promise<Provider
   // console and resolved from Postgres by the adapter.
   const provider = new OidcProvider(config.oidcIssuer, {
     adapter: createOidcAdapter(container.repositories),
-    jwks: loadDevJwks(),
+    jwks: loadJwks(),
     scopes: ALL_SCOPES,
     claims: CLAIMS,
     cookies: { keys: [config.authSecret] },
@@ -53,6 +53,14 @@ export async function createOidcProvider(container: Container): Promise<Provider
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
+
+  // The provider builds absolute URLs from the request it is answering, not from
+  // the issuer. Behind a TLS-terminating proxy that request arrives as plain
+  // http on an internal hostname, so without this the discovery document
+  // advertises the internal address and the post-consent resume redirect points
+  // somewhere the browser cannot reach. `proxy` is Koa's — Provider extends it —
+  // and is a property, not one of the options above.
+  provider.proxy = config.isProd;
 
   return provider;
 }
