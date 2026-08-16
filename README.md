@@ -8,8 +8,8 @@ right value suggested for the context they are being asked in.
 A clinic is offered the legal name. A forum is offered the public one. The
 person can override either, and withdraw both.
 
-CM3035 Advanced Web Design final project — Nicolas Conde Salazar, 220137157,
-Project Idea 7.1 (Identity and profile management API).
+CM3070 Final Project — Nicolas Conde Salazar, 220137157, Project Idea 7.1
+(Identity and profile management API).
 
 ## Run everything
 
@@ -18,7 +18,7 @@ docker compose up
 ```
 
 That is the whole setup. The API migrates and seeds the database on boot, which
-is what registers the three demo apps as OAuth clients.
+is what registers the four demo apps as OAuth clients.
 
 | | Address | What it is |
 |---|---|---|
@@ -27,12 +27,13 @@ is what registers the three demo apps as OAuth clients.
 | City Health Clinic | http://localhost:4411 | Demo relying party — `healthcare` |
 | Hobbyist Forum | http://localhost:4412 | Demo relying party — `social` |
 | Tiger Store | http://localhost:4413 | Demo relying party — `retail` |
+| Probe | http://localhost:4414 | A relying party that attacks Persona on purpose |
 | PostgreSQL | localhost:55432 | user/password/db all `persona` |
 
 Two seeded logins, both `password123`:
 
 - **`camila@example.com`** — a filled vault. Use this to connect the demo apps.
-- **`dev@example.com`** — owns the three demo apps in the developer console.
+- **`dev@example.com`** — owns the four demo apps in the developer console.
 
 ## The thing worth seeing
 
@@ -56,7 +57,7 @@ release in an audit log they can read at `/connections`.
 |---|---|
 | [`persona/`](./persona) | The provider: Express + TypeScript, Prisma + PostgreSQL, `oidc-provider` |
 | [`persona/web/`](./persona/web) | The user interface and developer console: Next.js, Tailwind, shadcn/ui |
-| [`demos/`](./demos) | Three independent relying parties, one folder each |
+| [`demos/`](./demos) | Four independent relying parties, one folder each |
 | `tasks/`, `references/` | Coursework documents and working notes, not part of the system |
 
 ## Developing without Docker
@@ -92,6 +93,42 @@ refuses to start without one — get a key at [resend.com](https://resend.com).
 account, which is enough to try the flow out. Tests never need a working key:
 they hand the container a stub mailer.
 
+## Deploying it
+
+The hosted copy runs on Railway: six services from this repo plus PostgreSQL,
+each one redeploying when the directory it lives in changes. Every service has a
+`railway.json` next to its `package.json`.
+
+Three things are worth knowing before touching it.
+
+**Persona answers on one public origin.** The web app proxies `/api`,
+`/interaction` and `/oidc` to the API (`persona/web/next.config.ts`), and the API
+has no public domain at all. That is not tidiness — the API sets host-only
+cookies and has no CORS handling, and it only works locally because
+`localhost:4400` and `localhost:4420` share cookies across ports. Two real
+subdomains would not, and the consent flow would dead-end. So the demo apps'
+`PERSONA_PUBLIC_URL` points at the **web** app, not the API.
+
+**`API_URL` is read when the web app is built, not when it starts.** Next writes
+the rewrite destinations into `.next/routes-manifest.json`. Change it and you
+must rebuild; restarting keeps the old value.
+
+**The seed owns the demo apps' redirect URIs.** It runs on every deploy from
+`preDeployCommand` and upserts, so setting `CLINIC_URL` and friends and
+redeploying the API is how those URIs are corrected — never by hand in the
+database.
+
+The variables a hosted copy needs are listed at the bottom of
+[`persona/.env.example`](./persona/.env.example). `AUTH_SECRET` must be set once
+and never changed: it derives the key that encrypts every registered app's
+secret.
+
+Signing in needs a code sent by email, and the seeded accounts live at
+`example.com`, which no mail provider will deliver to. So the hosted copy runs
+with `DEMO_LOGIN=true`, which offers one-click sign-in as those two accounts on
+both sign-in screens and says on the page that it is a demo. It is a way past
+the password, so it is refused for any other address.
+
 ## Tests
 
 The API needs a running database; nothing else does.
@@ -120,9 +157,11 @@ migrated and seeded first — which `docker compose up` does on boot.
 | `persona/web` | 229 | 91.8% | 95.5% |
 | `demos/clinic` | 94 | 100% | 100% |
 
-Only the clinic demo is tested. The three demos duplicate their OAuth plumbing on
-purpose, and `demos/clinic/src/lib/parity.test.ts` fails if the forum's or the
+Only the clinic demo is tested in full. The demos duplicate their OAuth plumbing
+on purpose, and `demos/clinic/src/lib/parity.test.ts` fails if the forum's or the
 store's copy drifts from it — which is what makes testing one of them enough.
+The probe carries its own parity test, since it is allowed one deviation and the
+test is what holds it to exactly one.
 
 [`references/acceptance.md`](references/acceptance.md) is generated from
 `persona/tests/acceptance.int.test.ts`, whose test names are the project's own

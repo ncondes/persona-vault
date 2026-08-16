@@ -1,7 +1,11 @@
-# The whole system: the Persona provider, its web app, and three unrelated
-# relying parties. `docker compose up` from a clean clone is enough — the API
-# migrates and seeds the database on boot, which is what registers the three
-# demo apps as OAuth clients.
+# The whole system: the Persona provider, its web app, three unrelated relying
+# parties and the probe that attacks it. `docker compose up` from a clean clone
+# is enough — the API migrates and seeds the database on boot, which is what
+# registers the four demo apps as OAuth clients.
+#
+# The hosted copy runs the same six services on Railway, wired by the same
+# variables. Its equivalents are listed in the deployment section of README.md;
+# change one and check the other.
 #
 # Two URLs point at Persona on purpose. The browser is redirected to
 # http://localhost:4400, which it can reach; the demo servers call the token and
@@ -143,6 +147,24 @@ services:
       - "4413:4413"
     volumes:
       - ./demos/store/src:/app/src
+    depends_on:
+      - api
+
+  probe:
+    build:
+      context: ./demos/probe
+      dockerfile: Dockerfile.dev
+    container_name: demo-probe
+    restart: unless-stopped
+    environment:
+      <<: *persona-urls
+      CLIENT_ID: "probe"
+      CLIENT_SECRET: "probe-dev-secret"
+      APP_URL: "http://localhost:4414"
+    ports:
+      - "4414:4414"
+    volumes:
+      - ./demos/probe/src:/app/src
     depends_on:
       - api
 

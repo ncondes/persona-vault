@@ -172,8 +172,11 @@ export const DATA_SCOPES = [
 export const NEXT_LINKS = [
   { href: "/console/new", external: false },
   { href: "/console/scopes", external: false },
+  // Relative on purpose: this origin proxies /oidc to the provider, so the link
+  // resolves wherever Persona happens to be running. An absolute one was pinned
+  // to a machine that only the developer who wrote it had.
   {
-    href: "http://localhost:4400/oidc/.well-known/openid-configuration",
+    href: "/oidc/.well-known/openid-configuration",
     external: true,
   },
 ];
