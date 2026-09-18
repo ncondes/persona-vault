@@ -24,7 +24,7 @@ export default async function HomePage() {
   // Re-read on every load: if the member renames themselves in Persona, their
   // posts here follow along.
   const claims = await fetchClaims(accessToken);
-  if (!claims) redirect("/?error=access_denied");
+  if (!claims) redirect("/access-ended");
 
   const handle = handleOf(claims);
   const displayName = displayNameOf(claims);

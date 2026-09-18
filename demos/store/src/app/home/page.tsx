@@ -17,7 +17,7 @@ export default async function HomePage() {
   // Re-read on every load, so an address changed in Persona reaches the next
   // order without anyone updating a profile here.
   const claims = await fetchClaims(accessToken);
-  if (!claims) redirect("/?error=access_denied");
+  if (!claims) redirect("/access-ended");
 
   const handle = claimText(claims, "username");
   const address = addressLines(claims);

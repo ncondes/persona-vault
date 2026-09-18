@@ -38,7 +38,7 @@ describe("the three demos have not drifted apart", () => {
 
   it.each(
     OTHERS.flatMap((demo) =>
-      ["connect", "callback", "disconnect"].map((route) => [demo, route] as const),
+      ["connect", "callback", "disconnect", "access-ended"].map((route) => [demo, route] as const),
     ),
   )("%s's %s route is identical to the clinic's", (demo, route) => {
     const path = `src/app/${route}/route.ts`;

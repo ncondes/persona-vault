@@ -12,7 +12,7 @@ export default async function HomePage() {
   // Re-read on every load rather than caching at sign-in: if the patient edits
   // a value in Persona, or withdraws consent, this reflects it immediately.
   const claims = await fetchClaims(accessToken);
-  if (!claims) redirect("/?error=access_denied");
+  if (!claims) redirect("/access-ended");
 
   const shared = Object.keys(claims).filter((key) => key !== "sub").length;
 

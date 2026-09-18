@@ -5,6 +5,7 @@ import { SESSION_COOKIE } from "@/lib/persona";
 
 const ERRORS: Record<string, string> = {
   access_denied: "You declined, so nothing was shared. Your basket is still here.",
+  access_ended: "Persona no longer shares your details with us. Your basket is still here.",
   invalid_callback: "That sign-in link could not be verified. Start again.",
   token_exchange_failed: "We could not reach Persona. Try again in a moment.",
 };
