@@ -22,10 +22,20 @@ export interface InteractionField {
   options: InteractionOption[];
 }
 
+// What the person is told about the app asking. `verifiedDomain` is the only
+// item here that Persona checked rather than accepted: the name and the purpose
+// are both whatever the developer typed.
+export interface InteractionClient {
+  id: string;
+  name: string;
+  purpose: string;
+  verifiedDomain: string | null;
+}
+
 export interface ConsentDetails {
   uid: string;
   prompt: 'consent';
-  client: { id: string; name: string; purpose: string };
+  client: InteractionClient;
   settings: { confirmSensitive: boolean };
   fields: InteractionField[];
 }
@@ -85,7 +95,12 @@ export class InteractionService {
     return {
       uid,
       prompt: 'consent',
-      client: { id: client.id, name: client.name, purpose: client.purpose },
+      client: {
+        id: client.id,
+        name: client.name,
+        purpose: client.purpose,
+        verifiedDomain: client.verifiedDomain,
+      },
       settings: { confirmSensitive: user?.confirmSensitive ?? true },
       fields: suggestions.map((s) => ({
         scope: s.scope,

@@ -15,6 +15,8 @@ import type {
   Settings,
   User,
   VaultItem,
+  VerificationChallenge,
+  VerificationResult,
 } from "./types";
 
 export class ApiError extends Error {
@@ -115,6 +117,10 @@ export const rotateAppSecret = (id: string) =>
 export const previewPayload = (purpose: string, scopes: string[]) =>
   request<PreviewResult>("/api/apps/preview", { method: "POST", body: { purpose, scopes } });
 export const getAppActivity = (id: string) => request<ActivityView>(`/api/apps/${id}/activity`);
+export const startVerification = (id: string) =>
+  request<VerificationChallenge>(`/api/apps/${id}/verification`, { method: "POST" });
+export const checkVerification = (id: string) =>
+  request<VerificationResult>(`/api/apps/${id}/verification/check`, { method: "POST" });
 
 // OIDC interaction (consent app)
 export const getInteraction = (uid: string) =>

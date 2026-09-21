@@ -17,6 +17,8 @@ const app: AppView = {
   redirectUris: ["http://localhost:4411/callback"],
   secretLastFour: "3f9a",
   status: "active",
+  verifiedDomain: null,
+  verifiedAt: null,
   createdAt: new Date(0).toISOString(),
   updatedAt: new Date(0).toISOString(),
 };

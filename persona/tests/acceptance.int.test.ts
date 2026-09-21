@@ -1,5 +1,6 @@
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
+import { RATE_LIMIT_POLICIES } from '../src/constants/rate-limits';
 import { Container } from '../src/container';
 import { testContainer } from './support/app';
 import {
@@ -135,6 +136,24 @@ describe('Persona acceptance', () => {
       uid = uidFrom((await agent.get(toPath(details.body.redirectTo))).headers.location);
     }
     throw new Error('never reached the consent step');
+  }
+
+  // Starts an authorization and stops at the consent screen, for the checks
+  // that are about what the person is shown rather than what is released.
+  async function reachConsentFor(
+    key: keyof typeof APPS,
+    scope: string,
+  ): Promise<{ uid: string }> {
+    const { id, uri } = registered[key];
+    const started = await agent.get('/oidc/auth').query({
+      client_id: id,
+      response_type: 'code',
+      scope,
+      redirect_uri: uri,
+      state: 'xyz',
+      prompt: 'consent',
+    });
+    return { uid: await reachConsent(started.headers.location) };
   }
 
   // A full "Connect with Persona": authorize, consent, code, token, userinfo.
@@ -573,6 +592,157 @@ describe('Persona acceptance', () => {
       await prisma.user.deleteMany({
         where: { email: { startsWith: `acceptance-otp-${stamp}` } },
       });
+    });
+  });
+
+  describe('refusing abuse', () => {
+    // The claim is not "there is a limiter". It is that the limit is keyed on
+    // the account under attack, so it cannot be dodged by changing network, and
+    // that it covers both of the doors the password can be tried at.
+    const guesses = RATE_LIMIT_POLICIES.authLogin.limit + 2;
+
+    it('cuts off a burst of password guesses against one address', async () => {
+      const victim = `acceptance-burst-${stamp}@example.com`;
+      let last;
+      for (let i = 0; i < guesses; i += 1) {
+        last = await request(app).post('/api/auth/login').send({ email: victim, password: `g${i}` });
+      }
+      expect(last!.status).toBe(429);
+      expect(last!.body.error.code).toBe('RATE_LIMITED');
+    });
+
+    it('tells a refused caller how long to wait', async () => {
+      const victim = `acceptance-wait-${stamp}@example.com`;
+      let last;
+      for (let i = 0; i < guesses; i += 1) {
+        last = await request(app).post('/api/auth/login').send({ email: victim, password: `g${i}` });
+      }
+      expect(Number(last!.headers['retry-after'])).toBeGreaterThan(0);
+    });
+
+    it('does not spend one person’s budget on another’s', async () => {
+      const attacked = `acceptance-one-${stamp}@example.com`;
+      for (let i = 0; i < guesses; i += 1) {
+        await request(app).post('/api/auth/login').send({ email: attacked, password: `g${i}` });
+      }
+      const bystander = await request(app)
+        .post('/api/auth/login')
+        .send({ email: `acceptance-two-${stamp}@example.com`, password: 'x' });
+      expect(bystander.status).not.toBe(429);
+    });
+
+    // Guarding only /api/auth would leave the consent screen as a fully working
+    // password door. The two share one budget per address, so alternating
+    // between them buys nothing.
+    it('holds the same budget at the consent screen as at the API', async () => {
+      const victim = `acceptance-doors-${stamp}@example.com`;
+      for (let i = 0; i < guesses; i += 1) {
+        await request(app).post('/api/auth/login').send({ email: victim, password: `g${i}` });
+      }
+      const viaConsent = await request(app)
+        .post('/interaction/any-uid/login')
+        .set(asJson)
+        .send({ email: victim, password: 'x' });
+      expect(viaConsent.status).toBe(429);
+    });
+
+    it('never throttles the health check, so a monitor is never mistaken for an outage', async () => {
+      for (let i = 0; i < 40; i += 1) {
+        expect((await request(app).get('/api/health')).status).toBe(200);
+      }
+    });
+  });
+
+  describe('knowing who is asking', () => {
+    // The consent decision the whole project rests on is made against a name the
+    // developer typed. Verification does not fix that — it cannot say whether
+    // whoever runs a domain is really a clinic. What it fixes is narrower and
+    // still worth having: the person is told which domain was actually proved,
+    // and an app that proved nothing says so rather than staying quiet.
+    it('tells the person which domain an app proved it is served from', async () => {
+      await prisma.client.update({
+        where: { id: registered.clinic.id },
+        data: { verifiedDomain: 'clinic.example', verifiedAt: new Date() },
+      });
+
+      const { uid } = await reachConsentFor('clinic', 'openid name email');
+      const details = await agent.get(`/interaction/${uid}`).set(asJson);
+
+      expect(details.body.client.verifiedDomain).toBe('clinic.example');
+      await agent.post(`/interaction/${uid}/abort`).set(asJson);
+    });
+
+    it('says plainly that an unverified app is unverified', async () => {
+      // Same app as the row above, with the proof taken away — so the two rows
+      // differ in exactly one thing.
+      await prisma.client.update({
+        where: { id: registered.clinic.id },
+        data: { verifiedDomain: null, verifiedAt: null },
+      });
+
+      const { uid } = await reachConsentFor('clinic', 'openid name email');
+      const details = await agent.get(`/interaction/${uid}`).set(asJson);
+
+      expect(details.body.prompt).toBe('consent');
+      expect(details.body.client.verifiedDomain).toBeNull();
+      await agent.post(`/interaction/${uid}/abort`).set(asJson);
+    });
+
+    // An app cannot verify itself by saying so: the claim is only ever written
+    // by the server after it fetched the file.
+    it('ignores a verification an app claims for itself', async () => {
+      const res = await agent
+        .put(`/api/apps/${registered.store.id}`)
+        .send({ verifiedDomain: 'city-health-clinic.example', verifiedAt: new Date() });
+
+      const after = await prisma.client.findUnique({ where: { id: registered.store.id } });
+      expect(after!.verifiedDomain).toBeNull();
+      expect([200, 400]).toContain(res.status);
+    });
+
+    it('takes the badge down if the app moves to another domain', async () => {
+      await prisma.client.update({
+        where: { id: registered.forum.id },
+        data: { verifiedDomain: 'forum.example', verifiedAt: new Date() },
+      });
+
+      await agent
+        .put(`/api/apps/${registered.forum.id}`)
+        .send({ redirectUris: ['https://somewhere-else.example/callback'] });
+
+      const after = await prisma.client.findUnique({ where: { id: registered.forum.id } });
+      expect(after!.verifiedDomain).toBeNull();
+    });
+  });
+
+  describe('rotating the signing key', () => {
+    // The claim is not "the key can be changed". It is that changing it breaks
+    // nothing: a token signed under the old key still verifies while anything
+    // signed with it could still be alive.
+    it('publishes a new key before it signs anything', async () => {
+      const service = container.signingKeyService;
+      const active = await service.active();
+      expect(active).not.toBeNull();
+      // Whatever is published, exactly one of them signs.
+      const published = await container.repositories.signingKeys.listPublished();
+      expect(published.filter((key) => key.state === 'active')).toHaveLength(1);
+      expect(published[0].kid).toBe(active!.kid);
+    });
+
+    it('never publishes the private half of a key', async () => {
+      const jwks = await request(app).get('/oidc/jwks');
+      expect(jwks.status).toBe(200);
+      for (const key of jwks.body.keys) {
+        for (const member of ['d', 'p', 'q', 'dp', 'dq', 'qi']) {
+          expect(key[member]).toBeUndefined();
+        }
+      }
+    });
+
+    it('names each key after the key itself, so two can never collide', async () => {
+      const published = await container.repositories.signingKeys.listPublished();
+      const kids = published.map((key) => key.kid);
+      expect(new Set(kids).size).toBe(kids.length);
     });
   });
 

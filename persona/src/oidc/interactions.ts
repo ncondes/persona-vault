@@ -108,9 +108,16 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
           return res.json({
             uid,
             prompt: 'login',
+            // The same shape as the consent step, so the badge cannot say one
+            // thing on the sign-in screen and another on the screen after it.
             client: client
-              ? { id: client.id, name: client.name, purpose: client.purpose }
-              : { id: clientId },
+              ? {
+                  id: client.id,
+                  name: client.name,
+                  purpose: client.purpose,
+                  verifiedDomain: client.verifiedDomain,
+                }
+              : { id: clientId, verifiedDomain: null },
           });
         }
         if (config.webUrl) {

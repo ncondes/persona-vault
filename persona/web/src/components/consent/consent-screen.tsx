@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useErrorMessage } from "@/components/common/use-error-message";
 import { ApiError, getCatalog, interactionAbort, interactionDecision } from "@/lib/api";
 import {
@@ -146,14 +146,33 @@ export function ConsentScreen({ prompt, onDataAdded }: ConsentScreenProps) {
         }
       />
 
-      {trivial ? (
-        <p className="mt-5 text-center text-sm text-muted-foreground">{t.consent.trivialNote}</p>
-      ) : (
-        <div className="mx-auto mt-4 flex w-fit items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-600">
-          <BadgeCheck className="text-brand size-3.5" />
-          {t.consent.verified}
-        </div>
-      )}
+      {/* Two separate claims, deliberately not merged into one badge. The first
+          is about the person's own control over the data; the second is about
+          the app, and it is the only one Persona actually checked. An app that
+          has proved nothing says so, in words rather than by the absence of a
+          tick — a missing badge is not something anyone notices. */}
+      <div className="mx-auto mt-4 flex w-fit flex-col items-center gap-1.5">
+        {trivial ? (
+          <p className="text-center text-sm text-muted-foreground">{t.consent.trivialNote}</p>
+        ) : (
+          <div className="flex w-fit items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-600">
+            <ShieldCheck className="size-3.5 text-zinc-400" />
+            {t.consent.dataNote}
+          </div>
+        )}
+
+        {prompt.client.verifiedDomain ? (
+          <div className="flex w-fit items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-600">
+            <BadgeCheck className="text-brand size-3.5" />
+            {t.consent.verifiedDomain(prompt.client.verifiedDomain)}
+          </div>
+        ) : (
+          <div className="border-sensitive/40 bg-sensitive/10 text-sensitive flex w-fit items-center gap-1.5 rounded-full border border-dashed px-3 py-1.5 text-xs">
+            <ShieldAlert className="size-3.5" />
+            {t.consent.unverified}
+          </div>
+        )}
+      </div>
 
       <div className="mt-5 space-y-2.5">
         {normal.map(renderField)}

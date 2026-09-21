@@ -117,8 +117,25 @@ export interface AppView {
   redirectUris: string[];
   status: AppStatus;
   secretLastFour: string;
+  // The domain this app proved it is served from, or null. Written by the
+  // server after it fetched the challenge file — never by the app.
+  verifiedDomain: string | null;
+  verifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface VerificationChallenge {
+  domain: string;
+  url: string;
+  token: string;
+  expiresAt: string;
+}
+
+export interface VerificationResult {
+  verified: boolean;
+  domain: string;
+  reason?: string;
 }
 
 // Only ever returned by create and rotate; the plaintext is unrecoverable after.
@@ -213,6 +230,10 @@ export interface InteractionClient {
   id: string;
   name?: string;
   purpose?: string;
+  // The domain the app proved it is served from, or null. The name and the
+  // purpose above are whatever the developer typed; this is the only thing
+  // Persona checked.
+  verifiedDomain?: string | null;
 }
 
 export interface InteractionOption {
@@ -243,7 +264,7 @@ export interface LoginPrompt {
 export interface ConsentPrompt {
   uid: string;
   prompt: "consent";
-  client: { id: string; name: string; purpose: string };
+  client: InteractionClient;
   settings: { confirmSensitive: boolean };
   fields: InteractionField[];
 }

@@ -11,6 +11,11 @@ each — which is the whole argument the project is making.
 | [`store`](./store) — Tiger Store | 4413 | `retail` | username, name, email, phone, address | **Preferred** (no rule for `retail`, so the default) |
 | [`probe`](./probe) — Probe | 4414 | `social` (declared) | name, username — then reaches for everything else | **Public**, and nothing more |
 
+The first three serve `/.well-known/persona-challenge.txt`, so they can prove to
+Persona that they are served from the domain their redirect URIs point at, and
+the consent screen says which domain was proved. **Probe deliberately does not**
+— it is the unverified case, and the contrast is the point.
+
 The first three are products. [`probe`](./probe) is a tool: a registered client
 that misbehaves on purpose — over-requesting scopes, tampering with redirect
 URIs, replaying codes and tokens — and shows what comes back. Ten checks, none

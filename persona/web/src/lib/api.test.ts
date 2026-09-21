@@ -206,6 +206,8 @@ describe("the endpoint map", () => {
     ["rotateAppSecret", () => api.rotateAppSecret(ID), "POST", `/api/apps/${ID}/secret`],
     ["previewPayload", () => api.previewPayload("retail", ["email"]), "POST", "/api/apps/preview"],
     ["getAppActivity", () => api.getAppActivity(ID), "GET", `/api/apps/${ID}/activity`],
+    ["startVerification", () => api.startVerification(ID), "POST", `/api/apps/${ID}/verification`],
+    ["checkVerification", () => api.checkVerification(ID), "POST", `/api/apps/${ID}/verification/check`],
 
     ["getInteraction", () => api.getInteraction("uid"), "GET", "/interaction/uid"],
     ["interactionLogin", () => api.interactionLogin("uid", "a@x.co", "p"), "POST", "/interaction/uid/login"],
@@ -227,6 +229,6 @@ describe("the endpoint map", () => {
       .map(([name]) => name);
 
     // Keep this in step with the table above; a new endpoint should be pinned too.
-    expect(exported).toHaveLength(31);
+    expect(exported).toHaveLength(33);
   });
 });

@@ -14,6 +14,7 @@ import { useToast } from "@/components/common/toast";
 import { CodeBlock } from "@/components/console/code-block";
 import { CopyField } from "@/components/console/copy-field";
 import { SecretDialog } from "@/components/console/secret-dialog";
+import { AppVerification } from "@/components/console/app-verification";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -100,6 +101,11 @@ export function AppOverview({
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      <section>
+        <SectionLabel>{t.console.verification.title}</SectionLabel>
+        <AppVerification app={app} onChanged={onChanged} />
       </section>
 
       <section>

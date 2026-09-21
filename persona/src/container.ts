@@ -22,6 +22,7 @@ import { ContextService, ContextServiceImpl } from './services/context.service';
 import { InteractionService } from './services/interaction.service';
 import { OtpService, OtpServiceImpl } from './services/otp.service';
 import { SigningKeyService } from './services/signing-key.service';
+import { VerificationService } from './services/verification.service';
 import { VaultService, VaultServiceImpl } from './services/vault.service';
 import { VaultController } from './controllers/vault.controller';
 
@@ -75,6 +76,7 @@ export class Container {
   readonly interactionService: InteractionService;
   readonly accountService: AccountService;
   readonly signingKeyService: SigningKeyService;
+  readonly verificationService: VerificationService;
   readonly healthController: HealthController;
   readonly authController: AuthController;
   readonly vaultController: VaultController;
@@ -110,6 +112,11 @@ export class Container {
     this.accountService = new AccountServiceImpl(this.repositories);
     this.signingKeyService = new SigningKeyService(
       this.repositories.signingKeys,
+      () => this.clock.now(),
+    );
+    this.verificationService = new VerificationService(
+      this.repositories.clients,
+      undefined,
       () => this.clock.now(),
     );
 

@@ -138,25 +138,36 @@ model VaultItem {
 // the OAuth client_id used during "Connect with Persona". The OIDC provider
 // reads clients from this table through the adapter in src/oidc/adapter.ts.
 model Client {
-  id              String       @id
-  ownerId         String       @map("owner_id")
-  owner           User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name            String
-  description     String?
-  purpose         String
-  accent          String       @default("teal")
-  allowedScopes   String[]     @map("allowed_scopes")
-  requiredScopes  String[]     @map("required_scopes")
-  redirectUris    String[]     @map("redirect_uris")
+  id                   String       @id
+  ownerId              String       @map("owner_id")
+  owner                User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                 String
+  description          String?
+  purpose              String
+  accent               String       @default("teal")
+  allowedScopes        String[]     @map("allowed_scopes")
+  requiredScopes       String[]     @map("required_scopes")
+  redirectUris         String[]     @map("redirect_uris")
   // oidc-provider compares client secrets in plaintext, so they are encrypted
   // at rest rather than hashed. See src/infrastructure/crypto/secret-box.ts.
-  secretEncrypted String       @map("secret_encrypted")
-  secretLastFour  String       @map("secret_last_four")
-  status          ClientStatus @default(active)
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-  consents        Consent[]
-  auditEntries    AuditEntry[]
+  secretEncrypted      String       @map("secret_encrypted")
+  secretLastFour       String       @map("secret_last_four")
+  status               ClientStatus @default(active)
+  // Domain verification. The developer proves control of the domain their
+  // redirect URIs point at by serving a token at a well-known path; what is
+  // stored is the domain that was proved, not the claim that was made.
+  //
+  // This does not verify that whoever controls the domain is what they say they
+  // are. It closes the narrower hole: an app can no longer put a name on the
+  // consent screen next to a domain it does not hold.
+  verifiedDomain       String?      @map("verified_domain")
+  verifiedAt           DateTime?    @map("verified_at")
+  verificationToken    String?      @map("verification_token")
+  verificationIssuedAt DateTime?    @map("verification_issued_at")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+  consents             Consent[]
+  auditEntries         AuditEntry[]
 
   @@index([ownerId])
   @@map("client")

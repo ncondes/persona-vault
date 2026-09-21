@@ -105,7 +105,7 @@ describe("every interpolated string uses its argument", () => {
 
   it("has the same interpolated strings in both locales", () => {
     expect(functionPaths(es).sort()).toEqual(functionPaths(en).sort());
-    expect(functionPaths(en).length).toBe(12);
+    expect(functionPaths(en).length).toBe(16);
   });
 
   it.each([

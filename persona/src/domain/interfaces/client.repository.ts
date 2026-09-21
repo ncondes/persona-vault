@@ -25,6 +25,10 @@ export interface UpdateClientInput {
   secretEncrypted?: string;
   secretLastFour?: string;
   status?: ClientStatus;
+  verifiedDomain?: string | null;
+  verifiedAt?: Date | null;
+  verificationToken?: string | null;
+  verificationIssuedAt?: Date | null;
 }
 
 export interface ClientRepository {

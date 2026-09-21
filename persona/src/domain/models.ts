@@ -90,6 +90,11 @@ export interface VaultItem {
 
 // A relying party registered through the developer console. `secretEncrypted`
 // never leaves the service layer; the console only ever sees `secretLastFour`.
+//
+// `verifiedDomain` is the domain the developer proved control of, or null. It is
+// a weaker claim than it looks and the consent screen has to say so: it means
+// the app is served from where it says it is, not that its operator is who they
+// say they are.
 export interface Client {
   id: string;
   ownerId: string;
@@ -103,6 +108,10 @@ export interface Client {
   secretEncrypted: string;
   secretLastFour: string;
   status: ClientStatus;
+  verifiedDomain: string | null;
+  verifiedAt: Date | null;
+  verificationToken: string | null;
+  verificationIssuedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

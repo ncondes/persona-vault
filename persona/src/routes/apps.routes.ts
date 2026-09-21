@@ -24,6 +24,36 @@ export function buildAppRoutes(container: Container, provider?: any): Router {
   router.get('/:id/activity', limit('apiRead'), apps.activity);
   router.post('/:id/secret', limit('appSecret'), apps.rotateSecret);
 
+  // Domain verification. Two steps, because the developer has to go and put a
+  // file in place between them.
+  router.post('/:id/verification', limit('appVerify'), async (req, res, next) => {
+    try {
+      const client = await container.clientService.ownedClient(
+        req.userId!,
+        String(req.params.id),
+      );
+      res.json({ data: await container.verificationService.issue(client) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // The one route that makes the API fetch a URL somebody else chose. The
+  // fetcher refuses anything but https on the default port, resolves the name
+  // and refuses private addresses, pins the connection to the address it
+  // checked, and follows no redirects — see challenge-fetch.ts.
+  router.post('/:id/verification/check', limit('appVerify'), async (req, res, next) => {
+    try {
+      const client = await container.clientService.ownedClient(
+        req.userId!,
+        String(req.params.id),
+      );
+      res.json({ data: await container.verificationService.check(client) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.put('/:id', limit('vaultWrite'), validateBody(updateAppSchema), async (req, res, next) => {
     try {
       const { app, revokedGrantIds } = await container.clientService.update(

@@ -119,6 +119,16 @@ async function main() {
       requiredScopes: client.requiredScopes,
       redirectUris: client.redirectUris,
     });
+
+    // Domain verification cannot run against localhost — it needs https on a
+    // public address — so the seed states the outcome for the three products
+    // and leaves Probe unverified. See the note on DemoClient.verified.
+    await prisma.client.update({
+      where: { id: client.id },
+      data: client.verified
+        ? { verifiedDomain: new URL(client.redirectUris[0]).hostname, verifiedAt: new Date() }
+        : { verifiedDomain: null, verifiedAt: null },
+    });
   }
 
   console.log(

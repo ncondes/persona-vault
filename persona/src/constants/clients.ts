@@ -17,6 +17,18 @@ function demoSecret(name: string): string {
 
 export interface DemoClient {
   id: string;
+  // Whether the seed records this app as having proved its domain.
+  //
+  // The proof itself cannot happen locally: verification requires https on a
+  // public address, and these run on localhost. So the seed states the outcome
+  // for the three products, the way it states their client secrets — the demo
+  // world is fabricated on purpose. The mechanism that would produce that
+  // outcome is tested for real in verification.service.test.ts and
+  // challenge-fetch.int.test.ts, and the three demos serve the challenge file
+  // so a hosted copy can go through it properly.
+  //
+  // Probe is left unverified, because that is the case worth seeing.
+  verified?: boolean;
   name: string;
   description: string;
   purpose: string;
@@ -50,6 +62,7 @@ export const DEMO_CLIENTS: DemoClient[] = [
     requiredScopes: ['name', 'email', 'document', 'eps'],
     redirectUris: [`${demoOrigin('clinic', 4411)}/callback`],
     devSecret: demoSecret('clinic'),
+    verified: true,
   },
   {
     id: 'forum',
@@ -61,6 +74,7 @@ export const DEMO_CLIENTS: DemoClient[] = [
     requiredScopes: ['name'],
     redirectUris: [`${demoOrigin('forum', 4412)}/callback`],
     devSecret: demoSecret('forum'),
+    verified: true,
   },
   {
     id: 'store',
@@ -72,6 +86,7 @@ export const DEMO_CLIENTS: DemoClient[] = [
     requiredScopes: ['username', 'address'],
     redirectUris: [`${demoOrigin('store', 4413)}/callback`],
     devSecret: demoSecret('store'),
+    verified: true,
   },
   // The adversary. Registered exactly like the other three, and deliberately
   // modest about it: a social app asking for a name and a handle. What it then

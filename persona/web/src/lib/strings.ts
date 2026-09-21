@@ -297,7 +297,14 @@ const en = {
   consent: {
     wantsAccess: "wants to access",
     itemCount: (n: number) => `${n} item${n === 1 ? "" : "s"}`,
-    verified: "Verified identity · only what you enable",
+    // This used to read "Verified identity · only what you enable" and was
+    // shown for every app, whoever was asking. It is a claim about the person's
+    // Persona account, but sitting beside the app's name it reads as a claim
+    // about the app — which was true of nothing. It now says what it means, and
+    // the app gets its own line below.
+    dataNote: "You choose what to share · only what you enable",
+    verifiedDomain: (domain: string) => `Verified — served from ${domain}`,
+    unverified: "Not verified — Persona has not checked who runs this app",
     sensitiveDivider: "Sensitive data",
     missingBadge: "Missing from your vault",
     addAndSave: "Add and save to my vault",
@@ -343,6 +350,21 @@ const en = {
       "Delete your account and everything in your vault? Connected apps lose access immediately. This can't be undone.",
   },
   console: {
+    verification: {
+      title: "Domain",
+      verified: (domain: string) => `Verified — served from ${domain}`,
+      unverified: "Not verified",
+      hint: "Persona shows people which domain your app is served from. Prove it by serving a token at a well-known path on the domain your redirect URIs point at.",
+      limits: "This proves you control the domain. It does not prove who you are, and Persona says so on the consent screen.",
+      start: "Verify this domain",
+      recheck: "Check again",
+      serveAt: "Serve this file",
+      tokenLabel: "with exactly this content",
+      checking: "Checking…",
+      failed: (reason: string) => `Not verified yet — ${reason}`,
+      succeeded: (domain: string) => `${domain} verified`,
+      movedWarning: "Changing the domain your redirect URIs point at takes this down.",
+    },
     title: "Developer console",
     lead: "Apps that ask for data with \u201cConnect with Persona\u201d.",
     register: "Register an app",
@@ -803,7 +825,9 @@ const es: Strings = {
   consent: {
     wantsAccess: "quiere acceder a",
     itemCount: (n: number) => `${n} dato${n === 1 ? "" : "s"}`,
-    verified: "Identidad verificada · solo lo que actives",
+    dataNote: "Tú eliges qué compartir · solo lo que actives",
+    verifiedDomain: (domain: string) => `Verificada — se sirve desde ${domain}`,
+    unverified: "Sin verificar — Persona no ha comprobado quién opera esta app",
     sensitiveDivider: "Datos sensibles",
     missingBadge: "Falta en tu vault",
     addAndSave: "Añadir y guardar en mi vault",
@@ -851,6 +875,21 @@ const es: Strings = {
       "¿Eliminar tu cuenta y todo tu vault? Las apps conectadas pierden acceso de inmediato. No se puede deshacer.",
   },
   console: {
+    verification: {
+      title: "Dominio",
+      verified: (domain: string) => `Verificado — se sirve desde ${domain}`,
+      unverified: "Sin verificar",
+      hint: "Persona muestra a las personas desde qué dominio se sirve tu app. Demuéstralo sirviendo un token en una ruta conocida del dominio al que apuntan tus redirect URIs.",
+      limits: "Esto demuestra que controlas el dominio. No demuestra quién eres, y Persona lo dice en la pantalla de consentimiento.",
+      start: "Verificar este dominio",
+      recheck: "Comprobar otra vez",
+      serveAt: "Sirve este archivo",
+      tokenLabel: "con exactamente este contenido",
+      checking: "Comprobando…",
+      failed: (reason: string) => `Aún sin verificar — ${reason}`,
+      succeeded: (domain: string) => `${domain} verificado`,
+      movedWarning: "Cambiar el dominio al que apuntan tus redirect URIs lo retira.",
+    },
     title: "Consola de desarrollador",
     lead: "Aplicaciones que piden datos con \u00abConectar con Persona\u00bb.",
     register: "Registrar app",

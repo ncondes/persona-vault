@@ -20,6 +20,10 @@ export interface AppView {
   redirectUris: string[];
   status: ClientStatus;
   secretLastFour: string;
+  // The domain the developer proved control of, or null. Not the same as the
+  // name they typed, which is still whatever they like.
+  verifiedDomain: string | null;
+  verifiedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,9 +86,26 @@ function toAppView(client: Client): AppView {
     redirectUris: client.redirectUris,
     status: client.status,
     secretLastFour: client.secretLastFour,
+    verifiedDomain: client.verifiedDomain,
+    verifiedAt: client.verifiedAt,
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
   };
+}
+
+// Whether two sets of redirect URIs point at the same hosts. Compared by host
+// rather than by string, so editing a path or adding a second URI on the same
+// domain does not throw away a proof that still holds.
+function sameHosts(before: string[], after: string[]): boolean {
+  const hosts = (uris: string[]) =>
+    [...new Set(uris.map((uri) => {
+      try {
+        return new URL(uri).hostname.toLowerCase();
+      } catch {
+        return uri;
+      }
+    }))].sort().join(',');
+  return hosts(before) === hosts(after);
 }
 
 // Client ids are public: they appear in authorize URLs and in each demo app's
@@ -153,6 +174,9 @@ export interface ClientService {
   rotateSecret(ownerId: string, id: string): Promise<AppWithSecret>;
   preview(userId: string, purpose: string, scopes: string[]): Promise<PreviewView>;
   activity(ownerId: string, id: string): Promise<ActivityView>;
+  // The whole row, for the one caller that needs more than the console view:
+  // domain verification works from the registered redirect URIs.
+  ownedClient(ownerId: string, id: string): Promise<Client>;
   // Seed only: registers an app with a fixed id and secret so the demo clients
   // survive a rebuild. Shares create()'s validation and encryption.
   register(ownerId: string, id: string, secret: string, input: NewApp): Promise<AppView>;
@@ -212,6 +236,12 @@ export class ClientServiceImpl implements ClientService {
     assertValid(validate(next));
 
     const removed = client.allowedScopes.filter((scope) => !next.allowedScopes.includes(scope));
+
+    // A domain proved for one set of redirect URIs says nothing about another,
+    // so pointing the app somewhere else takes the badge down. Leaving it up is
+    // the one failure that would matter: an unverified app looking verified.
+    const movedHost = patch.redirectUris !== undefined && !sameHosts(client.redirectUris, next.redirectUris);
+
     const updated = await this.repositories.clients.update(id, {
       ...patch,
       ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
@@ -219,6 +249,14 @@ export class ClientServiceImpl implements ClientService {
         ? { description: patch.description?.trim() || null }
         : {}),
       ...(patch.allowedScopes || patch.requiredScopes ? canonicalScopes(next) : {}),
+      ...(movedHost
+        ? {
+            verifiedDomain: null,
+            verifiedAt: null,
+            verificationToken: null,
+            verificationIssuedAt: null,
+          }
+        : {}),
     });
 
     // Narrowing the scope list invalidates every standing consent: users
@@ -303,6 +341,10 @@ export class ClientServiceImpl implements ClientService {
     };
     assertValid(validate(app));
     return { ...app, ...canonicalScopes(app) };
+  }
+
+  ownedClient(ownerId: string, id: string): Promise<Client> {
+    return this.owned(ownerId, id);
   }
 
   // A foreign app reports as missing so client ids cannot be probed by a
