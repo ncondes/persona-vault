@@ -1,34 +1,52 @@
-import { generateKeyPairSync } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { SigningKeyService, JwkSet } from '../services/signing-key.service';
+import { logger } from '../infrastructure/logger/logger';
 
-const KEYS_PATH = path.join(process.cwd(), '.dev-jwks.json');
+type Jwk = Record<string, unknown>;
 
-interface Jwks {
-  keys: Record<string, unknown>[];
+// Resolved when it is read rather than when the module loads, so the path
+// follows the working directory instead of whatever it happened to be at import.
+function cachedKeysPath(): string {
+  return path.join(process.cwd(), '.dev-jwks.json');
 }
 
-// Loads the signing key. In production it comes from the environment, because a
-// hosted container has no filesystem worth writing to: every deploy would mint a
-// fresh key under the same `kid` and silently invalidate every token already
-// issued. Locally it is generated once and cached in a file so restarts don't do
-// the same thing.
-export function loadJwks(): Jwks {
+// Reads a key set that already exists, from the environment or from the file a
+// previous version cached on a laptop. Only consulted when the table is empty —
+// once a key is in the database, these are ignored.
+function existingKeySet(): Jwk[] {
   if (process.env.OIDC_JWKS) {
-    return JSON.parse(process.env.OIDC_JWKS) as Jwks;
+    const parsed = JSON.parse(process.env.OIDC_JWKS) as JwkSet;
+    return parsed.keys ?? [];
+  }
+  const cached = cachedKeysPath();
+  if (existsSync(cached)) {
+    return (JSON.parse(readFileSync(cached, 'utf8')) as JwkSet).keys ?? [];
+  }
+  return [];
+}
+
+// Loads the signing keys, and moves the rollover on one step while it is there.
+//
+// This used to return a single key straight from the environment. A single key
+// cannot be rotated: there is nowhere to publish its replacement before it signs
+// and nowhere to keep it after it stops, so any change invalidates every token
+// in flight. The keys live in Postgres now, encrypted at rest, and the set is
+// ordered active-first because oidc-provider signs with the first key that
+// matches the algorithm.
+//
+// The first boot after this change adopts whatever was in OIDC_JWKS, keeping its
+// `kid` exactly as it was — tokens already issued carry that id in their header,
+// and a verifier that cannot find it in the published set rejects them.
+export async function loadJwks(service: SigningKeyService): Promise<JwkSet> {
+  if (!(await service.active())) {
+    for (const jwk of existingKeySet()) {
+      await service.adopt(jwk);
+      logger.info({ kid: jwk.kid }, 'adopted the existing signing key');
+      break;
+    }
   }
 
-  if (existsSync(KEYS_PATH)) {
-    return JSON.parse(readFileSync(KEYS_PATH, 'utf8')) as Jwks;
-  }
-
-  const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  const jwk = privateKey.export({ format: 'jwk' }) as Record<string, unknown>;
-  jwk.use = 'sig';
-  jwk.alg = 'RS256';
-  jwk.kid = 'persona-dev-1';
-
-  const jwks: Jwks = { keys: [jwk] };
-  writeFileSync(KEYS_PATH, JSON.stringify(jwks, null, 2));
-  return jwks;
+  await service.advance();
+  return service.jwks();
 }

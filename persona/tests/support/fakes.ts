@@ -25,6 +25,10 @@ import {
   OtpChallengeRepository,
   ReissueChallengeInput,
 } from '../../src/domain/interfaces/otp-challenge.repository';
+import {
+  CreateSigningKeyInput,
+  SigningKeyRepository,
+} from '../../src/domain/interfaces/signing-key.repository';
 import { Repositories, UnitOfWork } from '../../src/domain/interfaces/unit-of-work';
 import {
   CreateUserInput,
@@ -42,8 +46,10 @@ import {
   AuditType,
   Client,
   Consent,
+  KeyState,
   OtpChallenge,
   OtpPurpose,
+  SigningKey,
   User,
   VaultItem,
   VaultKind,
@@ -312,6 +318,56 @@ export class FakePayloads implements OidcPayloadRepository {
   }
 }
 
+// Mirrors PrismaSigningKeyRepository's ordering, because the order of the set is
+// what decides which key signs: oidc-provider takes the first one that matches.
+const PUBLISH_ORDER: Record<KeyState, number> = { active: 0, incoming: 1, retiring: 2 };
+
+export class FakeSigningKeys implements SigningKeyRepository {
+  readonly rows: SigningKey[] = [];
+
+  async listPublished(): Promise<SigningKey[]> {
+    return [...this.rows]
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .sort((a, b) => PUBLISH_ORDER[a.state] - PUBLISH_ORDER[b.state]);
+  }
+
+  async create(input: CreateSigningKeyInput): Promise<SigningKey> {
+    const row: SigningKey = {
+      kid: input.kid,
+      alg: input.alg,
+      publicJwk: input.publicJwk,
+      privateEncrypted: input.privateEncrypted,
+      state: input.state,
+      createdAt: input.createdAt,
+      activatedAt: input.activatedAt ?? null,
+      retiresAt: null,
+    };
+    this.rows.push(row);
+    return row;
+  }
+
+  async setState(
+    kid: string,
+    state: KeyState,
+    at: { activatedAt?: Date; retiresAt?: Date },
+  ): Promise<SigningKey> {
+    const row = this.rows.find((key) => key.kid === kid);
+    if (!row) throw new NotFoundError();
+    row.state = state;
+    if (at.activatedAt) row.activatedAt = at.activatedAt;
+    if (at.retiresAt) row.retiresAt = at.retiresAt;
+    return row;
+  }
+
+  async deleteRetired(now: Date): Promise<number> {
+    const doomed = this.rows.filter(
+      (key) => key.state === 'retiring' && key.retiresAt !== null && key.retiresAt <= now,
+    );
+    for (const key of doomed) this.rows.splice(this.rows.indexOf(key), 1);
+    return doomed.length;
+  }
+}
+
 export class FakeOtpChallenges implements OtpChallengeRepository {
   rows: OtpChallenge[] = [];
   private next = 1;
@@ -383,6 +439,7 @@ export interface FakeRepositories {
   consents: FakeConsents;
   audit: FakeAudit;
   otpChallenges: FakeOtpChallenges;
+  signingKeys: FakeSigningKeys;
   repositories: Repositories;
   unitOfWork: UnitOfWork;
 }
@@ -396,6 +453,7 @@ export function fakeRepositories(items: VaultItem[] = []): FakeRepositories {
   const consents = new FakeConsents();
   const audit = new FakeAudit();
   const otpChallenges = new FakeOtpChallenges();
+  const signingKeys = new FakeSigningKeys();
   const repositories = {
     users,
     vault,
@@ -403,6 +461,7 @@ export function fakeRepositories(items: VaultItem[] = []): FakeRepositories {
     consents,
     audit,
     otpChallenges,
+    signingKeys,
   } as unknown as Repositories;
   return {
     users,
@@ -411,6 +470,7 @@ export function fakeRepositories(items: VaultItem[] = []): FakeRepositories {
     consents,
     audit,
     otpChallenges,
+    signingKeys,
     repositories,
     unitOfWork: { run: (work) => work(repositories) },
   };

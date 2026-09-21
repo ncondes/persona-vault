@@ -19,6 +19,8 @@
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.all.config.js --coverage",
     "typecheck:tests": "tsc -p tsconfig.test.json",
     "acceptance": "tsx scripts/acceptance-table.ts",
+    "keys": "tsx scripts/keys.ts",
+    "keys:rotate": "tsx scripts/keys.ts rotate",
     "perf": "tsx scripts/perf-userinfo.ts",
     "perf:ratelimit": "tsx scripts/perf-ratelimit.ts",
     "preview:email": "tsx scripts/preview-otp-email.ts",

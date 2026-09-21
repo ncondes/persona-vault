@@ -51,6 +51,16 @@ enum ClientStatus {
   @@map("client_status")
 }
 
+// Where a signing key is in its rollover. Only `active` signs; the other two
+// are published so tokens signed either side of a rollover still verify.
+enum KeyState {
+  incoming
+  active
+  retiring
+
+  @@map("key_state")
+}
+
 // Which flow an emailed code is standing in front of.
 enum OtpPurpose {
   signup
@@ -61,13 +71,13 @@ enum OtpPurpose {
 
 // A person who owns a vault in Persona.
 model User {
-  id               String       @id @default(uuid())
-  email            String       @unique
-  passwordHash     String       @map("password_hash")
-  confirmSensitive Boolean      @default(true) @map("confirm_sensitive")
-  notifyAccess     Boolean      @default(false) @map("notify_access")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id               String         @id @default(uuid())
+  email            String         @unique
+  passwordHash     String         @map("password_hash")
+  confirmSensitive Boolean        @default(true) @map("confirm_sensitive")
+  notifyAccess     Boolean        @default(false) @map("notify_access")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
   vaultItems       VaultItem[]
   consents         Consent[]
   auditEntries     AuditEntry[]
@@ -207,4 +217,34 @@ model OidcPayload {
   @@index([grantId])
   @@index([expiresAt])
   @@map("oidc_payload")
+}
+
+// One RSA key pair in the JWKS. Rotation needs more than one row: a new key has
+// to be published before it signs anything, and the key it replaces has to stay
+// published until the last token it signed has expired. A single key in an
+// environment variable can express neither.
+//
+// The only artifact Persona signs with these is the ID token — access tokens are
+// opaque and checked against storage, and no refresh token is ever issued — so
+// the overlap a retiring key needs is the ID token's lifetime plus clock
+// tolerance, not the fourteen days a session lasts.
+model SigningKey {
+  // The RFC 7638 thumbprint of the public key, so the id is derived from the key
+  // rather than chosen. Two different keys can no longer collide on one `kid`.
+  kid              String    @id
+  alg              String    @default("RS256")
+  publicJwk        Json      @map("public_jwk")
+  // Encrypted with the same AES-256-GCM box as client secrets, under its own
+  // HKDF label. It inherits that box's constraint: AUTH_SECRET cannot be
+  // rotated without invalidating everything derived from it.
+  privateEncrypted String    @map("private_encrypted")
+  state            KeyState  @default(incoming)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  activatedAt      DateTime? @map("activated_at")
+  // When the key stops being published. Set when it starts retiring, so the
+  // window is recorded rather than recomputed.
+  retiresAt        DateTime? @map("retires_at")
+
+  @@index([state])
+  @@map("signing_key")
 }

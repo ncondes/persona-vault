@@ -19,6 +19,21 @@ export type ClientStatus = 'active' | 'disabled';
 
 export type OtpPurpose = 'signup' | 'login';
 
+// Where a signing key is in its rollover. Only `active` signs.
+export type KeyState = 'incoming' | 'active' | 'retiring';
+
+export interface SigningKey {
+  // The RFC 7638 thumbprint of the public key.
+  kid: string;
+  alg: string;
+  publicJwk: unknown;
+  privateEncrypted: string;
+  state: KeyState;
+  createdAt: Date;
+  activatedAt: Date | null;
+  retiresAt: Date | null;
+}
+
 export interface User {
   id: string;
   email: string;

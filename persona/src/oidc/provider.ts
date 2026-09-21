@@ -15,7 +15,7 @@ export async function createOidcProvider(container: Container): Promise<Provider
   // console and resolved from Postgres by the adapter.
   const provider = new OidcProvider(config.oidcIssuer, {
     adapter: createOidcAdapter(container.repositories),
-    jwks: loadJwks(),
+    jwks: await loadJwks(container.signingKeyService),
     scopes: ALL_SCOPES,
     claims: CLAIMS,
     cookies: { keys: [config.authSecret] },
