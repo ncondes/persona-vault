@@ -102,15 +102,15 @@ grant, authorization code and access token — so connections survive a restart.
 Run the tests:
 
 ```bash
-npm test                 # unit — 250 tests, no database
-npm run test:int         # integration — 151 tests (needs the Docker database)
+npm test                 # unit — 401 tests, no database
+npm run test:int         # integration — 209 tests (needs Postgres and Redis)
 npm run test:cov         # both together, with coverage; fails if coverage drops
 npm run typecheck:tests  # tsconfig.json excludes tests, so `npm run build` skips them
 npm run acceptance       # regenerates ../references/acceptance.md
 npm run preview:email    # writes the code emails to .preview/ to look at
 ```
 
-401 tests, 96.8% of statements and 91.6% of branches. Split by filename:
+610 tests, 96.4% of statements and 89.1% of branches. Split by filename:
 `*.int.test.ts` needs Postgres, everything else does not. The integration tests
 create and delete their own rows and never truncate, but they expect the database
 to be migrated and seeded first.
