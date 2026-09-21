@@ -363,6 +363,11 @@ export class FakeSigningKeys implements SigningKeyRepository {
     return row;
   }
 
+  async deleteByKid(kid: string): Promise<void> {
+    const row = this.rows.find((key) => key.kid === kid);
+    if (row) this.rows.splice(this.rows.indexOf(row), 1);
+  }
+
   async deleteRetired(now: Date): Promise<number> {
     const doomed = this.rows.filter(
       (key) => key.state === 'retiring' && key.retiresAt !== null && key.retiresAt <= now,

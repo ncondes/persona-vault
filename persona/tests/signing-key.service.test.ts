@@ -186,6 +186,48 @@ describe('SigningKeyService', () => {
     });
   });
 
+  // A scheduled rollover keeps the replaced key published so its tokens go on
+  // verifying. When the key is compromised that is the wrong behaviour, because
+  // a forged token verifies too -- so this is a separate operation.
+  describe('replacing a key that must stop being trusted', () => {
+    it('mints a new active key and removes the old one at once', async () => {
+      const { service, time, keys } = build();
+      await service.advance();
+      const compromised = (await service.active())!.kid;
+
+      time.advance(1000);
+      const { minted, removed } = await service.replaceNow();
+
+      expect(removed).toEqual([compromised]);
+      expect(minted.kid).not.toBe(compromised);
+      expect(keys.rows.map((k) => k.kid)).toEqual([minted.kid]);
+      expect((await service.jwks()).keys.map((k) => k.kid)).toEqual([minted.kid]);
+    });
+
+    it('leaves nothing of the old key published, unlike a rollover', async () => {
+      const { service, time } = build();
+      await service.advance();
+      const compromised = (await service.active())!.kid;
+
+      // A rollover at this point would keep the old key in the set.
+      time.advance(KEY_ROTATION_INTERVAL_MS);
+      await service.advance();
+      time.advance(KEY_PUBLISH_LEAD_MS);
+      await service.advance();
+      expect((await service.jwks()).keys.map((k) => k.kid)).toContain(compromised);
+
+      await service.replaceNow();
+      expect((await service.jwks()).keys.map((k) => k.kid)).not.toContain(compromised);
+    });
+
+    it('works when there is nothing to replace', async () => {
+      const { service } = build();
+      const { minted, removed } = await service.replaceNow();
+      expect(removed).toEqual([]);
+      expect((await service.active())!.kid).toBe(minted.kid);
+    });
+  });
+
   describe('adopting a key that already exists', () => {
     // Tokens already in flight carry the old id in their header. Recomputing it
     // would make every one of them unverifiable until it expired.

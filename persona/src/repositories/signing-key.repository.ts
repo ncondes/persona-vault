@@ -47,6 +47,10 @@ export class PrismaSigningKeyRepository implements SigningKeyRepository {
     }) as Promise<SigningKey>;
   }
 
+  async deleteByKid(kid: string): Promise<void> {
+    await this.db.signingKey.delete({ where: { kid } });
+  }
+
   async deleteRetired(now: Date): Promise<number> {
     const { count } = await this.db.signingKey.deleteMany({
       where: { state: 'retiring', retiresAt: { lte: now } },

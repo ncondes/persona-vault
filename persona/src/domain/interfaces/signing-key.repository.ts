@@ -23,4 +23,7 @@ export interface SigningKeyRepository {
   setState(kid: string, state: KeyState, at: { activatedAt?: Date; retiresAt?: Date }): Promise<SigningKey>;
   // Drops keys whose retirement has passed. Returns how many went.
   deleteRetired(now: Date): Promise<number>;
+  // Drops one key outright, whatever state it is in. For a key that must stop
+  // being trusted now rather than at the end of its window.
+  deleteByKid(kid: string): Promise<void>;
 }

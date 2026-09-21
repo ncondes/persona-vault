@@ -117,6 +117,27 @@ export class SigningKeyService {
     });
   }
 
+  // Replaces the active key immediately and removes every other, for a key that
+  // must stop being trusted now.
+  //
+  // This is deliberately not the rollover above. A scheduled rollover keeps the
+  // replaced key published so tokens it signed go on verifying; when the key is
+  // compromised that is exactly the wrong behaviour, because a forged token
+  // verifies too. So the old key leaves the set at once and the ID tokens it
+  // signed stop working -- which is the point, not a side effect.
+  async replaceNow(): Promise<{ minted: SigningKey; removed: string[] }> {
+    const minted = await this.mint('active');
+    const removed: string[] = [];
+    for (const key of await this.keys.listPublished()) {
+      if (key.kid !== minted.kid) {
+        await this.keys.deleteByKid(key.kid);
+        removed.push(key.kid);
+      }
+    }
+    logger.warn({ kid: minted.kid, removed }, 'signing key replaced immediately');
+    return { minted, removed };
+  }
+
   // Runs the state machine one step. Called at boot and on the sweep, so a
   // rollover needs no scheduler of its own. Returns the active kid afterwards,
   // which is how the caller knows whether the provider has to be rebuilt.

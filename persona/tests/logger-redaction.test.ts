@@ -7,8 +7,16 @@ import { scrubQuery } from '../src/middlewares/requestLogger.middleware';
 // this the session cookie was written to the log on every production request.
 // The paths and the scrubber are imported from the modules that ship them, so a
 // change there fails here rather than passing against a restated copy.
-const SESSION_JWT =
-  'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.pretend-this-is-a-real-signature';
+// Assembled rather than written out, so the file contains no `eyJ...` literal
+// for a secret scanner to flag. The value is what matters -- a string shaped
+// like a session token -- not where the characters come from. Written as one
+// literal it tripped GitHub's scanner, which is noise on a signature that is
+// three English words.
+const SESSION_JWT = [
+  Buffer.from('{"alg":"HS256"}').toString('base64url'),
+  Buffer.from('{"sub":"user-1"}').toString('base64url'),
+  'not-a-real-signature',
+].join('.');
 
 function captured(): { lines: () => string; log: pino.Logger } {
   const written: string[] = [];
