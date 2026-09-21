@@ -144,8 +144,15 @@ counters live in Redis so they survive a restart; the in-process fallback is
 per-process and empties on every deploy, which would make the limits a control
 in name only. So the Redis service has to exist and the variable has to be set
 *before* deploying a version that includes them, or the API comes up refusing to
-boot. `TRUST_PROXY_HOPS` belongs here too: the API answers behind the web app's
-rewrites, so without it every caller looks like the proxy.
+boot. It is set as a reference, `${{Redis.REDIS_URL}}`, so a password rotation
+does not break it.
+
+**`TRUST_PROXY_HOPS` is deliberately 0.** The API answers behind the web app's
+rewrites, so `req.ip` is the proxy and every caller shares the one IP-keyed
+bound. Raising it would only help if the forwarded header survived the chain —
+and if it does, a caller can set it themselves and give themselves a private
+bucket per spoofed address, which is worse than a shared one. Nothing that
+checks a credential keys on it either way.
 
 The variables a hosted copy needs are listed at the bottom of
 [`persona/.env.example`](./persona/.env.example). `AUTH_SECRET` must be set once
