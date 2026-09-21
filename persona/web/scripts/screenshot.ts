@@ -1,8 +1,16 @@
 import { resolve } from "node:path";
 import { chromium } from "playwright-core";
 
-// Captures a signed-in screen for the report. Figures are 1492x812 so a new one
-// sits beside the hand-taken ones without rescaling.
+// Captures a signed-in screen for the report at 1492x812 logical pixels.
+//
+// deviceScaleFactor decides the real pixel count, and it decides whether the
+// figure clears 300 DPI in print: the .tex crops most of these, then scales the
+// crop to the full column, so the effective resolution is well under the raw
+// one. At 2 the cropped consent screens landed around 280.
+//
+// Changing it changes every `trim=` value in the report, because \includegraphics
+// measures trim in big points against the image's natural size and a JPEG with
+// no density metadata is read at 72dpi. Double the pixels, double the trims.
 //   npx tsx scripts/screenshot.ts <path> <output.jpg> [email]
 const WEB = process.env.PERF_WEB_URL ?? "http://localhost:4420";
 const API = process.env.PERF_API_URL ?? "http://localhost:4400";
@@ -46,7 +54,7 @@ async function main(): Promise<void> {
   try {
     const context = await browser.newContext({
       viewport: { width: 1492, height: Number(process.env.SHOT_HEIGHT ?? 812) },
-      deviceScaleFactor: 2,
+      deviceScaleFactor: Number(process.env.SHOT_SCALE ?? 3),
     });
     const cookies = (await sessionCookies()).map((cookie) => ({
       ...cookie,

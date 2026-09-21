@@ -116,11 +116,11 @@ they hand the container a stub mailer.
 
 ## Deploying it
 
-The hosted copy runs on Railway: six services from this repo plus PostgreSQL,
-each one redeploying when the directory it lives in changes. Every service has a
-`railway.json` next to its `package.json`.
+The hosted copy runs on Railway: six services from this repo plus PostgreSQL and
+Redis, each one redeploying when the directory it lives in changes. Every service
+has a `railway.json` next to its `package.json`.
 
-Three things are worth knowing before touching it.
+Four things are worth knowing before touching it.
 
 **Persona answers on one public origin.** The web app proxies `/api`,
 `/interaction` and `/oidc` to the API (`persona/web/next.config.ts`), and the API
@@ -139,6 +139,14 @@ must rebuild; restarting keeps the old value.
 redeploying the API is how those URIs are corrected — never by hand in the
 database.
 
+**The API will not start in production without `REDIS_URL`.** Rate-limit
+counters live in Redis so they survive a restart; the in-process fallback is
+per-process and empties on every deploy, which would make the limits a control
+in name only. So the Redis service has to exist and the variable has to be set
+*before* deploying a version that includes them, or the API comes up refusing to
+boot. `TRUST_PROXY_HOPS` belongs here too: the API answers behind the web app's
+rewrites, so without it every caller looks like the proxy.
+
 The variables a hosted copy needs are listed at the bottom of
 [`persona/.env.example`](./persona/.env.example). `AUTH_SECRET` must be set once
 and never changed: it derives the key that encrypts every registered app's
@@ -152,19 +160,22 @@ the password, so it is refused for any other address.
 
 ## Tests
 
-The API needs a running database; nothing else does.
+The API needs a running database and a Redis; nothing else does. `npm run db:up`
+starts both.
 
 ```bash
 cd persona
-npm run db:up            # Postgres, if it is not already running
+npm run db:up            # Postgres and Redis, if they are not already running
 
-npm test                 # unit — 250 tests, no database
-npm run test:int         # integration — 151 tests against real Postgres and a real OAuth flow
+npm test                 # unit — 341 tests, no database
+npm run test:int         # integration — 186 tests against real Postgres, Redis and a real OAuth flow
 npm run test:cov         # both, with merged coverage; fails if coverage drops
 npm run typecheck:tests  # the test files themselves (the build does not cover them)
 npm run acceptance       # regenerates references/acceptance.md
+npm run perf:ratelimit   # what the limiter costs; regenerates references/performance-ratelimit.md
+npm run keys             # which signing keys are published, and what each is doing
 
-cd web && npm test       # 229 tests over the app's pure logic
+cd web && npm test       # 244 tests over the app's pure logic
 cd ../../demos/clinic && npm test   # 94 tests over the relying-party plumbing
 ```
 
@@ -172,11 +183,15 @@ Integration tests write to the local development database in Docker. They create
 and delete their own rows and never truncate, but they do expect it to be
 migrated and seeded first — which `docker compose up` does on boot.
 
+Counts come from [`tasks/draft-report/evidence.md`](tasks/draft-report/evidence.md),
+which is the single source for every figure quoted anywhere in this repository.
+
 | Suite | Tests | Statements | Branches |
 |---|---|---|---|
-| `persona` (unit + integration) | 401 | 96.8% | 91.6% |
-| `persona/web` | 229 | 91.8% | 95.5% |
+| `persona` (unit + integration) | 437 | 96.7% | 91.0% |
+| `persona/web` | 244 | 92.6% | 95.7% |
 | `demos/clinic` | 94 | 100% | 100% |
+| `demos/probe` | 9 | — | — |
 
 Only the clinic demo is tested in full. The demos duplicate their OAuth plumbing
 on purpose, and `demos/clinic/src/lib/parity.test.ts` fails if the forum's or the

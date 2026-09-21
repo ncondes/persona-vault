@@ -6,7 +6,7 @@ Each row is a claim the project makes, and the test that proves it. Produced by
 running `persona/tests/acceptance.int.test.ts` against a real PostgreSQL database
 and a real OpenID Connect authorization-code flow — not a simulation.
 
-**29 of 29 passing.**
+**41 of 41 passing.**
 
 ## the right data for the context
 
@@ -60,6 +60,33 @@ and a real OpenID Connect authorization-code flow — not a simulation.
 | refuses a code that has expired | ✅ pass |
 | asks for a code at sign-in as well, not just at sign-up | ✅ pass |
 | asks for a code on the consent screen too, so it is no way around | ✅ pass |
+
+## refusing abuse
+
+| Requirement | Result |
+|---|---|
+| cuts off a burst of password guesses against one address | ✅ pass |
+| tells a refused caller how long to wait | ✅ pass |
+| does not spend one person’s budget on another’s | ✅ pass |
+| holds the same budget at the consent screen as at the API | ✅ pass |
+| never throttles the health check, so a monitor is never mistaken for an outage | ✅ pass |
+
+## knowing who is asking
+
+| Requirement | Result |
+|---|---|
+| tells the person which domain an app proved it is served from | ✅ pass |
+| says plainly that an unverified app is unverified | ✅ pass |
+| ignores a verification an app claims for itself | ✅ pass |
+| takes the badge down if the app moves to another domain | ✅ pass |
+
+## rotating the signing key
+
+| Requirement | Result |
+|---|---|
+| publishes a new key before it signs anything | ✅ pass |
+| never publishes the private half of a key | ✅ pass |
+| names each key after the key itself, so two can never collide | ✅ pass |
 
 ## deleting an account
 
