@@ -14,14 +14,25 @@ import { validateBody } from '../middlewares/validate.middleware';
 export function buildAuthRoutes(container: Container): Router {
   const router = Router();
   const auth = container.authController;
+  const limit = container.rateLimit;
 
   // Both flows are two calls: the first sends a code, the second is where the
   // session cookie is issued.
-  router.post('/register', validateBody(registerSchema), auth.register);
-  router.post('/register/verify', validateBody(verifySchema), auth.verifyRegistration);
-  router.post('/login', validateBody(loginSchema), auth.login);
-  router.post('/login/verify', validateBody(verifySchema), auth.verifyLogin);
-  router.post('/otp/resend', validateBody(resendSchema), auth.resendCode);
+  //
+  // The limiter runs after validation, so it keys on an address the schema has
+  // already vouched for rather than on whatever arrived. `authLogin` is the same
+  // policy the consent-screen sign-in uses, and keying both on the address means
+  // they share one budget — alternating between the two doors buys nothing.
+  router.post('/register', validateBody(registerSchema), limit('authRegister'), auth.register);
+  router.post(
+    '/register/verify',
+    validateBody(verifySchema),
+    limit('authVerify'),
+    auth.verifyRegistration,
+  );
+  router.post('/login', validateBody(loginSchema), limit('authLogin'), auth.login);
+  router.post('/login/verify', validateBody(verifySchema), limit('authVerify'), auth.verifyLogin);
+  router.post('/otp/resend', validateBody(resendSchema), limit('authResend'), auth.resendCode);
   router.post('/logout', auth.logout);
   router.get('/me', requireAuth, auth.me);
 
@@ -31,7 +42,7 @@ export function buildAuthRoutes(container: Container): Router {
   // only when asked for by name, and the controller serves only the addresses on
   // the demo list. Local development leaves it on; anywhere else has to choose.
   if (!config.isProd || config.demoLogin) {
-    router.post('/dev/login', validateBody(devLoginSchema), auth.devLogin);
+    router.post('/dev/login', validateBody(devLoginSchema), limit('authLogin'), auth.devLogin);
   }
 
   return router;

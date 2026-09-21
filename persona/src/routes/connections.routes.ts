@@ -9,9 +9,9 @@ export function buildConnectionRoutes(container: Container, provider?: any): Rou
   const router = Router();
   router.use(requireAuth);
 
-  router.get('/', container.accountController.connections);
+  router.get('/', container.rateLimit('apiRead'), container.accountController.connections);
 
-  router.delete('/:clientId', async (req, res, next) => {
+  router.delete('/:clientId', container.rateLimit('vaultWrite'), async (req, res, next) => {
     try {
       const grantId = await container.accountService.revokeConnection(
         req.userId!,

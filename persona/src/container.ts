@@ -4,8 +4,13 @@ import { AuthController } from './controllers/auth.controller';
 import { HealthController } from './controllers/health.controller';
 import { config } from './config/config';
 import { Mailer } from './domain/interfaces/mailer';
+import { Clock, RateLimitStore, systemClock } from './domain/interfaces/rate-limit';
 import { Repositories, UnitOfWork } from './domain/interfaces/unit-of-work';
 import { prisma } from './infrastructure/db/prisma';
+import { MemoryRateLimitStore } from './infrastructure/rate-limit/memory.store';
+import { RedisRateLimitStore } from './infrastructure/rate-limit/redis.store';
+import { logger } from './infrastructure/logger/logger';
+import { buildRateLimiter, RateLimiter } from './middlewares/rateLimit.middleware';
 import { ConsoleMailer } from './infrastructure/mail/console.mailer';
 import { ResendMailer } from './infrastructure/mail/resend.mailer';
 import { createRepositories } from './repositories';
@@ -19,11 +24,15 @@ import { OtpService, OtpServiceImpl } from './services/otp.service';
 import { VaultService, VaultServiceImpl } from './services/vault.service';
 import { VaultController } from './controllers/vault.controller';
 
-// The one dependency worth swapping from outside. Integration tests boot the
-// real container against the real database, and without this they would send
-// mail — or fail trying — on every sign-up.
+// The dependencies worth swapping from outside. Integration tests boot the real
+// container against the real database, and without the mailer they would send
+// mail — or fail trying — on every sign-up. The store and the clock are here for
+// the same reason: a unit test should not need Redis, and no test should have to
+// wait out a real window to watch a bucket refill.
 export interface ContainerOverrides {
   mailer?: Mailer;
+  rateLimitStore?: RateLimitStore;
+  clock?: Clock;
 }
 
 // Wires the application's dependencies together at startup.
@@ -36,10 +45,27 @@ function buildMailer(): Mailer {
     : new ResendMailer(config.resendApiKey, config.emailFrom);
 }
 
+// Redis when there is one, an in-process map when there is not. config.ts
+// refuses to start production without REDIS_URL, so the fallback can only be
+// reached locally and in tests — but it still says so, because a limiter that
+// silently forgets everything on restart is worth noticing.
+function buildRateLimitStore(clock: Clock): RateLimitStore {
+  if (config.redisUrl) {
+    return new RedisRateLimitStore(config.redisUrl);
+  }
+  if (!config.isTest) {
+    logger.warn('REDIS_URL is unset — rate limits are per-process and reset on restart');
+  }
+  return new MemoryRateLimitStore(clock);
+}
+
 export class Container {
   readonly repositories: Repositories;
   readonly unitOfWork: UnitOfWork;
   readonly mailer: Mailer;
+  readonly clock: Clock;
+  readonly rateLimitStore: RateLimitStore;
+  readonly rateLimit: RateLimiter;
   readonly otpService: OtpService;
   readonly authService: AuthService;
   readonly vaultService: VaultService;
@@ -56,6 +82,9 @@ export class Container {
   constructor(overrides: ContainerOverrides = {}) {
     // infrastructure
     this.mailer = overrides.mailer ?? buildMailer();
+    this.clock = overrides.clock ?? systemClock;
+    this.rateLimitStore = overrides.rateLimitStore ?? buildRateLimitStore(this.clock);
+    this.rateLimit = buildRateLimiter(this.rateLimitStore, this.clock);
 
     // repositories (bound to the shared client for non-transactional work)
     this.repositories = createRepositories(prisma);

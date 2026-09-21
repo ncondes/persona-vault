@@ -7,11 +7,12 @@ import { validateBody } from '../middlewares/validate.middleware';
 export function buildSettingsRoutes(container: Container): Router {
   const router = Router();
   const account = container.accountController;
+  const limit = container.rateLimit;
 
   router.use(requireAuth);
 
-  router.get('/', account.settings);
-  router.put('/', validateBody(updateSettingsSchema), account.updateSettings);
+  router.get('/', limit('apiRead'), account.settings);
+  router.put('/', limit('vaultWrite'), validateBody(updateSettingsSchema), account.updateSettings);
 
   return router;
 }

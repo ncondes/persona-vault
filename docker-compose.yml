@@ -3,9 +3,11 @@
 # is enough — the API migrates and seeds the database on boot, which is what
 # registers the four demo apps as OAuth clients.
 #
-# The hosted copy runs the same six services on Railway, wired by the same
+# The hosted copy runs the same services on Railway, wired by the same
 # variables. Its equivalents are listed in the deployment section of README.md;
-# change one and check the other.
+# change one and check the other. Redis is the newest of them: the API refuses
+# to start in production without REDIS_URL, so the service has to exist there
+# before a deploy that includes it.
 #
 # Two URLs point at Persona on purpose. The browser is redirected to
 # http://localhost:4400, which it can reach; the demo servers call the token and
@@ -31,6 +33,35 @@ services:
       - persona-pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U persona -d persona"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:8-alpine
+    container_name: persona-redis
+    restart: unless-stopped
+    # Rate-limit counters. Persistence is on because a Redis that forgets on
+    # restart hands an attacker a fresh budget, which is the difference between
+    # a control and the appearance of one. `noeviction` matters for the same
+    # reason: a full cache must refuse writes so the limiter fails closed,
+    # rather than quietly dropping counters and letting everything through.
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - "56379:6379"
+    volumes:
+      - persona-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 2s
       timeout: 3s
       retries: 15
@@ -65,6 +96,7 @@ services:
       # comes up with an account nobody can sign in to. config.ts refuses this
       # value when NODE_ENV=production.
       MAIL_TRANSPORT: "console"
+      REDIS_URL: "redis://redis:6379"
     # Seeding is required, not convenience: clients live in the database now, so
     # an unseeded database has no relying parties at all.
     command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run dev"
@@ -77,6 +109,8 @@ services:
       - ./persona/prisma:/app/prisma
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   web:
@@ -170,3 +204,4 @@ services:
 
 volumes:
   persona-pgdata:
+  persona-redisdata:

@@ -58,6 +58,7 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
   const router = Router();
   const form = urlencoded({ extended: false });
   const body = [json(), form];
+  const limit = container.rateLimit;
 
   // Completes an interaction step and sends the resume URL back the way the
   // caller expects: JSON for the frontend, a redirect for HTML forms.
@@ -144,6 +145,7 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
   router.post(
     '/:uid/login',
     body,
+    limit('authLogin'),
     interactionHandler(async (req, res) => {
       const uid = String(req.params.uid);
       // Checked before the password, so a request that has already expired costs
@@ -175,6 +177,7 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
   router.post(
     '/:uid/verify',
     body,
+    limit('interactionVerify'),
     interactionHandler(async (req, res) => {
       const uid = String(req.params.uid);
       const challengeId = String(req.body.challengeId ?? '');
@@ -207,6 +210,7 @@ export function buildInteractionRoutes(provider: any, container: Container): Rou
   router.post(
     '/:uid/decision',
     body,
+    limit('interactionDecision'),
     interactionHandler(async (req, res) => {
       const details = await provider.interactionDetails(req, res);
       const { params, session } = details;

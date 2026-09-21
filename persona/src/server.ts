@@ -15,9 +15,28 @@ import type { Container } from './container';
 export function buildApp(container: Container, provider?: any): Express {
   const app = express();
 
+  // Zero by default, so req.ip is the socket address and nothing is taken on
+  // trust. Behind the web app's rewrites it has to be told how many hops to
+  // skip, or every request appears to come from the proxy. See config.ts for
+  // why only the public-read limit relies on the answer.
+  if (config.trustProxyHops > 0) {
+    app.set('trust proxy', config.trustProxyHops);
+  }
+
   app.use(requestLogger);
 
   if (provider) {
+    // Limits go in front of the provider rather than inside it. Each path gets
+    // the key it can actually produce without a database read: the token
+    // endpoint has client_secret_basic in its Authorization header, authorize
+    // has client_id in the query string, and userinfo has a bearer token that
+    // is already per client per user. Order matters — Express runs the first
+    // match, so these have to be mounted before the catch-all below.
+    app.use('/oidc/token', container.rateLimit('oidcToken'));
+    app.use('/oidc/auth', container.rateLimit('oidcAuthorize'));
+    app.use('/oidc/me', container.rateLimit('oidcUserinfo'));
+    app.use('/oidc/jwks', container.rateLimit('publicRead'));
+    app.use('/oidc/.well-known', container.rateLimit('publicRead'));
     app.use('/oidc', provider.callback());
   }
 

@@ -11,7 +11,7 @@ export function buildAccountRoutes(container: Container, provider?: any): Router
   const router = Router();
   router.use(requireAuth);
 
-  router.delete('/', async (req, res, next) => {
+  router.delete('/', container.rateLimit('vaultWrite'), async (req, res, next) => {
     try {
       const grantIds = await container.accountService.deleteAccount(req.userId!);
       if (provider) {

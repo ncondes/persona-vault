@@ -1,6 +1,13 @@
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
-import { AppError, ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../src/domain/errors';
+import {
+  AppError,
+  ConflictError,
+  NotFoundError,
+  TooManyRequestsError,
+  UnauthorizedError,
+  ValidationError,
+} from '../src/domain/errors';
 import { requireAuth } from '../src/middlewares/auth.middleware';
 import { errorHandler } from '../src/middlewares/error.middleware';
 import { validateBody } from '../src/middlewares/validate.middleware';
@@ -9,9 +16,11 @@ import { signAuthToken } from '../src/infrastructure/auth/token';
 // Minimal Express doubles. The HTTP suites prove these are wired up; this file
 // is about the branches a passing request never takes.
 function fakeResponse() {
+  const headers: Record<string, string> = {};
   const res = {
     statusCode: 0,
     body: undefined as unknown,
+    headers,
     status(code: number) {
       res.statusCode = code;
       return res;
@@ -20,8 +29,16 @@ function fakeResponse() {
       res.body = payload;
       return res;
     },
+    setHeader(name: string, value: string) {
+      headers[name] = value;
+      return res;
+    },
   };
-  return res as unknown as Response & { statusCode: number; body: unknown };
+  return res as unknown as Response & {
+    statusCode: number;
+    body: unknown;
+    headers: Record<string, string>;
+  };
 }
 
 function run(handler: ReturnType<typeof validateBody>, req: Partial<Request>) {
@@ -67,6 +84,33 @@ describe('errorHandler', () => {
     expect(wire).not.toContain('hunter2');
     expect(wire).not.toContain('ECONNREFUSED');
     expect(wire).not.toContain('stack');
+  });
+
+  it('turns a rate-limit refusal into a Retry-After header', () => {
+    const res = fakeResponse();
+    errorHandler(
+      new TooManyRequestsError('Too many requests. Try again shortly.', 'RATE_LIMITED', 42),
+      {} as Request,
+      res,
+      jest.fn(),
+    );
+    expect(res.statusCode).toBe(429);
+    expect(res.headers['Retry-After']).toBe('42');
+  });
+
+  // Retry-After is in whole seconds, so a sub-second wait still has to say 1 —
+  // zero reads as "go ahead now", which is how a client ends up in a loop.
+  it('never tells a client to retry after zero seconds', () => {
+    const res = fakeResponse();
+    errorHandler(new TooManyRequestsError('slow down', 'RATE_LIMITED', 0), {} as Request, res, jest.fn());
+    expect(res.headers['Retry-After']).toBe('1');
+  });
+
+  it('sets no Retry-After when the error does not carry one', () => {
+    const res = fakeResponse();
+    errorHandler(new TooManyRequestsError(), {} as Request, res, jest.fn());
+    expect(res.statusCode).toBe(429);
+    expect(res.headers['Retry-After']).toBeUndefined();
   });
 
   it('does not treat a plain object shaped like an AppError as one', () => {

@@ -27,6 +27,23 @@ const envSchema = z.object({
   // account everything interesting hangs off lives at example.com, which no mail
   // provider will deliver to — so a hosted copy that anyone can try needs a way
   // in that does not involve an inbox. Off unless asked for, by name.
+  // Rate-limit counters live in Redis so they survive a restart of the API and
+  // are shared if it ever runs as more than one process. Optional here and
+  // required in production below, the same way RESEND_API_KEY is: local work
+  // and unit tests fall back to an in-process store, which is honest for one
+  // process and wrong for anything else.
+  REDIS_URL: z.string().min(1).optional(),
+  // Off switch for the limiter itself. Exists for the load test, which measures
+  // the same endpoint with and without it, and for a local session where the
+  // limits get in the way.
+  RATE_LIMIT_ENABLED: z.stringbool().default(true),
+  // How many proxies sit in front of Express, for req.ip. The API has no public
+  // domain: traffic arrives through the web app's rewrites over the private
+  // network, so without this req.ip is the proxy and every caller shares one
+  // address. Only the public-read bound keys on it, and that bound fails open —
+  // nothing that checks a credential trusts this number, because a forwarded
+  // header is ultimately something the caller can influence.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   DEMO_LOGIN: z.stringbool().default(false),
   // Only these addresses can use it. Accounts a visitor creates are not on the
   // list, so the door does not open for them.
@@ -57,6 +74,13 @@ if (env.MAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
   throw new Error('RESEND_API_KEY is required unless MAIL_TRANSPORT=console');
 }
 
+// The in-process fallback store is per-process and empties on restart, so in
+// production it would be a control in name only. Refuse to start instead of
+// pretending, which is the same call made for the mail transport above.
+if (env.NODE_ENV === 'production' && env.RATE_LIMIT_ENABLED && !env.REDIS_URL) {
+  throw new Error('REDIS_URL is required in production — rate limits cannot live in process memory');
+}
+
 export const config = {
   env: env.NODE_ENV,
   port: env.PORT,
@@ -69,6 +93,9 @@ export const config = {
   // transport is the one selected.
   resendApiKey: env.RESEND_API_KEY as string,
   emailFrom: env.EMAIL_FROM,
+  redisUrl: env.REDIS_URL,
+  rateLimitEnabled: env.RATE_LIMIT_ENABLED,
+  trustProxyHops: env.TRUST_PROXY_HOPS,
   demoLogin: env.DEMO_LOGIN,
   demoLoginEmails: env.DEMO_LOGIN_EMAILS,
   isProd: env.NODE_ENV === 'production',

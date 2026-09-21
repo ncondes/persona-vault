@@ -16,10 +16,12 @@ import { buildVaultRoutes } from './vault.routes';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildRoutes(container: Container, provider?: any): Router {
   const router = Router();
+  // Deliberately unlimited: a throttled health check reads as an outage, and
+  // there is nothing behind it worth protecting. See UNLIMITED_PATHS.
   router.use('/health', buildHealthRoutes(container));
   router.use('/auth', buildAuthRoutes(container));
   router.use('/vault', buildVaultRoutes(container));
-  router.use('/catalog', buildCatalogRoutes());
+  router.use('/catalog', container.rateLimit('publicRead'), buildCatalogRoutes());
   router.use('/audit', buildAuditRoutes(container));
   router.use('/connections', buildConnectionRoutes(container, provider));
   router.use('/settings', buildSettingsRoutes(container));
@@ -27,6 +29,11 @@ export function buildRoutes(container: Container, provider?: any): Router {
   router.use('/apps', buildAppRoutes(container, provider));
 
   // GET /api/export downloads everything Persona holds about the user.
-  router.get('/export', requireAuth, container.accountController.exportData);
+  router.get(
+    '/export',
+    requireAuth,
+    container.rateLimit('apiExport'),
+    container.accountController.exportData,
+  );
   return router;
 }

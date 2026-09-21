@@ -11,17 +11,20 @@ import { revokeGrant } from '../oidc/grants';
 export function buildAppRoutes(container: Container, provider?: any): Router {
   const router = Router();
   const apps = container.appController;
+  const limit = container.rateLimit;
 
   router.use(requireAuth);
 
-  router.get('/', apps.list);
-  router.post('/', validateBody(createAppSchema), apps.create);
-  router.post('/preview', validateBody(previewAppSchema), apps.preview);
-  router.get('/:id', apps.get);
-  router.get('/:id/activity', apps.activity);
-  router.post('/:id/secret', apps.rotateSecret);
+  router.get('/', limit('apiRead'), apps.list);
+  // Registering in bulk is how an impersonation attempt would start, so this one
+  // is a quota rather than a throughput limit.
+  router.post('/', limit('appCreate'), validateBody(createAppSchema), apps.create);
+  router.post('/preview', limit('apiRead'), validateBody(previewAppSchema), apps.preview);
+  router.get('/:id', limit('apiRead'), apps.get);
+  router.get('/:id/activity', limit('apiRead'), apps.activity);
+  router.post('/:id/secret', limit('appSecret'), apps.rotateSecret);
 
-  router.put('/:id', validateBody(updateAppSchema), async (req, res, next) => {
+  router.put('/:id', limit('vaultWrite'), validateBody(updateAppSchema), async (req, res, next) => {
     try {
       const { app, revokedGrantIds } = await container.clientService.update(
         req.userId!,
@@ -39,7 +42,7 @@ export function buildAppRoutes(container: Container, provider?: any): Router {
     }
   });
 
-  router.delete('/:id', async (req, res, next) => {
+  router.delete('/:id', limit('vaultWrite'), async (req, res, next) => {
     try {
       const grantIds = await container.clientService.remove(req.userId!, String(req.params.id));
       if (provider) {

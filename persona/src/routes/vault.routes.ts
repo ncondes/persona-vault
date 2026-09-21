@@ -7,13 +7,14 @@ import { validateBody } from '../middlewares/validate.middleware';
 export function buildVaultRoutes(container: Container): Router {
   const router = Router();
   const vault = container.vaultController;
+  const limit = container.rateLimit;
 
   router.use(requireAuth); // every vault route requires a logged-in user
 
-  router.get('/', vault.list);
-  router.post('/items', validateBody(createVaultItemSchema), vault.create);
-  router.put('/items/:id', validateBody(updateVaultItemSchema), vault.update);
-  router.delete('/items/:id', vault.remove);
+  router.get('/', limit('apiRead'), vault.list);
+  router.post('/items', limit('vaultWrite'), validateBody(createVaultItemSchema), vault.create);
+  router.put('/items/:id', limit('vaultWrite'), validateBody(updateVaultItemSchema), vault.update);
+  router.delete('/items/:id', limit('vaultWrite'), vault.remove);
 
   return router;
 }

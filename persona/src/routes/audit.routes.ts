@@ -5,6 +5,6 @@ import { requireAuth } from '../middlewares/auth.middleware';
 export function buildAuditRoutes(container: Container): Router {
   const router = Router();
   router.use(requireAuth);
-  router.get('/', container.accountController.auditHistory);
+  router.get('/', container.rateLimit('apiRead'), container.accountController.auditHistory);
   return router;
 }

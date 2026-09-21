@@ -35,7 +35,17 @@ export class UnauthorizedError extends AppError {
 }
 
 export class TooManyRequestsError extends AppError {
-  constructor(message = 'Too many requests', code = 'TOO_MANY_REQUESTS') {
+  // Seconds until the caller should try again. The error handler turns it into
+  // a Retry-After header, so a client is told how long to wait rather than
+  // left to guess and hammer.
+  readonly retryAfterSeconds?: number;
+
+  constructor(
+    message = 'Too many requests',
+    code = 'TOO_MANY_REQUESTS',
+    retryAfterSeconds?: number,
+  ) {
     super(429, code, message);
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
