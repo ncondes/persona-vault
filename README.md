@@ -194,9 +194,9 @@ Counts come from the suites themselves; run them to reproduce the table.
 
 | Suite | Tests | Statements | Branches |
 |---|---|---|---|
-| `persona` (unit + integration) | 437 | 96.7% | 91.0% |
-| `persona/web` | 244 | 92.6% | 95.7% |
-| `demos/clinic` | 94 | 100% | 100% |
+| `persona` (unit + integration) | 610 | 96.4% | 89.1% |
+| `persona/web` | 246 | 92.9% | 95.7% |
+| `demos/clinic` | 99 | 95.8% | 97.9% |
 | `demos/probe` | 9 | — | — |
 
 Only the clinic demo is tested in full. The demos duplicate their OAuth plumbing
