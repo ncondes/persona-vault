@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: persona (unit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: persona
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: persona/package-lock.json
+      - run: npm ci
+      # The config schema is validated at import, so a .env must exist even for
+      # the unit tests, which never open a connection.
+      - run: cp .env.example .env
+      - run: npm run build
+      - run: npm test
+
+  web:
+    name: persona/web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: persona/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: persona/web/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
