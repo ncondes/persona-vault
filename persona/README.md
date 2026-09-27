@@ -7,7 +7,7 @@ receive only the values the user approves, with the right value suggested for
 each context. Every grant, release and revocation is audited.
 
 Built on the **Project Idea 7.1** template (CM3070). This folder is the working
-application; the academic write-ups live under `../tasks/`.
+application.
 
 ## Stack
 
@@ -99,7 +99,9 @@ the seed, which calls the same service). The OIDC provider reads them through
 the Prisma adapter in `src/oidc/adapter.ts`, which also stores every session,
 grant, authorization code and access token — so connections survive a restart.
 
-Run the tests:
+Run the tests. The config schema is validated at import, so a `.env` must exist
+even for the unit tests, which never open a connection — `cp .env.example .env`
+is enough:
 
 ```bash
 npm test                 # unit — 401 tests, no database

@@ -79,7 +79,7 @@ release in an audit log they can read at `/connections`.
 | [`persona/`](./persona) | The provider: Express + TypeScript, Prisma + PostgreSQL, `oidc-provider` |
 | [`persona/web/`](./persona/web) | The user interface and developer console: Next.js, Tailwind, shadcn/ui |
 | [`demos/`](./demos) | Four independent relying parties, one folder each |
-| `tasks/`, `references/` | Coursework documents and working notes, not part of the system |
+| [`references/`](./references) | Generated engineering notes: the acceptance table, the performance runs and the build log |
 
 ## Developing without Docker
 
@@ -190,8 +190,7 @@ Integration tests write to the local development database in Docker. They create
 and delete their own rows and never truncate, but they do expect it to be
 migrated and seeded first — which `docker compose up` does on boot.
 
-Counts come from [`tasks/draft-report/evidence.md`](tasks/draft-report/evidence.md),
-which is the single source for every figure quoted anywhere in this repository.
+Counts come from the suites themselves; run them to reproduce the table.
 
 | Suite | Tests | Statements | Branches |
 |---|---|---|---|

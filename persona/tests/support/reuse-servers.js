@@ -15,7 +15,6 @@
 // Ruled out first, each by experiment: email collisions, concurrency between
 // files, shared process state, HTTP keep-alive, `oidc_payload` table bloat,
 // Postgres connection limits, and the Docker services on neighbouring ports.
-// See tasks/draft-report/evidence.md for the full trail.
 const supertest = require('supertest');
 
 // Keyed on the app so each test file's app gets exactly one server, and so a
