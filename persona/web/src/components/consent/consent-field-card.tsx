@@ -43,6 +43,7 @@ interface ConsentFieldCardProps {
 export function ConsentFieldCard({ field, selected, enabled, onSelect, onToggle }: ConsentFieldCardProps) {
   const t = useStrings();
   const sensitiveTone = field.sensitive;
+  const label = t.scopes[field.scope] ?? field.scope;
 
   const picker =
     field.kind === "allergy" ? (
@@ -104,7 +105,7 @@ export function ConsentFieldCard({ field, selected, enabled, onSelect, onToggle 
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{t.scopes[field.scope] ?? field.scope}</span>
+          <span className="text-sm font-medium">{label}</span>
           {field.required ? <Badge variant="secondary">{t.common.requiredBadge}</Badge> : null}
           {field.sensitive ? (
             <Badge className="bg-sensitive-bg2 text-sensitive border-sensitive-border">
@@ -113,7 +114,17 @@ export function ConsentFieldCard({ field, selected, enabled, onSelect, onToggle 
           ) : null}
         </div>
         {field.sensitive && !field.required ? (
-          <Switch checked={enabled} onCheckedChange={onToggle} />
+          <div className="flex shrink-0 items-center gap-2">
+            <span
+              className={cn(
+                "text-xs font-medium",
+                enabled ? "text-sensitive" : "text-zinc-500",
+              )}
+            >
+              {enabled ? t.common.sharing : t.common.notSharing}
+            </span>
+            <Switch checked={enabled} onCheckedChange={onToggle} aria-label={label} />
+          </div>
         ) : (
           <Check className="text-brand size-4" />
         )}
